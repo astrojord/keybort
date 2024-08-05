@@ -8,12 +8,12 @@ LAYOUTS = [
 
 CASE_MATERIALS = [
     ('abs', 'ABS'),
-    ('acr', 'Acrylic')
+    ('acr', 'Acrylic'),
     ('alu', 'Aluminum'),
     ('ano_alu', 'Aluminum (anodized)'),
     ('ck_alu', 'Aluminum (cerakoted)'),
     ('ec_alu', 'Aluminum (e-coated)'),
-    ('fr4_stack', 'FR4 Stack')
+    ('fr4_stack', 'FR4 Stack'),
     ('p', 'Plastic'),
     ('pc', 'Polycarbonate'),
     ('w', 'Wood'),

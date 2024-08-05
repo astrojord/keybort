@@ -20,9 +20,10 @@ class Keyboard(models.Model):
     collects a set of pieces that represent a built/planned board
     """
     kit = models.ForeignKey('Kit', null=True, on_delete=models.SET_NULL)
+    plate = models.ForeignKey('Plate', null=True, on_delete=models.SET_NULL)
     switch = models.ForeignKey('Switch', null=True, on_delete=models.SET_NULL)
     stabilizer = models.ForeignKey('Stabilizer', null=True, on_delete=models.SET_NULL)
-    keycaps = models.ForeignKey('Kit', null=True, on_delete=models.SET_NULL)
+    keycaps = models.ForeignKey('Keycaps', null=True, on_delete=models.SET_NULL)
 
     prebuilt = models.BooleanField(default=False)
     bluetooth = models.BooleanField(default=False)
