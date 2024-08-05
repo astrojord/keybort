@@ -2,6 +2,7 @@ services:
   db:
     platform: linux/amd64
     image: postgres:16-bookworm
+    container_name: db
     volumes:
       - type: volume
         source: pg_data
@@ -14,6 +15,7 @@ services:
 
   app:
     platform: linux/amd64
+    container_name: app
     build: 
       context: ./keybort
     volumes:

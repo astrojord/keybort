@@ -25,6 +25,7 @@ MOUNT_TYPES = [
     ('gasket', 'Gasket'),
     ('ip', 'Integrated Plate'),
     ('iso', 'Isolation'),
+    ('isotop', 'Isolated Top'),
     ('pl', 'Plateless'),
     ('sandwich', 'Sandwich'),
     ('top', 'Top'),
