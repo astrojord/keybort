@@ -1,0 +1,35 @@
+<ul class="sidebar-nav">
+    <li class="sidebar-header">
+        Navigation
+    </li>
+    
+    <li class="sidebar-item {% if request.path == "" %}active{% endif %}">
+        <a class="sidebar-link" href="">
+            <i class="align-middle fas fa-home"></i> <span class="align-middle">Home</span>
+        </a>
+    </li>
+
+    <li class="sidebar-item {% if 'inventory' in request.path %}active{% endif %}">
+        <a data-bs-target="#inv" data-bs-toggle="collapse" class="sidebar-link collapsed">
+            <i class="align-middle fas fa-list"></i> <span class="align-middle">Inventory</span>
+        </a>
+        <ul id="inv" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+            <li class="sidebar-item"><a class="sidebar-link" href="">Keyboards</a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="">Parts</a></li>
+        </ul>
+    </li>
+
+    <li class="sidebar-item {% if 'parts' in request.path %}active{% endif %}">
+        <a data-bs-target="#parts" data-bs-toggle="collapse" class="sidebar-link collapsed">
+            <i class="align-middle fas fa-magnifying-glass"></i> <span class="align-middle">View Stock Parts</span>
+        </a>
+        <ul id="parts" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+            <li class="sidebar-item"><a class="sidebar-link" href="">Prebuilts</a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="">Kits</a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="">Switches</a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="">Keycaps</a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="">Stabilizers</a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="">Plates</a></li>
+        </ul>
+    </li>
+</ul>

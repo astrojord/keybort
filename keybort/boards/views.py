@@ -1,6 +1,7 @@
 from django.shortcuts import render
 
 def index(request):
-    pass
+    context = {}
+    return render(request, 'pages/index.html', context)
     
 
