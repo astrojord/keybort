@@ -1,0 +1,6 @@
+# requirements.in
+pip-tools
+django
+django-allauth
+psycopg2-binary
+django-widget-tweaks
