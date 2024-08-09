@@ -5,15 +5,26 @@
 
     <div class="navbar-collapse collapse">
         <ul class="navbar-nav navbar-align">
+            {% if request.user.is_authenticated %}
             <li class="nav-item dropdown">
                 <a class="pe-md-0 dropdown-toggle nav-link" href="#" data-bs-toggle="dropdown">
                     <i class="align-middle fas fa-user me-1"></i> {{request.user}}
                 </a>
                 <div class="dropdown-menu dropdown-menu-end">
-                    <a class="dropdown-item" href=""><i class="align-middle fas fa-user me-1"></i>Profile</a>
-                    <a class="dropdown-item" href="">Log out</a>
+                    {% comment %}
+                        <a class="dropdown-item" href=""><i class="align-middle fas fa-user me-1"></i>Profile</a>
+                    {% endcomment %}
+                    <a class="dropdown-item" href="{% url 'account_change_password' %}"><i class="align-middle fas fa-key me-1"></i>Change password</a>
+                    <a class="dropdown-item" href="{% url 'account_logout' %}"><i class="align-middle fas fa-door-open me-1"></i>Log out</a>
                 </div>
             </li>
+            {% else %}
+            <li class="nav-item">
+                <a class="pe-md-0 nav-link" href="{% url 'account_login' %}">
+                    <i class="align-middle fas fa-user me-1"></i> Sign in
+                </a>
+            </li>
+            {% endif %}
         </ul>
     </div>
 </nav>
