@@ -16,7 +16,7 @@
                   {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}>{% slot value %}{% endslot %}</textarea>
     {% else %}
         {% if attrs.type != "checkbox" and attrs.type != "radio" %}
-            <label for="{{ attrs.id }}">
+            <label for="{{ attrs.id }}" class="form-label fw-bold">
                 {% slot label %}
                 {% endslot %}
             </label>
@@ -30,9 +30,10 @@
                {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
                {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
                {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
-               type="{{ attrs.type }}">
+               type="{{ attrs.type }}" 
+               class="{% if attrs.type == "checkbox" or attrs.type == "radio" %}form-check{% else %}form-control{% endif %}">
         {% if attrs.type == "checkbox" or attrs.type == "radio" %}
-            <label for="{{ attrs.id }}">
+            <label for="{{ attrs.id }}" class="form-label fw-bold">
                 {% slot label %}
                 {% endslot %}
             </label>
