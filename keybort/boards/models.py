@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
+from django.db.models.constraints import CheckConstraint
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
@@ -8,9 +10,13 @@ from . import const
 class BoardsPermissions(models.Model):
     class Meta:
         permissions = (
-            ('can_upload_canned_data', 'Can bulk upload canned data'),
-            ('can_delete_canned_data', 'Can delete canned data'),
+            ('can_upload_stock_data', 'Can bulk upload stock data'),
+            ('can_delete_stock_data', 'Can delete stock data'),
         )
+
+# elected to not use generic FK/ContentType due to schema nastiness
+# see great post @ https://lukeplant.me.uk/blog/posts/avoid-django-genericforeignkey/
+# using nullable FKs in intermediate tables + props on each polymorphic model 
 
 class Inventory(models.Model):
     """
@@ -18,51 +24,85 @@ class Inventory(models.Model):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    keyboard = models.ForeignKey('Keyboard', null=True, blank=True, on_delete=models.SET_NULL)
+    kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
+    plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
+    switch = models.ForeignKey('Switch', null=True, blank=True, on_delete=models.SET_NULL)
+    stabilizer = models.ForeignKey('Stabilizer', null=True, blank=True, on_delete=models.SET_NULL)
+    keycaps = models.ForeignKey('Keycaps', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    @property
+    def obj(self):
+        if self.keyboard:
+            return self.keyboard
+        elif self.kit:
+            return self.kit
+        elif self.plate:
+            return self.plate
+        elif self.switch:
+            return self.switch
+        elif self.stabilizer:
+            return self.switch
+        elif self.keycaps:
+            return self.keycaps
+        
+        raise AssertionError(f'missing data for inventory {self.pk}')   
 
     def __str__(self):
-        return f'{self.user.username} - {self.content_type} {self.object_id}'
+        return f'{self.user.username} - {self.obj}'
 
     class Meta:
         verbose_name_plural = 'Inventories'
+
+        # todo: surely there's a better way to do this w/ some sort of boolean logic magic
+        constraints = [
+            CheckConstraint(check=(
+                Q(keyboard__isnull=True) ^
+                Q(kit__isnull=True) ^
+                Q(plate__isnull=True) ^
+                Q(switch__isnull=True) ^
+                Q(stabilizer__isnull=True) ^
+                Q(keycaps__isnull=True) 
+            ), name='inventory_data_exists')
+        ]
 
 class Keyboard(models.Model):
     """
     collects a set of pieces that represent a built/planned board
     """
-    # can go to Kit or CannedKit
-    kit_limit = models.Q(app_label='boards', model='kit') | models.Q(app_label='boards', model='cannedkit')
-    kit_content_type = models.ForeignKey(ContentType, limit_choices_to=kit_limit, on_delete=models.CASCADE, related_name='board_kit')
-    kit_object_id = models.PositiveIntegerField()
-    kit_content_object = GenericForeignKey('kit_content_type', 'kit_object_id')
+    custom = models.OneToOneField('CustomKeyboard', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockKeyboard', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
 
-    # can go to Plate or CannedPlate
-    plate_limit = models.Q(app_label='boards', model='plate') | models.Q(app_label='boards', model='cannedplate')
-    plate_content_type = models.ForeignKey(ContentType, limit_choices_to=plate_limit, null=True, on_delete=models.SET_NULL, related_name='board_plate')
-    plate_object_id = models.PositiveIntegerField(null=True)
-    plate_content_object = GenericForeignKey('plate_content_type', 'plate_object_id')
-
-    # can go to Switch or CannedSwitch
-    switch_limit = models.Q(app_label='boards', model='switch') | models.Q(app_label='boards', model='cannedswitch')
-    switch_content_type = models.ForeignKey(ContentType, limit_choices_to=switch_limit, null=True, on_delete=models.SET_NULL, related_name='board_switch')
-    switch_object_id = models.PositiveIntegerField(null=True)
-    switch_content_object = GenericForeignKey('switch_content_type', 'switch_object_id')
-
-    # can go to Stabilizer or CannedStabilizer
-    stabilizer_limit = models.Q(app_label='boards', model='stabilizer') | models.Q(app_label='boards', model='cannedstabilizer')
-    stabilizer_content_type = models.ForeignKey(ContentType, limit_choices_to=stabilizer_limit, null=True, on_delete=models.SET_NULL, related_name='board_stabilizer')
-    stabilizer_object_id = models.PositiveIntegerField(null=True)
-    stabilizer_content_object = GenericForeignKey('stabilizer_content_type', 'stabilizer_object_id')
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for keyboard {self.pk}')
     
-    # can go to Keycaps or CannedKeycaps
-    keycaps_limit = models.Q(app_label='boards', model='keycaps') | models.Q(app_label='boards', model='cannedkeycaps')
-    keycaps_content_type = models.ForeignKey(ContentType, limit_choices_to=keycaps_limit, null=True, on_delete=models.SET_NULL, related_name='board_keycaps')
-    keycaps_object_id = models.PositiveIntegerField(null=True)
-    keycaps_content_object = GenericForeignKey('keycaps_content_type', 'keycaps_object_id')
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='keyboard_data_exists')
+        ]
 
-    prebuilt = models.BooleanField(default=False)
+class CustomKeyboard(models.Model):
+    # can go to CustomKit or StockKit
+    kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # can go to CustomPlate or StockPlate
+    plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # can go to CustomSwitch or StockSwitch
+    switch = models.ForeignKey('Switch', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # can go to CustomStabilizer or StockStabilizer
+    stabilizer = models.ForeignKey('Stabilizer', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    # can go to CustomKeycaps or StockPlate
+    keycaps = models.ForeignKey('Keycaps', null=True, blank=True, on_delete=models.SET_NULL)
+
     bluetooth = models.BooleanField(default=False)
     wireless = models.BooleanField(default=False)
 
@@ -70,10 +110,44 @@ class Keyboard(models.Model):
     references = models.TextField(blank=True, null=True, help_text='Documentation, QMK info, etc.')
 
     def __str__(self):
-        return f'{self.kit_content_object.brand} {self.kit_content_object.name}'
+        return f'{self.kit.obj.brand} {self.kit.obj.name}'
+    
+class StockKeyboard(models.Model):
+    kit = models.ForeignKey('StockKit', null=True, blank=True, on_delete=models.SET_NULL)
+    plate = models.ForeignKey('StockPlate', null=True, blank=True, on_delete=models.SET_NULL)
+    switch = models.ForeignKey('StockSwitch', null=True, blank=True, on_delete=models.SET_NULL)
+    stabilizer = models.ForeignKey('StockStabilizer', null=True, blank=True, on_delete=models.SET_NULL)
+    keycaps = models.ForeignKey('StockKeycaps', null=True, blank=True, on_delete=models.SET_NULL)
+
+    bluetooth = models.BooleanField(default=False)
+    wireless = models.BooleanField(default=False)
+
+    notes = models.TextField(blank=True, null=True)
+    references = models.TextField(blank=True, null=True, help_text='Documentation, QMK info, etc.')
+
+    def __str__(self):
+        return f'{self.kit.brand} {self.kit.name}'
+
+class Kit(models.Model):
+    custom = models.OneToOneField('CustomKit', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockKit', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
+
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for kit {self.pk}')
+    
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='kit_data_exists')
+        ]
 
 # todo: there's probably a better thing to call this
-class Kit(models.Model):
+class CustomKit(models.Model):
     brand = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     size = models.CharField(max_length=32, blank=True, null=True)
@@ -87,8 +161,33 @@ class Kit(models.Model):
 
     def __str__(self):
         return f'{self.brand} {self.name} (kit)'
+    
+class StockKit(CustomKit):
+    """
+    preconfigured kit to be selected by users instead of typing custom attributes
+    """
+    def __str__(self):
+        return f'{self.brand} {self.name} (kit)'
 
 class Plate(models.Model):
+    custom = models.OneToOneField('CustomPlate', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockPlate', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
+
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for plate {self.pk}')
+    
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='plate_data_exists')
+        ]
+
+class CustomPlate(models.Model):
     material = models.CharField(max_length=255, blank=True, null=True)
     flex_cuts = models.BooleanField(default=False)
     half = models.BooleanField(default=False)
@@ -104,7 +203,38 @@ class Plate(models.Model):
 
         return s
 
+class StockPlate(CustomPlate):
+    """
+    preconfigured plate to be selected by users instead of typing custom attributes
+    """
+    def __str__(self):
+        s = self.material
+        if self.flex_cuts:
+            s += ' (flex)'
+        if self.half:
+            s += ' (half)'
+
+        return s
+
 class Switch(models.Model):
+    custom = models.OneToOneField('CustomSwitch', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockSwitch', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
+
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for switch {self.pk}')
+    
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='switch_data_exists')
+        ]
+
+class CustomSwitch(models.Model):
     quantity = models.PositiveIntegerField(blank=True, null=True)
     brand = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -127,7 +257,35 @@ class Switch(models.Model):
     class Meta:
         verbose_name_plural = 'Switches'
 
+class StockSwitch(CustomSwitch):
+    """
+    preconfigured switch to be selected by users instead of typing custom attributes
+    """
+    def __str__(self):
+        return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
+    
+    class Meta:
+        verbose_name_plural = 'Stock switches'
+
 class Stabilizer(models.Model):
+    custom = models.OneToOneField('CustomStabilizer', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockStabilizer', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
+
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for stabilizer {self.pk}')
+    
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='stabilizer_data_exists')
+        ]
+
+class CustomStabilizer(models.Model):
     brand = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
 
@@ -135,8 +293,33 @@ class Stabilizer(models.Model):
 
     def __str__(self):
         return f'{self.brand} {self.name}'
+    
+class StockStabilizer(CustomStabilizer):
+    """
+    preconfigured stabilizer to be selected by users instead of typing custom attributes
+    """
+    def __str__(self):
+        return f'{self.brand} {self.name}'
 
 class Keycaps(models.Model):
+    custom = models.OneToOneField('CustomKeycaps', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockKeycaps', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
+
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for keycaps {self.pk}')
+    
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='keycaps_data_exists')
+        ]
+
+class CustomKeycaps(models.Model):
     brand = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     material = models.CharField(max_length=255, blank=True, null=True)
@@ -149,67 +332,85 @@ class Keycaps(models.Model):
     class Meta:
         verbose_name_plural = verbose_name = 'Keycaps'
 
-# todo: artisans + breaking down for mixed sets (like alphas from one, mods from another or gmk base + highlight)
+class StockKeycaps(CustomKeycaps):
+    """
+    preconfigured kit to be selected by users instead of typing custom attributes
+    """
+    def __str__(self):
+        return f'{self.brand} {self.name}'
+    
+    class Meta:
+        verbose_name_plural = verbose_name = 'Stock keycaps'
 
+# todo: artisans + breaking down for mixed sets (like alphas from one, mods from another or gmk base + highlight)
 class Mod(models.Model):
+    custom = models.OneToOneField('CustomMod', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_custom_obj')
+    stock = models.OneToOneField('StockMod', null=True, blank=True, on_delete=models.CASCADE, related_name='%(class)s_stock_obj')
+
+    @property
+    def obj(self):
+        if self.custom:
+            return self.custom
+        elif self.stock:
+            return self.stock
+        
+        raise AssertionError(f'missing data for mod {self.pk}')
+    
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='mod_data_exists')
+        ]
+
+class CustomMod(models.Model):
     """
     represents foams, lube/film, tape mod, etc.
     """
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    # can go to CustomKit or StockKit
+    kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # can go to CustomPlate or StockPlate
+    plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # can go to CustomSwitch or StockSwitch
+    switch = models.ForeignKey('Switch', null=True, blank=True, on_delete=models.SET_NULL)
+
+    # can go to CustomStabilizer or StockStabilizer
+    stabilizer = models.ForeignKey('Stabilizer', null=True, blank=True, on_delete=models.SET_NULL)
+    
+    # can go to CustomKeycaps or StockPlate
+    keycaps = models.ForeignKey('Keycaps', null=True, blank=True, on_delete=models.SET_NULL)
 
     mod = models.TextField()
     notes = models.TextField(blank=True, null=True)
 
-class CannedKit(Kit):
-    """
-    preconfigured kit to be selected by users instead of typing custom attributes
-    """
-    def __str__(self):
-        return f'{self.brand} {self.name} (kit)'
+    @property
+    def obj(self):
+        if self.kit:
+            return self.kit
+        elif self.plate:
+            return self.plate
+        elif self.switch:
+            return self.switch
+        elif self.stabilizer:
+            return self.switch
+        elif self.keycaps:
+            return self.keycaps
+        
+        raise AssertionError(f'missing data for mod {self.pk}')
 
-class CannedPlate(Plate):
-    """
-    preconfigured plate to be selected by users instead of typing custom attributes
-    """
-    def __str__(self):
-        s = self.material
-        if self.flex_cuts:
-            s += ' (flex)'
-        if self.half:
-            s += ' (half)'
-
-        return s
-
-class CannedSwitch(Switch):
-    """
-    preconfigured switch to be selected by users instead of typing custom attributes
-    """
-    def __str__(self):
-        return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
-    
     class Meta:
-        verbose_name_plural = 'Canned switches'
+        # todo: surely there's a better way to do this w/ some sort of boolean logic magic
+        constraints = [
+            CheckConstraint(check=(
+                Q(kit__isnull=True) ^
+                Q(plate__isnull=True) ^
+                Q(switch__isnull=True) ^
+                Q(stabilizer__isnull=True) ^
+                Q(keycaps__isnull=True) 
+            ), name='%(class)s_obj_data_exists')
+        ]
 
-class CannedStabilizer(Stabilizer):
-    """
-    preconfigured stabilizer to be selected by users instead of typing custom attributes
-    """
-    def __str__(self):
-        return f'{self.brand} {self.name}'
-
-class CannedKeycaps(Keycaps):
-    """
-    preconfigured kit to be selected by users instead of typing custom attributes
-    """
-    def __str__(self):
-        return f'{self.brand} {self.name}'
-    
-    class Meta:
-        verbose_name_plural = verbose_name = 'Canned keycaps'
-
-class CannedMod(Mod):
+class StockMod(CustomMod):
     """
     preconfigured mod to be selected by users instead of typing custom attributes
     """
