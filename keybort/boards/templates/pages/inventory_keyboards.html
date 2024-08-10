@@ -1,7 +1,90 @@
 {% extends "base/base.html" %}
+{% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
+{% block page_js %}
+<script src="https://unpkg.com/htmx.org@2.0.1"></script>
+<script src="{% static 'adminkit/datatables.js' %}"></script>
+<script>
+    $(document).ready( function (){
+        $('#datatable-keyboards').DataTable({
+            "responsive": true,
+            "order": [[1, 'asc']],
+            "columnDefs": [{
+                'targets': 'no-sort',
+                'orderable': false,
+            }],
+        });
+    });
+</script>
+{% endblock page_js %}
+
 {% block content %}
-test
+<div class="row">
+    <div class="col-12 d-inline-flex justify-content-between">
+        <h1 class="h3 mb-3"><span class="text-success">Keyboard Inventory</span> - {{request.user}}</h1>
+        <div class="float-right">
+            <a href="" class="btn btn-success"><i class="fas fa-plus me-1"></i>Add</a>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <table id="datatable-keyboards" class="table table-striped no-footer">
+                    <thead>
+                        <tr>
+                            <th class="no-sort"></th>
+                            <th>Kit</th>
+                            <th>PCB</th>
+                            <th>Switches</th>
+                            <th>Keycaps</th>
+                            <th>Plate</th>
+                            <th>Stabilizer</th>
+                            <th>Mods</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody> 
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>Mode Sonnet</td>
+                            <td>Hotswap</td>
+                            <td>Kinetic Labs Moon v2</td>
+                            <td>Tomocaps Dragon Type</td>
+                            <td>Carbon Fiber</td>
+                            <td>TX AP rev 4</td>
+                            <td>Krytox 205g0 on switches</td>
+                            <td>Full silicone and foam kit used</td>
+                        </tr>
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>V4N4G0N R2</td>
+                            <td>Solder</td>
+                            <td>C3E Banana Split</td>
+                            <td>GMK Polybius</td>
+                            <td>POM</td>
+                            <td>Durock</td>
+                            <td>Krytox 205g0 on switches</td>
+                            <td>Plate foam + case foam, purple thermal 3DP PETG case</td>
+                        </tr>
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>Detour</td>
+                            <td>Solder</td>
+                            <td>Gazzew Boba LT</td>
+                            <td>Cherry Notion</td>
+                            <td>FR4</td>
+                            <td>N/A</td>
+                            <td></td>
+                            <td>Used Kinetic Labs plate foam stickers</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock content %}

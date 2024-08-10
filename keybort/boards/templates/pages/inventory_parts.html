@@ -1,7 +1,81 @@
 {% extends "base/base.html" %}
+{% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
+{% block page_js %}
+<script src="https://unpkg.com/htmx.org@2.0.1"></script>
+<script src="{% static 'adminkit/datatables.js' %}"></script>
+<script>
+    $(document).ready( function (){
+        $('#datatable-parts').DataTable({
+            "responsive": true,
+            "order": [[1, 'asc']],
+            "columnDefs": [{
+                'targets': 'no-sort',
+                'orderable': false,
+            }],
+        });
+    });
+</script>
+{% endblock page_js %}
+
 {% block content %}
-test
+<div class="row">
+    <div class="col-12 d-inline-flex justify-content-between">
+        <h1 class="h3 mb-3"><span class="text-success">Parts Inventory</span> - {{request.user}}</h1>
+        <div class="float-right">
+            <a href="" class="btn btn-success"><i class="fas fa-plus me-1"></i>Add</a>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <table id="datatable-parts" class="table table-striped no-footer">
+                    <thead>
+                        <tr>
+                            <th class="no-sort text-nowrap" style="width:1px;"></th>
+                            <th class="col-1">Type</th>
+                            <th class="col-2">Name</th>
+                            <th class="text-center text-nowrap" style="width:1px;">Quantity</th>
+                            <th class="col-8">Information</th>
+                        </tr>
+                    </thead>
+                    <tbody> 
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>Switch</td>
+                            <td>Trash Linear</td>
+                            <td class="text-center">5</td>
+                            <td>53gf, nylon top, nylon bottom</td>
+                        </tr>
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>Stabilizer</td>
+                            <td>Durock</td>
+                            <td class="text-center">1</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>Kit</td>
+                            <td>V4N4G0N</td>
+                            <td class="text-center">1</td>
+                            <td>Black thermal 3DP PLA case</td>
+                        </tr>
+                        <tr>
+                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
+                            <td>Kit</td>
+                            <td>V4N4G0N</td>
+                            <td class="text-center">1</td>
+                            <td>Frosted stacked acrylic case</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock content %}
