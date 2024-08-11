@@ -4,32 +4,32 @@
     </li>
     
     <li class="sidebar-item {% if request.path == "" %}active{% endif %}">
-        <a class="sidebar-link" href="">
+        <a class="sidebar-link" href="{% url 'index' %}">
             <i class="align-middle fas fa-home"></i> <span class="align-middle">Home</span>
         </a>
     </li>
 
     <li class="sidebar-item {% if 'inventory' in request.path %}active{% endif %}">
-        <a data-bs-target="#inv" data-bs-toggle="collapse" class="sidebar-link collapsed">
+        <a data-bs-target="#inv" data-bs-toggle="collapse" class="sidebar-link {% if 'inventory' not in request.path %}collapsed{% endif %}">
             <i class="align-middle fas fa-list"></i> <span class="align-middle">Inventory</span>
         </a>
-        <ul id="inv" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-            <li class="sidebar-item"><a class="sidebar-link" href="{% url 'inventory_keyboards' %}">Keyboards</a></li>
-            <li class="sidebar-item"><a class="sidebar-link" href="{% url 'inventory_parts' %}">Parts</a></li>
+        <ul id="inv" class="sidebar-dropdown list-unstyled {% if 'inventory' not in request.path %}collapse{% endif %}" data-bs-parent="#sidebar">
+            <li class="sidebar-item {% if 'keyboards' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'inventory_keyboards' %}">Keyboards</a></li>
+            <li class="sidebar-item {% if 'parts' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'inventory_parts' %}">Parts</a></li>
         </ul>
     </li>
 
     <li class="sidebar-item {% if 'stock' in request.path %}active{% endif %}">
-        <a data-bs-target="#parts" data-bs-toggle="collapse" class="sidebar-link collapsed">
+        <a data-bs-target="#parts" data-bs-toggle="collapse" class="sidebar-link {% if 'stock' not in request.path %}collapsed{% endif %}">
             <i class="align-middle fas fa-magnifying-glass"></i> <span class="align-middle">View Stock Parts</span>
         </a>
-        <ul id="parts" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-            {% comment %} <li class="sidebar-item"><a class="sidebar-link" href="">Prebuilts</a></li> {% endcomment %}
-            <li class="sidebar-item"><a class="sidebar-link" href="">Kits</a></li>
-            <li class="sidebar-item"><a class="sidebar-link" href="">Switches</a></li>
-            <li class="sidebar-item"><a class="sidebar-link" href="">Keycaps</a></li>
-            <li class="sidebar-item"><a class="sidebar-link" href="">Stabilizers</a></li>
-            <li class="sidebar-item"><a class="sidebar-link" href="">Plates</a></li>
+        <ul id="parts" class="sidebar-dropdown list-unstyled {% if 'stock' not in request.path %}collapse{% endif %}" data-bs-parent="#sidebar">
+            <li class="sidebar-item {% if 'prebuilts' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_prebuilts' %}">Prebuilts</a></li>
+            <li class="sidebar-item {% if 'kits' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_kits' %}">Kits</a></li>
+            <li class="sidebar-item {% if 'switches' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_switches' %}">Switches</a></li>
+            <li class="sidebar-item {% if 'keycaps' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_keycaps' %}">Keycaps</a></li>
+            <li class="sidebar-item {% if 'stabilizers' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_stabilizers' %}">Stabilizers</a></li>
+            <li class="sidebar-item {% if 'plates' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_plates' %}">Plates</a></li>
         </ul>
     </li>
 </ul>

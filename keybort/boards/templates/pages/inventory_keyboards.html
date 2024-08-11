@@ -32,7 +32,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <table id="datatable-keyboards" class="table table-striped no-footer">
+                <table id="datatable-keyboards" class="table table-striped table-responsive no-footer">
                     <thead>
                         <tr>
                             <th class="no-sort"></th>
@@ -46,44 +46,78 @@
                             <th>Notes</th>
                         </tr>
                     </thead>
-                    <tbody> 
+                    <tbody>
+                        {% for kb in inventory %}
                         <tr>
-                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
-                            <td>Mode Sonnet</td>
-                            <td>Hotswap</td>
-                            <td>Kinetic Labs Moon v2</td>
-                            <td>Tomocaps Dragon Type</td>
-                            <td>Carbon Fiber</td>
-                            <td>TX AP rev 4</td>
-                            <td>Krytox 205g0 on switches</td>
-                            <td>Full silicone and foam kit used</td>
+                            <td class="text-center d-flex align-items-center">
+                                <a href="{% url 'keyboard_detail' %}?{{kb.url_params}}"><i class="fas fa-edit"></i></a> 
+                                <button class="btn btn-link p-0 ms-1" hx-post="{% url 'keyboard_delete' %}?{{kb.url_params}}" hx-confirm="Delete? The data will be unrecoverable."><i class="fas fa-trash text-primary"></i></button>
+                            </td>
+                            <td {% if kb.kit_str %} 
+                                hx-get="{% url 'part_detail' %}?{{kb.kit_url_params}}"
+                                hx-target="#info-modal"
+                                hx-trigger="click"
+                                data-bs-toggle="modal"
+                                data-bs-target="#info-modal"
+                                class="hoverable"
+                                {% endif %}>
+                                {{kb.kit_str}}
+                            </td>
+                            <td>{{kb.pcb}}</td>
+                            <td {% if kb.switches_str %} 
+                                hx-get="{% url 'part_detail' %}?{{kb.switches_url_params}}"
+                                hx-target="#info-modal"
+                                hx-trigger="click"
+                                data-bs-toggle="modal"
+                                data-bs-target="#info-modal"
+                                class="hoverable"
+                                {% endif %}>
+                                {{kb.switches_str}}
+                            </td>
+                            <td {% if kb.keycaps_str %} 
+                                hx-get="{% url 'part_detail' %}?{{kb.keycaps_url_params}}"
+                                hx-target="#info-modal"
+                                hx-trigger="click"
+                                data-bs-toggle="modal"
+                                data-bs-target="#info-modal"
+                                class="hoverable"
+                                {% endif %}>
+                                {{kb.keycaps_str}}
+                            </td>
+                            <td {% if kb.plate_str %} 
+                                hx-get="{% url 'part_detail' %}?{{kb.plate_url_params}}"
+                                hx-target="#info-modal"
+                                hx-trigger="click"
+                                data-bs-toggle="modal"
+                                data-bs-target="#info-modal"
+                                class="hoverable"
+                                {% endif %}>
+                                {{kb.plate_str}}
+                            </td>
+                            <td {% if kb.stabilizer_str %} 
+                                hx-get="{% url 'part_detail' %}?{{kb.stabilizer_url_params}}"
+                                hx-target="#info-modal"
+                                hx-trigger="click"
+                                data-bs-toggle="modal"
+                                data-bs-target="#info-modal"
+                                class="hoverable"
+                                {% endif %}>
+                                {{kb.stabilizer_str}}
+                            </td>
+                            <td>mods not implemented</td>
+                            <td>{{kb.notes}}</td>
                         </tr>
-                        <tr>
-                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
-                            <td>V4N4G0N R2</td>
-                            <td>Solder</td>
-                            <td>C3E Banana Split</td>
-                            <td>GMK Polybius</td>
-                            <td>POM</td>
-                            <td>Durock</td>
-                            <td>Krytox 205g0 on switches</td>
-                            <td>Plate foam + case foam, purple thermal 3DP PETG case</td>
-                        </tr>
-                        <tr>
-                            <td class="text-center"><a href=""><i class="fas fa-magnifying-glass"></i></a></td>
-                            <td>Detour</td>
-                            <td>Solder</td>
-                            <td>Gazzew Boba LT</td>
-                            <td>Cherry Notion</td>
-                            <td>FR4</td>
-                            <td>N/A</td>
-                            <td></td>
-                            <td>Used Kinetic Labs plate foam stickers</td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<div id="info-modal" class="modal modal-blur fade" style="display:none;" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content"></div>
     </div>
 </div>
 

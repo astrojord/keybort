@@ -34,17 +34,17 @@ class Inventory(models.Model):
     @property
     def obj(self):
         if self.keyboard:
-            return self.keyboard
+            return self.keyboard.obj
         elif self.kit:
-            return self.kit
+            return self.kit.obj
         elif self.plate:
-            return self.plate
+            return self.plate.obj
         elif self.switch:
-            return self.switch
+            return self.switch.obj
         elif self.stabilizer:
-            return self.switch
+            return self.switch.obj
         elif self.keycaps:
-            return self.keycaps
+            return self.keycaps.obj
         
         raise AssertionError(f'missing data for inventory {self.pk}')   
 
@@ -82,6 +82,13 @@ class Keyboard(models.Model):
         
         raise AssertionError(f'missing data for keyboard {self.pk}')
     
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
+    
     class Meta:
         constraints = [
             CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='keyboard_data_exists')
@@ -109,6 +116,10 @@ class CustomKeyboard(models.Model):
     notes = models.TextField(blank=True, null=True)
     references = models.TextField(blank=True, null=True, help_text='Documentation, QMK info, etc.')
 
+    @property
+    def stock(self):
+        return False
+
     def __str__(self):
         return f'{self.kit.obj.brand} {self.kit.obj.name}'
     
@@ -125,6 +136,10 @@ class StockKeyboard(models.Model):
     notes = models.TextField(blank=True, null=True)
     references = models.TextField(blank=True, null=True, help_text='Documentation, QMK info, etc.')
 
+    @property
+    def stock(self):
+        return True
+
     def __str__(self):
         return f'{self.kit.brand} {self.kit.name}'
 
@@ -140,6 +155,13 @@ class Kit(models.Model):
             return self.stock
         
         raise AssertionError(f'missing data for kit {self.pk}')
+    
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
     
     class Meta:
         constraints = [
@@ -159,6 +181,10 @@ class CustomKit(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
+    @property
+    def stock(self):
+        return False
+    
     def __str__(self):
         return f'{self.brand} {self.name} (kit)'
     
@@ -166,6 +192,11 @@ class StockKit(CustomKit):
     """
     preconfigured kit to be selected by users instead of typing custom attributes
     """
+
+    @property
+    def stock(self):
+        return True
+    
     def __str__(self):
         return f'{self.brand} {self.name} (kit)'
 
@@ -182,6 +213,13 @@ class Plate(models.Model):
         
         raise AssertionError(f'missing data for plate {self.pk}')
     
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
+    
     class Meta:
         constraints = [
             CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='plate_data_exists')
@@ -193,6 +231,10 @@ class CustomPlate(models.Model):
     half = models.BooleanField(default=False)
 
     notes = models.TextField(blank=True, null=True)
+
+    @property
+    def stock(self):
+        return False
 
     def __str__(self):
         s = self.material
@@ -207,6 +249,10 @@ class StockPlate(CustomPlate):
     """
     preconfigured plate to be selected by users instead of typing custom attributes
     """
+    @property
+    def stock(self):
+        return True
+    
     def __str__(self):
         s = self.material
         if self.flex_cuts:
@@ -229,7 +275,15 @@ class Switch(models.Model):
         
         raise AssertionError(f'missing data for switch {self.pk}')
     
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
+    
     class Meta:
+        verbose_name_plural = 'Switches'
         constraints = [
             CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='switch_data_exists')
         ]
@@ -251,16 +305,25 @@ class CustomSwitch(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
+    @property
+    def stock(self):
+        return False
+
     def __str__(self):
         return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
     
     class Meta:
-        verbose_name_plural = 'Switches'
+        verbose_name_plural = 'Custom switches'
 
 class StockSwitch(CustomSwitch):
     """
     preconfigured switch to be selected by users instead of typing custom attributes
     """
+
+    @property
+    def stock(self):
+        return True
+    
     def __str__(self):
         return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
     
@@ -280,6 +343,13 @@ class Stabilizer(models.Model):
         
         raise AssertionError(f'missing data for stabilizer {self.pk}')
     
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
+    
     class Meta:
         constraints = [
             CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='stabilizer_data_exists')
@@ -291,6 +361,10 @@ class CustomStabilizer(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
+    @property
+    def stock(self):
+        return False
+
     def __str__(self):
         return f'{self.brand} {self.name}'
     
@@ -298,6 +372,11 @@ class StockStabilizer(CustomStabilizer):
     """
     preconfigured stabilizer to be selected by users instead of typing custom attributes
     """
+
+    @property
+    def stock(self):
+        return True
+    
     def __str__(self):
         return f'{self.brand} {self.name}'
 
@@ -314,7 +393,15 @@ class Keycaps(models.Model):
         
         raise AssertionError(f'missing data for keycaps {self.pk}')
     
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
+    
     class Meta:
+        verbose_name_plural = verbose_name = 'Keycaps'
         constraints = [
             CheckConstraint(check=Q(custom__isnull=True) ^ Q(stock__isnull=True), name='keycaps_data_exists')
         ]
@@ -326,16 +413,25 @@ class CustomKeycaps(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
+    @property
+    def stock(self):
+        return False
+
     def __str__(self):
         return f'{self.brand} {self.name}'
     
     class Meta:
-        verbose_name_plural = verbose_name = 'Keycaps'
+        verbose_name_plural = verbose_name = 'Custom keycaps'
 
 class StockKeycaps(CustomKeycaps):
     """
     preconfigured kit to be selected by users instead of typing custom attributes
     """
+
+    @property
+    def stock(self):
+        return True
+    
     def __str__(self):
         return f'{self.brand} {self.name}'
     
@@ -355,6 +451,13 @@ class Mod(models.Model):
             return self.stock
         
         raise AssertionError(f'missing data for mod {self.pk}')
+    
+    def __str__(self):
+        obj = self.obj
+        if obj.stock:
+            return f'{obj} (stock)'
+        else:
+            return f'{obj} (custom)'
     
     class Meta:
         constraints = [
@@ -386,17 +489,21 @@ class CustomMod(models.Model):
     @property
     def obj(self):
         if self.kit:
-            return self.kit
+            return self.kit.obj
         elif self.plate:
-            return self.plate
+            return self.plate.obj
         elif self.switch:
-            return self.switch
+            return self.switch.obj
         elif self.stabilizer:
-            return self.switch
+            return self.switch.obj
         elif self.keycaps:
-            return self.keycaps
+            return self.keycaps.obj
         
         raise AssertionError(f'missing data for mod {self.pk}')
+    
+    @property
+    def stock(self):
+        return False
 
     class Meta:
         # todo: surely there's a better way to do this w/ some sort of boolean logic magic
@@ -414,4 +521,7 @@ class StockMod(CustomMod):
     """
     preconfigured mod to be selected by users instead of typing custom attributes
     """
-    pass
+    
+    @property
+    def stock(self):
+        return True
