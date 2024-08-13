@@ -3,7 +3,7 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
 {% block page_js %}
-<script src="https://unpkg.com/htmx.org@2.0.1"></script>
+<script src="{% static 'htmx-2.0.1.min.js' %}" defer></script>
 <script src="{% static 'adminkit/datatables.js' %}"></script>
 <script>
     $(document).ready( function (){
