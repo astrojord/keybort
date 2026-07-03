@@ -1,35 +1,123 @@
-<ul class="sidebar-nav">
-    <li class="sidebar-header">
-        Navigation
-    </li>
-    
-    <li class="sidebar-item {% if request.path == "" %}active{% endif %}">
-        <a class="sidebar-link" href="{% url 'index' %}">
-            <i class="align-middle fas fa-home"></i> <span class="align-middle">Home</span>
-        </a>
-    </li>
+<aside id="sidebar" class="sidebar" data-side="left">
+    <nav aria-label="Sidebar navigation">
+        <header>
+            <a
+                href="/"
+                class="btn h-12 w-full justify-start p-2"
+                data-variant="ghost"
+                data-size="lg"
+            >
+                <div class="foreground flex items-center justify-center">
+                    <span
+                        class="badge size-8 aspect-square bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"
+                        ><i class="fa fa-keyboard"></i
+                    ></span>
+                    <span class="font-semibold mx-4">Keybort</span>
+                    <span class="font-normal">v0.1</span>
+                </div>
+            </a>
+        </header>
+        <section class="scrollbar-sm">
+            <div role="group" aria-labelledby="group-label-content-1">
+                <h3 id="group-label-content-1">Inventory</h3>
+                <ul>
+                    <li>
+                        <a href="{% url 'inventory_keyboards' %}">
+                            <i class="fa fa-list"></i>
+                            <span>Keyboards</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'inventory_parts' %}">
+                            <i class="fas fa-cubes-stacked"></i>
+                            <span>Parts</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
-    <li class="sidebar-item {% if 'inventory' in request.path %}active{% endif %}">
-        <a data-bs-target="#inv" data-bs-toggle="collapse" class="sidebar-link {% if 'inventory' not in request.path %}collapsed{% endif %}">
-            <i class="align-middle fas fa-list"></i> <span class="align-middle">Inventory</span>
-        </a>
-        <ul id="inv" class="sidebar-dropdown list-unstyled {% if 'inventory' not in request.path %}collapse{% endif %}" data-bs-parent="#sidebar">
-            <li class="sidebar-item {% if 'keyboards' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'inventory_keyboards' %}">Keyboards</a></li>
-            <li class="sidebar-item {% if 'parts' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'inventory_parts' %}">Parts</a></li>
-        </ul>
-    </li>
+            <div role="group" aria-labelledby="group-label-content-2">
+                <h3 id="group-label-content-2">View Stock Parts</h3>
+                <ul>
+                    <li>
+                        <a href="{% url 'stock_prebuilts' %}">
+                            <i class="fas fa-hammer"></i>
+                            <span>Prebuilts</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'stock_kits' %}">
+                            <i class="fas fa-crop-simple"></i>
+                            <span>Kits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'stock_switches' %}">
+                            <i class="fas fa-plus"></i>
+                            <span>Switches</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'stock_keycaps' %}">
+                            <i class="fa fa-regular fa-square"></i>
+                            <span>Keycaps</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'stock_stabilizers' %}">
+                            <i class="fa fa-arrows-down-to-line"></i>
+                            <span>Stabilizers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'stock_plates' %}">
+                            <i class="fa fa-layer-group"></i>
+                            <span>Plates</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
-    <li class="sidebar-item {% if 'stock' in request.path %}active{% endif %}">
-        <a data-bs-target="#parts" data-bs-toggle="collapse" class="sidebar-link {% if 'stock' not in request.path %}collapsed{% endif %}">
-            <i class="align-middle fas fa-magnifying-glass"></i> <span class="align-middle">View Stock Parts</span>
-        </a>
-        <ul id="parts" class="sidebar-dropdown list-unstyled {% if 'stock' not in request.path %}collapse{% endif %}" data-bs-parent="#sidebar">
-            <li class="sidebar-item {% if 'prebuilts' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_prebuilts' %}">Prebuilts</a></li>
-            <li class="sidebar-item {% if 'kits' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_kits' %}">Kits</a></li>
-            <li class="sidebar-item {% if 'switches' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_switches' %}">Switches</a></li>
-            <li class="sidebar-item {% if 'keycaps' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_keycaps' %}">Keycaps</a></li>
-            <li class="sidebar-item {% if 'stabilizers' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_stabilizers' %}">Stabilizers</a></li>
-            <li class="sidebar-item {% if 'plates' in request.path %}active{% endif %}"><a class="sidebar-link" href="{% url 'stock_plates' %}">Plates</a></li>
-        </ul>
-    </li>
-</ul>
+            {% comment %} {# example of collapsible nav menu: #}
+            <li>
+                <details id="submenu-content-1-3">
+                    <summary aria-controls="submenu-content-1-3-content">
+                        <svg
+                            class="lucide lucide-settings"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+                            />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span>Settings</span>
+                    </summary>
+                    <ul id="submenu-content-1-3-content">
+                        <li>
+                            <a href="#"><span>General</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><span>Team</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><span>Billing</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><span>Limits</span></a>
+                        </li>
+                    </ul>
+                </details>
+            </li>
+            {% endcomment %}
+        </section>
+    </nav>
+</aside>

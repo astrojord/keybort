@@ -1,12 +1,12 @@
 services:
   db:
     platform: linux/amd64
-    image: postgres:16-bookworm
+    image: postgres:18-bookworm
     container_name: db
     volumes:
       - type: volume
         source: pg_data
-        target: /var/lib/postgresql/data
+        target: /var/lib/postgresql
     ports:
       - 5432:5432
     env_file:
@@ -16,7 +16,7 @@ services:
   app:
     platform: linux/amd64
     container_name: app
-    build: 
+    build:
       context: ./keybort
     volumes:
       - type: bind

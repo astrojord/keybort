@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+td.hoverable:hover {
+    background-color: #424c59;
+}
