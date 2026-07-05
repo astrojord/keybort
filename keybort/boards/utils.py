@@ -11,7 +11,10 @@ def model_to_dict_verbose(instance, fields=None, exclude=None):
 
         value = f.value_from_object(instance)
         if f.choices:
-            value = [display for db, display in f.choices if value == db][0]
-            
+            try:
+                value = [display for db, display in f.choices if value == db][0]
+            except IndexError:
+                continue
+
         data[f.verbose_name.capitalize()] = value
     return data

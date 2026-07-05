@@ -1,28 +1,28 @@
-<div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title text-success fw-bold">Detail: {{part_title}}</h5>
-        </div>
-        <div class="modal-body">
-            <table class="table table-sm table-responsive no-footer">
-                {% for f,v in fields.items %}
-                    <tr>
-                        <th class="col-3">{{f}}</th>
-                        <td>
-                            {% if v == True %}
-                            <i class="fas fa-check text-success"></i>
-                            {% elif v == False %}
-                            <i class="fas fa-x text-danger"></i>
-                            {% else %}
-                            {{v}}
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-    </div>
-</div>
+<div class="">
+    <header>
+      <h2 id="detail-dialog-title">Part details</h2>
+      <p id="detail-dialog-description">{{part_title}}</p>
+    </header>
+    <section>
+        <table class="table">
+            {% for f,v in fields.items %}
+                <tr>
+                    <th class="w-auto">{{f}}</th>
+                    <td class="text-wrap">
+                        {% if v == True %}
+                        <i class="fas fa-check text-green-400"></i>
+                        {% elif v == False %}
+                        <i class="fas fa-x  text-red-400"></i>
+                        {% else %}
+                        {{v}}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </section>
+    <footer>
+      <button class="btn" data-variant="outline" onclick="this.closest('dialog').close()">Close</button>
+    </footer>
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+  </div>
