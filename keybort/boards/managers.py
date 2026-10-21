@@ -200,7 +200,7 @@ class KeyboardManager:
 
     # modal form state
 
-    def keyboard_form_context(self, action_url, data=None, current=None):
+    def keyboard_form_context(self, action_url, data=None, current=None, kind=None):
         data = data or {}
         # kit is required (CustomKeyboard.__str__ depends on it)
         parts = [
@@ -222,13 +222,18 @@ class KeyboardManager:
             initial = model_to_dict(current, fields=CustomKeyboardDetailsForm._meta.fields) if current else None
             details_form = CustomKeyboardDetailsForm(data or None, prefix="details", initial=initial)
 
+        stock_keyboards = StockKeyboard.objects.select_related("kit")
+        if kind == "prebuilt" and not stock_keyboards:
+            kind = None
+        step = {"prebuilt": "prebuilt", "custom": parts[0]["type"]}.get(kind)
+
         return {
             "action_url": action_url,
             "editing": current is not None,
             "from_prebuilt": current is not None and current.stock,
-            "kind": data.get("kind", "custom"),
-            "step": None,
-            "stock_keyboards": StockKeyboard.objects.select_related("kit"),
+            "kind": data.get("kind", kind or "custom"),
+            "step": step,
+            "stock_keyboards": stock_keyboards,
             "prebuilt_id": data.get("prebuilt", ""),
             "prebuilt_error": None,
             "parts": parts,

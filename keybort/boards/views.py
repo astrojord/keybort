@@ -20,6 +20,7 @@ def index(request):
 def inventory_keyboards(request):
     context = {"page_title": "Keyboard Inventory"}
     context["inventory"] = KeyboardManager(request.user).keyboard_rows()
+    context["filters"] = list(const.KEYBOARD_KINDS.items())
     # cut off text for part names after maybe 50 characters?
     # cut off text for mods + notes after some longer amount of characters
     return render(request, "pages/inventory_keyboards.html", context)
@@ -134,7 +135,11 @@ def add_keyboard(request):
     manager = KeyboardManager(request.user)
     action_url = reverse("keyboard_add")
     if request.method != "POST":
-        return render(request, "partials/keyboard_modal.html", manager.keyboard_form_context(action_url))
+        kind = request.GET.get("kind")
+        if kind not in const.KEYBOARD_KINDS:
+            kind = None
+        context = manager.keyboard_form_context(action_url, kind=kind)
+        return render(request, "partials/keyboard_modal.html", context)
 
     context = manager.keyboard_form_context(action_url, request.POST)
     match context["kind"]:

@@ -98,6 +98,12 @@ PART_PLURALS = {
     'stabilizer': 'Stabilizers',
 }
 
+# tabs on the keyboards page, keyed by the row's data-type
+KEYBOARD_KINDS = {
+    'prebuilt': 'Prebuilts',
+    'custom': 'Customs',
+}
+
 # headings for each part's step in the keyboard/part modals
 PART_STEP_LABELS = {
     'kit': 'Kit',

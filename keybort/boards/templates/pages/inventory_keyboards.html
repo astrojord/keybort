@@ -10,10 +10,17 @@
         type="button"
         class="btn"
         hx-get="{% url 'keyboard_add' %}"
+        hx-vals='js:{kind: document.getElementById("keyboards-filter").dataset.active}'
         hx-target="#page-dialog"
     >
         <i class="fas fa-plus me-1"></i>Add
     </button>
+</div>
+<div id="keyboards-filter" data-active="" class="mt-4 flex flex-wrap gap-1" role="group" aria-label="Filter by kind">
+    <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="">All <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
+    {% for kind, label in filters %}
+    <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="{{ kind }}">{{ label }} <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
+    {% endfor %}
 </div>
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
@@ -43,14 +50,14 @@
             </table>
         </section>
     </div>
-    <div class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
+    <div id="keyboards-empty" class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
         <header>
             <figure><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-keyboard-icon lucide-keyboard"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></svg></figure>
-            <h3>No keyboards yet</h3>
+            <h3>No <span data-empty-label>keyboards</span> yet</h3>
             <p>Add a prebuilt from the catalog or put together a custom build.</p>
         </header>
         <section>
-            <button type="button" class="btn" hx-get="{% url 'keyboard_add' %}" hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add keyboard</button>
+            <button type="button" class="btn" hx-get="{% url 'keyboard_add' %}" hx-vals='js:{kind: document.getElementById("keyboards-filter").dataset.active}' hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add keyboard</button>
         </section>
     </div>
 </div>
@@ -67,3 +74,44 @@
 </dialog>
 
 {% endblock content %}
+
+{% block page_js %}
+<script>
+    (() => {
+        const filter = document.getElementById("keyboards-filter");
+        const tbody = document.querySelector("#table-keyboards tbody");
+        let active = "";
+
+        // counts and visibility come from the rows, so they stay right after htmx adds/removes one
+        function apply() {
+            const rows = [...tbody.querySelectorAll("tr[data-type]")];
+            for (const button of filter.querySelectorAll("[data-filter]")) {
+                const kind = button.dataset.filter;
+                const count = rows.filter((row) => !kind || row.dataset.type === kind).length;
+                button.querySelector("[data-count]").textContent = count;
+                button.dataset.variant = kind === active ? "secondary" : "ghost";
+                button.setAttribute("aria-pressed", kind === active);
+                // dim kinds with nothing in them, unless it's the one being looked at
+                button.toggleAttribute("data-empty", count === 0 && kind !== active);
+            }
+            // the empty state shows itself (css) once no rows are visible
+            for (const row of rows) {
+                row.hidden = active && row.dataset.type !== active;
+            }
+            const label = filter.querySelector(`[data-filter="${active}"]`);
+            document.querySelector("[data-empty-label]").textContent = active ? label.firstChild.textContent.trim().toLowerCase() : "keyboards";
+        }
+
+        filter.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-filter]");
+            if (!button) return;
+            active = button.dataset.filter;
+            // the add buttons send this so the modal opens on the filtered kind
+            filter.dataset.active = active;
+            apply();
+        });
+        document.body.addEventListener("htmx:afterSettle", apply);
+        apply();
+    })();
+</script>
+{% endblock page_js %}
