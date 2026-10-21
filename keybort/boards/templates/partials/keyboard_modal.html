@@ -1,0 +1,109 @@
+{% load allauth %}
+<form
+    id="keyboard-form"
+    class="sm:max-w-2xl"
+    hx-post="{{ action_url }}"
+    hx-target="#page-dialog"
+    data-initial-step="{{ step|default:'kind' }}"
+    data-path-input="kind"
+    data-default-path="custom"
+    {% if editing %}data-free-nav{% endif %}
+>
+    {% csrf_token %}
+    <header>
+        {% if editing %}
+        <h2 id="page-dialog-title">Edit keyboard</h2>
+        {% if from_prebuilt %}
+        <p id="page-dialog-description">
+            Saving turns this prebuilt into a custom build in your inventory. The catalog entry isn't changed.
+        </p>
+        {% endif %}
+        {% else %}
+        <h2 id="page-dialog-title">Add keyboard</h2>
+        <p id="page-dialog-description">Pick a prebuilt, or define a custom build by parts.</p>
+        {% endif %}
+        <ol class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm" aria-label="Steps">
+            {% if not editing %}
+            <li data-step-label="kind" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">Type</li>
+            <li data-step-label="prebuilt" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">Prebuilt</li>
+            {% endif %}
+            {% for part in parts %}
+            <li data-step-label="{{ part.type }}" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">{% if editing %}<button type="button" class="hover:underline" data-goto="{{ part.type }}">{{ part.label }}</button>{% else %}{{ part.label }}{% endif %}</li>
+            {% endfor %}
+            <li data-step-label="details" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">{% if editing %}<button type="button" class="hover:underline" data-goto="details">Details</button>{% else %}Details{% endif %}</li>
+        </ol>
+    </header>
+
+    <section class="-mx-6 min-h-0 overflow-y-auto px-6">
+        {% if not editing %}
+        <fieldset data-step="kind" class="grid min-w-0 gap-3" role="radiogroup" aria-label="Keyboard type">
+            <label{% if not stock_keyboards %} data-disabled="true"{% endif %}>
+                <div class="field" data-orientation="horizontal">
+                    <section>
+                        <h3>Prebuilt</h3>
+                        <p>
+                            {% if stock_keyboards %}
+                            Select from the catalog ({{ stock_keyboards|length }} available).
+                            {% else %}
+                            No prebuilts in the catalog yet.
+                            {% endif %}
+                        </p>
+                    </section>
+                    <input type="radio" name="kind" value="prebuilt" required{% if kind == "prebuilt" %} checked{% endif %}{% if not stock_keyboards %} disabled{% endif %}>
+                </div>
+            </label>
+            <label>
+                <div class="field" data-orientation="horizontal">
+                    <section>
+                        <h3>Custom build</h3>
+                        <p>Choose each part from stock or enter your own.</p>
+                    </section>
+                    <input type="radio" name="kind" value="custom" required{% if kind != "prebuilt" %} checked{% endif %}>
+                </div>
+            </label>
+        </fieldset>
+
+        <fieldset data-step="prebuilt" data-path="prebuilt" class="grid min-w-0 gap-4" hidden>
+            <div class="field"{% if prebuilt_error %} data-invalid="true"{% endif %}>
+                <label for="id_prebuilt">Prebuilt keyboard</label>
+                <select id="id_prebuilt" name="prebuilt" required{% if prebuilt_error %} aria-invalid="true" aria-describedby="id_prebuilt-error"{% endif %}>
+                    <option value="">Choose a keyboard…</option>
+                    {% for stock_kb in stock_keyboards %}
+                    <option value="{{ stock_kb.pk }}"{% if prebuilt_id == stock_kb.pk|stringformat:"s" %} selected{% endif %}>{{ stock_kb.kit.brand }} {{ stock_kb.kit.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if prebuilt_error %}
+                <div role="alert" id="id_prebuilt-error" class="text-sm">{{ prebuilt_error }}</div>
+                {% endif %}
+            </div>
+        </fieldset>
+        {% endif %}
+
+        {% for part in parts %}
+        <fieldset data-step="{{ part.type }}" data-path="custom" class="grid min-w-0 gap-4" hidden>
+            {% include "partials/part_source_fields.html" %}
+        </fieldset>
+        {% endfor %}
+
+        <fieldset data-step="details" data-path="custom" class="grid min-w-0 gap-4" hidden>
+            {% element fields form=details_form %}
+            {% endelement %}
+        </fieldset>
+    </section>
+
+    <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" class="btn" data-variant="outline" data-action="back">Back</button>
+        <button type="button" class="btn" data-action="next">Next</button>
+        {% if editing %}
+        <button type="submit" class="btn bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/50" data-action="save">Save changes</button>
+        {% else %}
+        <button type="submit" class="btn" data-action="save">Add keyboard</button>
+        {% endif %}
+    </footer>
+
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+
+    <script>
+        initStepForm(document.getElementById("keyboard-form"));
+    </script>
+</form>

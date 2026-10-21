@@ -7,10 +7,13 @@ urlpatterns = [
 
     path('inventory/', views.inventory_keyboards, name='inventory_keyboards'),
     path('inventory/keyboards', views.inventory_keyboards, name='inventory_keyboards'),
-    path('inventory/keyboards/detail', views.keyboard_detail, name='keyboard_detail'),
+    path('inventory/keyboards/edit', views.edit_keyboard, name='keyboard_edit'),
     path('inventory/keyboards/add', views.add_keyboard, name='keyboard_add'),
     path('inventory/keyboards/delete', views.delete_keyboard, name='keyboard_delete'),
     path('inventory/parts', views.inventory_parts, name='inventory_parts'),
+    path('inventory/parts/add', views.add_part, name='part_add'),
+    path('inventory/parts/edit', views.edit_part, name='part_edit'),
+    path('inventory/parts/delete', views.delete_part, name='part_delete'),
     
     path('stock/', views.search_stock, name='search_stock'),
     path('stock/prebuilts', views.stock_prebuilts, name='stock_prebuilts'),

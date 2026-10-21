@@ -1,0 +1,70 @@
+{% load allauth %}
+{% comment %} one part's source choice (stock / custom / skip unless required) and its fields, used by the keyboard and part modals {% endcomment %}
+<div class="grid gap-3 {% if part.required %}sm:grid-cols-2{% else %}sm:grid-cols-3{% endif %}" role="radiogroup" aria-label="{{ part.label }} source">
+    <label{% if not part.stock_options %} data-disabled="true"{% endif %}>
+        <div class="field" data-orientation="horizontal">
+            <section>
+                <h3>Stock</h3>
+                <p>{% if part.stock_options %}{{ part.stock_options|length }} in the catalog{% else %}None in the catalog{% endif %}</p>
+            </section>
+            <input type="radio" name="{{ part.type }}-source" value="stock" required{% if part.source == "stock" %} checked{% endif %}{% if not part.stock_options %} disabled{% endif %}>
+        </div>
+    </label>
+    <label>
+        <div class="field" data-orientation="horizontal">
+            <section>
+                <h3>Custom</h3>
+                <p>Enter details</p>
+            </section>
+            <input type="radio" name="{{ part.type }}-source" value="custom" required{% if part.source == "custom" %} checked{% endif %}>
+        </div>
+    </label>
+    {% if not part.required %}
+    <label>
+        <div class="field" data-orientation="horizontal">
+            <section>
+                <h3>Skip</h3>
+                <p>Leave it empty for now</p>
+            </section>
+            <input type="radio" name="{{ part.type }}-source" value="none" required{% if part.source == "none" %} checked{% endif %}>
+        </div>
+    </label>
+    {% endif %}
+</div>
+
+{% if part.error %}
+<div class="alert" role="alert" data-variant="destructive">
+    <section>{{ part.error }}</section>
+</div>
+{% endif %}
+
+{% if part.current %}
+<fieldset data-removal data-current-source="{{ part.current.source }}" data-current-stock="{{ part.current.stock_id }}" class="grid min-w-0 gap-3 rounded-lg border p-4" aria-label="What to do with {{ part.current.name }}">
+    <p class="text-sm">This takes <strong>{{ part.current.name }}</strong> off the board. What should happen to it?</p>
+    <div class="field" data-orientation="horizontal">
+        <input type="radio" id="id_{{ part.type }}-removed-keep" name="{{ part.type }}-removed" value="keep"{% if part.removal != "delete" %} checked{% endif %}>
+        <label for="id_{{ part.type }}-removed-keep">Keep it in my parts inventory</label>
+    </div>
+    <div class="field" data-orientation="horizontal">
+        <input type="radio" id="id_{{ part.type }}-removed-delete" name="{{ part.type }}-removed" value="delete"{% if part.removal == "delete" %} checked{% endif %}>
+        <label for="id_{{ part.type }}-removed-delete">{% if part.current.source == "custom" %}Delete it{% else %}I don't have it anymore{% endif %}</label>
+    </div>
+</fieldset>
+{% endif %}
+
+<fieldset data-source="stock" class="min-w-0">
+    <div class="field">
+        <label for="id_{{ part.type }}-stock">Stock {{ part.label|lower }}</label>
+        <select id="id_{{ part.type }}-stock" name="{{ part.type }}-stock" required>
+            <option value="">Choose…</option>
+            {% for option in part.stock_options %}
+            <option value="{{ option.pk }}"{% if part.stock_id == option.pk|stringformat:"s" %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</fieldset>
+
+<fieldset data-source="custom" class="grid min-w-0 gap-4">
+    {% element fields form=part.form %}
+    {% endelement %}
+</fieldset>

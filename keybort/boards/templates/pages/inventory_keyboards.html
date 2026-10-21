@@ -6,12 +6,17 @@
         <span class="text-brand font-semibold">Keyboard Inventory</span> -
         {{request.user}}
     </h1>
-    <a href="#" class="btn"
-        ><i class="fas fa-plus me-1"></i>Add</a
+    <button
+        type="button"
+        class="btn"
+        hx-get="{% url 'keyboard_add' %}"
+        hx-target="#page-dialog"
     >
+        <i class="fas fa-plus me-1"></i>Add
+    </button>
 </div>
 <div class="w-full mt-4">
-    <div class="card">
+    <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
             <table
                 id="table-keyboards"
@@ -32,85 +37,33 @@
                 </thead>
                 <tbody>
                     {% for kb in inventory %}
-                    <tr>
-                        <td class="text-center flex items-center">
-                            <a
-                                href="{% url 'keyboard_detail' %}?{{kb.url_params}}"
-                                ><i class="fas fa-edit"></i
-                            ></a>
-                            <button
-                                class="btn text-red-400 p-0 ms-1"
-                                data-variant="ghost"
-                                hx-post="{% url 'keyboard_delete' %}?{{kb.url_params}}"
-                                hx-target="closest tr"
-                                hx-swap="delete"
-                                hx-confirm="Delete? The data will be unrecoverable."
-                            >
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                        <td
-                            {% if kb.kit_str %}
-                            hx-get="{% url 'part_detail' %}?{{kb.kit_url_params}}"
-                            hx-target="#detail-dialog"
-                            hx-trigger="click"
-                            class="hoverable"
-                            {% endif %}
-                        >
-                            {{kb.kit_str}}
-                        </td>
-                        <td>{{kb.pcb}}</td>
-                        <td
-                            {% if kb.switches_str %}
-                            hx-get="{% url 'part_detail' %}?{{kb.switches_url_params}}"
-                            hx-target="#detail-dialog"
-                            hx-trigger="click"
-                            class="hoverable"
-                            {% endif %}
-                        >
-                            {{kb.switches_str}}
-                        </td>
-                        <td
-                            {% if kb.keycaps_str %}
-                            hx-get="{% url 'part_detail' %}?{{kb.keycaps_url_params}}"
-                            hx-target="#detail-dialog"
-                            hx-trigger="click"
-                            class="hoverable"
-                            {% endif %}
-                        >
-                            {{kb.keycaps_str}}
-                        </td>
-                        <td
-                            {% if kb.plate_str %}
-                            hx-get="{% url 'part_detail' %}?{{kb.plate_url_params}}"
-                            hx-target="#detail-dialog"
-                            hx-trigger="click"
-                            class="hoverable"
-                            {% endif %}
-                        >
-                            {{kb.plate_str}}
-                        </td>
-                        <td
-                            {% if kb.stabilizer_str %}
-                            hx-get="{% url 'part_detail' %}?{{kb.stabilizer_url_params}}"
-                            hx-target="#detail-dialog"
-                            hx-trigger="click"
-                            class="hoverable"
-                            {% endif %}
-                        >
-                            {{kb.stabilizer_str}}
-                        </td>
-                        <td>mods not implemented</td>
-                        <td>{{kb.notes}}</td>
-                    </tr>
+                    {% include "partials/keyboard_row.html" %}
                     {% endfor %}
                 </tbody>
             </table>
         </section>
     </div>
+    <div class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
+        <header>
+            <figure><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-keyboard-icon lucide-keyboard"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></svg></figure>
+            <h3>No keyboards yet</h3>
+            <p>Add a prebuilt from the catalog or put together a custom build.</p>
+        </header>
+        <section>
+            <button type="button" class="btn" hx-get="{% url 'keyboard_add' %}" hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add keyboard</button>
+        </section>
+    </div>
 </div>
 
-<dialog id="detail-dialog" class="dialog" hx-on::after-swap="this.showModal()" aria-labelledby="detail-dialog-title" aria-describedby="detail-dialog-description" onclick="if (event.target === this) this.close()">
+<dialog
+    id="page-dialog"
+    class="dialog"
+    hx-on::after-swap="if (!this.open) this.showModal()"
+    hx-on:close-dialog="this.close()"
+    aria-labelledby="page-dialog-title"
+    aria-describedby="page-dialog-description"
+    onclick="if (event.target === this) this.close()"
+>
 </dialog>
 
 {% endblock content %}

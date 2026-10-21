@@ -41,6 +41,9 @@ class Inventory(models.Model):
         "Keycaps", null=True, blank=True, on_delete=models.SET_NULL
     )
 
+    # how many of a standalone part the user has (switches are counted individually)
+    quantity = models.PositiveIntegerField(default=1)
+
     @property
     def obj(self):
         if self.keyboard:
@@ -329,7 +332,7 @@ class CustomPlate(models.Model):
         return False
 
     def __str__(self):
-        s = self.material
+        s = self.material or "Plate"
         if self.flex_cuts:
             s += " (flex)"
         if self.half:
@@ -348,7 +351,7 @@ class StockPlate(CustomPlate):
         return True
 
     def __str__(self):
-        s = self.material
+        s = self.material or "Plate"
         if self.flex_cuts:
             s += " (flex)"
         if self.half:

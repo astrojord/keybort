@@ -6,12 +6,24 @@
         <span class="text-brand font-semibold">Parts Inventory</span> -
         {{request.user}}
     </h1>
-    <a href="#" class="btn"
-        ><i class="fas fa-plus me-1"></i>Add</a
+    <button
+        type="button"
+        class="btn"
+        hx-get="{% url 'part_add' %}"
+        hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}'
+        hx-target="#page-dialog"
     >
+        <i class="fas fa-plus me-1"></i>Add
+    </button>
+</div>
+<div id="parts-filter" data-active="" class="mt-4 flex flex-wrap gap-1" role="group" aria-label="Filter by type">
+    <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="">All <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
+    {% for part_type, label in filters %}
+    <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="{{ part_type }}">{{ label }} <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
+    {% endfor %}
 </div>
 <div class="w-full mt-4">
-    <div class="card">
+    <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
             <table
                 id="table-parts"
@@ -21,63 +33,81 @@
                     <tr>
                         <th class="w-px text-nowrap"></th>
                         <th class="w-1/12">Type</th>
-                        <th class="w-2/12">Name</th>
+                        <th class="w-3/12">Name</th>
                         <th class="w-px text-center text-nowrap">Quantity</th>
-                        <th class="w-8/12">Information</th>
+                        <th>Information</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="text-center">
-                            <a href=""
-                                ><i class="fas fa-magnifying-glass"></i
-                            ></a>
-                        </td>
-                        <td>Switch</td>
-                        <td>Trash Linear</td>
-                        <td class="text-center">5</td>
-                        <td>53gf, nylon top, nylon bottom</td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">
-                            <a href=""
-                                ><i class="fas fa-magnifying-glass"></i
-                            ></a>
-                        </td>
-                        <td>Stabilizer</td>
-                        <td>Durock</td>
-                        <td class="text-center">1</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">
-                            <a href=""
-                                ><i class="fas fa-magnifying-glass"></i
-                            ></a>
-                        </td>
-                        <td>Kit</td>
-                        <td>V4N4G0N</td>
-                        <td class="text-center">1</td>
-                        <td>Black thermal 3DP PLA case</td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">
-                            <a href=""
-                                ><i class="fas fa-magnifying-glass"></i
-                            ></a>
-                        </td>
-                        <td>Kit</td>
-                        <td>V4N4G0N</td>
-                        <td class="text-center">1</td>
-                        <td>Frosted stacked acrylic case</td>
-                    </tr>
+                    {% for part in inventory %}
+                    {% include "partials/part_row.html" %}
+                    {% endfor %}
                 </tbody>
             </table>
         </section>
     </div>
+    <div id="parts-empty" class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
+        <header>
+            <figure><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-icon lucide-package"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg></figure>
+            <h3>No <span data-empty-label>parts</span> yet</h3>
+            <p>Anything you own that isn't currently on a built board goes here.</p>
+        </header>
+        <section>
+            <button type="button" class="btn" hx-get="{% url 'part_add' %}" hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}' hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add part</button>
+        </section>
+    </div>
 </div>
 
-<dialog id="detail-dialog" class="dialog" hx-on::after-swap="this.showModal()" aria-labelledby="detail-dialog-title" aria-describedby="detail-dialog-description" onclick="if (event.target === this) this.close()">
+<dialog
+    id="page-dialog"
+    class="dialog"
+    hx-on::after-swap="if (!this.open) this.showModal()"
+    hx-on:close-dialog="this.close()"
+    aria-labelledby="page-dialog-title"
+    aria-describedby="page-dialog-description"
+    onclick="if (event.target === this) this.close()"
+>
 </dialog>
 
 {% endblock content %}
+
+{% block page_js %}
+<script>
+    (() => {
+        const filter = document.getElementById("parts-filter");
+        const tbody = document.querySelector("#table-parts tbody");
+        let active = "";
+
+        // counts and visibility come from the rows, so they stay right after htmx adds/removes one
+        function apply() {
+            const rows = [...tbody.querySelectorAll("tr[data-type]")];
+            for (const button of filter.querySelectorAll("[data-filter]")) {
+                const type = button.dataset.filter;
+                const count = rows.filter((row) => !type || row.dataset.type === type).length;
+                button.querySelector("[data-count]").textContent = count;
+                button.dataset.variant = type === active ? "secondary" : "ghost";
+                button.setAttribute("aria-pressed", type === active);
+                // dim types with nothing in them, unless it's the one being looked at
+                button.toggleAttribute("data-empty", count === 0 && type !== active);
+            }
+            // the empty state shows itself (css) once no rows are visible
+            for (const row of rows) {
+                row.hidden = active && row.dataset.type !== active;
+            }
+            const label = filter.querySelector(`[data-filter="${active}"]`);
+            document.querySelector("[data-empty-label]").textContent = active ? label.firstChild.textContent.trim().toLowerCase() : "parts";
+        }
+
+        filter.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-filter]");
+            if (!button) return;
+            active = button.dataset.filter;
+            // the add buttons send this so the modal opens on the filtered type
+            filter.dataset.active = active;
+            apply();
+        });
+        document.body.addEventListener("htmx:afterSettle", apply);
+        apply();
+    })();
+</script>
+{% endblock page_js %}

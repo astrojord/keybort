@@ -80,3 +80,34 @@ KEYCAP_MATERIALS = [
     ('tdp', '3DP'),
     ('w', 'Wood'),
 ]
+# part types in display order. the model/form behind each one lives on KeyboardManager.PART_MODELS,
+# since models.py imports this file
+PART_SINGULARS = {
+    'kit': 'Kit',
+    'switch': 'Switch',
+    'keycaps': 'Keycaps',
+    'plate': 'Plate',
+    'stabilizer': 'Stabilizer',
+}
+
+PART_PLURALS = {
+    'kit': 'Kits',
+    'switch': 'Switches',
+    'keycaps': 'Keycaps',
+    'plate': 'Plates',
+    'stabilizer': 'Stabilizers',
+}
+
+# headings for each part's step in the keyboard/part modals
+PART_STEP_LABELS = {
+    'kit': 'Kit',
+    'switch': 'Switches',
+    'keycaps': 'Keycaps',
+    'plate': 'Plate',
+    'stabilizer': 'Stabilizers',
+}
+
+# htmx event the page dialogs listen for to close themselves after a save
+CLOSE_DIALOG_EVENT = 'close-dialog'
+
+QUANTITY_ERROR = 'Enter a whole number, 1 or more.'

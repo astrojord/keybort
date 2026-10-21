@@ -1,0 +1,36 @@
+{% load allauth %}
+<form id="part-edit-form" class="{% if form %}sm:max-w-2xl{% endif %}" hx-post="{{ action_url }}" hx-target="#page-dialog">
+    {% csrf_token %}
+    <header>
+        <h2 id="page-dialog-title">Edit {{ name }}</h2>
+        <p id="page-dialog-description">
+            {% if form %}
+            {{ type_label }} in your parts inventory.
+            {% else %}
+            Stock {{ type_label|lower }} from the catalog, only the quantity is yours to change.
+            {% endif %}
+        </p>
+    </header>
+
+    <section class="-mx-6 min-h-0 overflow-y-auto px-6">
+        <div class="grid min-w-0 gap-4">
+            {% if form %}
+            {% element fields form=form %}
+            {% endelement %}
+            {% endif %}
+
+            <div class="field"{% if quantity_error %} data-invalid="true"{% endif %}>
+                <label for="id_quantity">Quantity</label>
+                <input type="number" id="id_quantity" name="quantity" value="{{ quantity }}" min="1" step="1" required{% if quantity_error %} aria-invalid="true" aria-describedby="id_quantity-error"{% endif %}>
+                {% if quantity_error %}<div role="alert" id="id_quantity-error" class="text-sm">{{ quantity_error }}</div>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" class="btn" data-variant="outline" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/50">Save changes</button>
+    </footer>
+
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+</form>

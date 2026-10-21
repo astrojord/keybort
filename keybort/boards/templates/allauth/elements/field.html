@@ -28,6 +28,8 @@
                {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
                {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
                {% if attrs.maxlength %}maxlength="{{ attrs.maxlength }}"{% endif %}
+               {% if attrs.min or attrs.min == 0 %}min="{{ attrs.min }}"{% endif %}
+               {% if attrs.step %}step="{{ attrs.step }}"{% endif %}
                {% if attrs.value is not None and attrs.value is not True and attrs.value is not False and attrs.type != "password" %}value="{{ attrs.value }}"{% endif %}
                {% if attrs.errors %}aria-invalid="true" aria-describedby="{{ attrs.id }}-error"{% endif %}
                type="{{ attrs.type }}">

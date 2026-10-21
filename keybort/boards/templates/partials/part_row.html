@@ -1,0 +1,35 @@
+<tr id="{{part.row_id}}" data-type="{{part.type}}">
+    <td class="text-center flex items-center">
+        <button
+            type="button"
+            class="btn p-0"
+            data-variant="ghost"
+            aria-label="Edit"
+            hx-get="{% url 'part_edit' %}?id={{part.id}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-edit"></i>
+        </button>
+        <button
+            type="button"
+            class="btn text-red-400 p-0 ms-1"
+            data-variant="ghost"
+            aria-label="Delete"
+            hx-get="{% url 'part_delete' %}?id={{part.id}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-trash"></i>
+        </button>
+    </td>
+    <td>{{part.type_label}}</td>
+    <td
+        hx-get="{% url 'part_detail' %}?{{part.detail_params}}"
+        hx-target="#page-dialog"
+        hx-trigger="click"
+        class="hoverable"
+    >
+        {{part.name}}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
+    </td>
+    <td class="text-center">{{part.quantity}}</td>
+    <td class="text-wrap">{{part.info}}</td>
+</tr>

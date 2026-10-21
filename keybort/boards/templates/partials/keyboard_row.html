@@ -1,0 +1,77 @@
+<tr id="{{kb.row_id}}">
+    <td class="text-center flex items-center">
+        <button
+            type="button"
+            class="btn p-0"
+            data-variant="ghost"
+            aria-label="Edit"
+            hx-get="{% url 'keyboard_edit' %}?{{kb.url_params}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-edit"></i>
+        </button>
+        <button
+            class="btn text-red-400 p-0 ms-1"
+            data-variant="ghost"
+            type="button"
+            aria-label="Delete"
+            hx-get="{% url 'keyboard_delete' %}?{{kb.url_params}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-trash"></i>
+        </button>
+    </td>
+    <td
+        {% if kb.kit_str %}
+        hx-get="{% url 'part_detail' %}?{{kb.kit_url_params}}"
+        hx-target="#page-dialog"
+        hx-trigger="click"
+        class="hoverable"
+        {% endif %}
+    >
+        {{kb.kit_str}}
+    </td>
+    <td>{{kb.pcb}}</td>
+    <td
+        {% if kb.switches_str %}
+        hx-get="{% url 'part_detail' %}?{{kb.switches_url_params}}"
+        hx-target="#page-dialog"
+        hx-trigger="click"
+        class="hoverable"
+        {% endif %}
+    >
+        {{kb.switches_str}}
+    </td>
+    <td
+        {% if kb.keycaps_str %}
+        hx-get="{% url 'part_detail' %}?{{kb.keycaps_url_params}}"
+        hx-target="#page-dialog"
+        hx-trigger="click"
+        class="hoverable"
+        {% endif %}
+    >
+        {{kb.keycaps_str}}
+    </td>
+    <td
+        {% if kb.plate_str %}
+        hx-get="{% url 'part_detail' %}?{{kb.plate_url_params}}"
+        hx-target="#page-dialog"
+        hx-trigger="click"
+        class="hoverable"
+        {% endif %}
+    >
+        {{kb.plate_str}}
+    </td>
+    <td
+        {% if kb.stabilizer_str %}
+        hx-get="{% url 'part_detail' %}?{{kb.stabilizer_url_params}}"
+        hx-target="#page-dialog"
+        hx-trigger="click"
+        class="hoverable"
+        {% endif %}
+    >
+        {{kb.stabilizer_str}}
+    </td>
+    <td>mods not implemented</td>
+    <td>{{kb.notes}}</td>
+</tr>

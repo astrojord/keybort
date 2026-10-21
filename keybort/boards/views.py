@@ -1,28 +1,13 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Q
 from django.http import Http404, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
+from django.urls import reverse
 
+from . import const
 from .forms import KeycapsForm, KitForm, ModForm, PlateForm, StabilizerForm, SwitchForm
 from .handlers import handle_canned_parts_upload
-from .models import (
-    CustomKeyboard,
-    CustomKeycaps,
-    CustomKit,
-    CustomMod,
-    CustomPlate,
-    CustomStabilizer,
-    CustomSwitch,
-    Inventory,
-    StockKeyboard,
-    StockKeycaps,
-    StockKit,
-    StockMod,
-    StockPlate,
-    StockStabilizer,
-    StockSwitch,
-)
-from .utils import model_to_dict_verbose
+from .managers import KeyboardManager
+from .utils import htmx_swap, keyboard_params, model_to_dict_verbose
 
 
 # home/dashboard
@@ -34,74 +19,7 @@ def index(request):
 @login_required(login_url="/accounts/login")
 def inventory_keyboards(request):
     context = {"page_title": "Keyboard Inventory"}
-
-    # each instance here will be either CustomKeyboard or StockKeyboard
-    user_inventory_qs = [
-        i.obj
-        for i in Inventory.objects.filter(user=request.user)
-        .exclude(keyboard__isnull=True)
-        .prefetch_related(
-            "kit",
-            "keycaps",
-            "switch",
-            "plate",
-            "stabilizer",
-        )
-    ]
-
-    inventory = []
-    for kb in user_inventory_qs:
-        data = {
-            "id": kb.pk,
-            "url_params": f"id={kb.pk}&stock={int(kb.stock)}",
-            "stock": kb.stock,
-            "notes": kb.notes,
-        }
-
-        if kb.kit:
-            data.update(
-                {
-                    "kit_url_params": f"type=kit&id={kb.kit.obj.pk}&stock={int(kb.kit.obj.stock)}",
-                    "kit_str": f"{kb.kit.obj.brand} {kb.kit.obj.name}",
-                    "pcb": kb.kit.obj.pcb,
-                }
-            )
-
-        if kb.switch:
-            data.update(
-                {
-                    "switches_url_params": f"type=switch&id={kb.switch.obj.pk}&stock={int(kb.switch.obj.stock)}",
-                    "switches_str": f"{kb.switch.obj.brand} {kb.switch.obj.name}",
-                }
-            )
-
-        if kb.keycaps:
-            data.update(
-                {
-                    "keycaps_url_params": f"type=keycaps&id={kb.keycaps.obj.pk}&stock={int(kb.keycaps.obj.stock)}",
-                    "keycaps_str": str(kb.keycaps.obj),
-                }
-            )
-
-        if kb.plate:
-            data.update(
-                {
-                    "plate_url_params": f"type=plate&id={kb.plate.obj.pk}&stock={int(kb.plate.obj.stock)}",
-                    "plate_str": str(kb.plate.obj),
-                }
-            )
-
-        if kb.stabilizer:
-            data.update(
-                {
-                    "stabilizer_url_params": f"type=stabilizer&id={kb.stabilizer.obj.pk}&stock={int(kb.stabilizer.obj.stock)}",
-                    "stabilizer_str": str(kb.stabilizer.obj),
-                }
-            )
-
-        inventory.append(data)
-
-    context["inventory"] = inventory
+    context["inventory"] = KeyboardManager(request.user).keyboard_rows()
     # cut off text for part names after maybe 50 characters?
     # cut off text for mods + notes after some longer amount of characters
     return render(request, "pages/inventory_keyboards.html", context)
@@ -110,126 +28,184 @@ def inventory_keyboards(request):
 @login_required(login_url="/accounts/login")
 def inventory_parts(request):
     context = {"page_title": "Parts Inventory"}
-
-    user_inventory = [
-        i.obj
-        for i in Inventory.objects.filter(user=request.user, keyboard__isnull=True)
-    ]
-
+    context["inventory"] = KeyboardManager(request.user).part_rows()
+    context["filters"] = list(const.PART_PLURALS.items())
     return render(request, "pages/inventory_parts.html", context)
 
+# GET: modal body, pick a part type then stock or custom
+# POST: add it to the parts inventory, or bump quantity if exists
+@login_required(login_url="/accounts/login")
+def add_part(request):
+    manager = KeyboardManager(request.user)
+    if request.method != "POST":
+        part_type = request.GET.get("type")
+        if part_type not in manager.PART_MODELS:
+            part_type = None
+        return render(request, "partials/part_add_modal.html", manager.add_part_context(part_type=part_type))
 
-# returns view-only modal body on HTMX request from either inventory page
+    context = manager.add_part_context(request.POST)
+    if context["part_type"] not in manager.PART_MODELS:
+        return HttpResponse(status=400)
+
+    result = manager.add_part(context, request.POST)
+    if result is None:
+        return render(request, "partials/part_add_modal.html", context)
+
+    inv, stacked = result
+    response = render(request, "partials/part_row.html", {"part": manager.part_row(inv)})
+    if stacked:
+        return htmx_swap(response, f"#part-{inv.pk}", "outerHTML", const.CLOSE_DIALOG_EVENT)
+    return htmx_swap(response, "#table-parts tbody", "beforeend", const.CLOSE_DIALOG_EVENT)
+
+
+@login_required(login_url="/accounts/login")
+def edit_part(request):
+    part_id = request.GET.get("id", "")
+    if not part_id.isdigit():
+        return HttpResponse(status=400)
+
+    manager = KeyboardManager(request.user)
+    inv = manager.standalone_part(part_id)
+    if inv is None:
+        raise Http404
+
+    action_url = f"{reverse('part_edit')}?id={inv.pk}"
+    if request.method != "POST":
+        return render(request, "partials/part_edit_modal.html", manager.edit_part_context(inv, action_url))
+
+    context = manager.edit_part_context(inv, action_url, request.POST)
+    inv = manager.edit_part(context, request.POST)
+    if inv is None:
+        return render(request, "partials/part_edit_modal.html", context)
+
+    response = render(request, "partials/part_row.html", {"part": manager.part_row(inv)})
+    return htmx_swap(response, f"#part-{inv.pk}", "outerHTML", const.CLOSE_DIALOG_EVENT)
+
+# GET: confirmation modal
+# POST: drop it from inventory
+@login_required(login_url="/accounts/login")
+def delete_part(request):
+    part_id = request.GET.get("id", "")
+    if not part_id.isdigit():
+        return HttpResponse(status=400)
+
+    manager = KeyboardManager(request.user)
+    inv = manager.standalone_part(part_id)
+    if inv is None:
+        raise Http404
+
+    if request.method != "POST":
+        context = manager.delete_part_context(inv, f"{reverse('part_delete')}?id={inv.pk}")
+        return render(request, "partials/part_delete_modal.html", context)
+
+    row_id = f"part-{inv.pk}"
+    manager.delete_part(inv)
+    return htmx_swap(HttpResponse(), f"#{row_id}", "delete", const.CLOSE_DIALOG_EVENT)
+
+
+# view-only modal body
 def part_detail(request):
     part_type = request.GET.get("type")
     part_id = request.GET.get("id", "")
     stock = request.GET.get("stock")
 
-    if part_type is None or not part_id.isdigit() or stock not in ("0", "1"):
+    if part_type not in KeyboardManager.PART_MODELS or not part_id.isdigit() or stock not in ("0", "1"):
         return HttpResponse(status=400)
 
-    stock = stock == "1"
-    context = {}
+    # 404 for someone else's custom part too, so ids aren't confirmed
+    obj = KeyboardManager(request.user).visible_part(part_type, part_id, stock == "1")
+    if obj is None:
+        raise Http404
 
-    # would love to use model_to_dict here but need user-readable dict keys
-    # todo: make own model_to_dist that returns verbose names as keys
-    match part_type:
-        case "kit":
-            if stock:
-                obj = get_object_or_404(StockKit, pk=part_id)
-            else:
-                obj = get_object_or_404(CustomKit, pk=part_id)
+    context = {
+        "part_title": str(obj),
+        "fields": model_to_dict_verbose(
+            obj,
+            exclude=["id", f"custom{part_type}_ptr", f"stock{part_type}_ptr", "quantity"],
+        ),
+    }
+    return render(request, "partials/detail_modal.html", context)
 
-        case "switch":
-            if stock:
-                obj = get_object_or_404(StockSwitch, pk=part_id)
-            else:
-                obj = get_object_or_404(CustomSwitch, pk=part_id)
+# GET: modal body
+# POST: validate + create, if error, re-render the modal on the first broken step
+#       if success, put new row on table and close dialog
+@login_required(login_url="/accounts/login")
+def add_keyboard(request):
+    manager = KeyboardManager(request.user)
+    action_url = reverse("keyboard_add")
+    if request.method != "POST":
+        return render(request, "partials/keyboard_modal.html", manager.keyboard_form_context(action_url))
 
-        case "keycaps":
-            if stock:
-                obj = get_object_or_404(StockKeycaps, pk=part_id)
-            else:
-                obj = get_object_or_404(CustomKeycaps, pk=part_id)
-
-        case "plate":
-            if stock:
-                obj = get_object_or_404(StockPlate, pk=part_id)
-            else:
-                obj = get_object_or_404(CustomPlate, pk=part_id)
-
-        case "stabilizer":
-            if stock:
-                obj = get_object_or_404(StockStabilizer, pk=part_id)
-            else:
-                obj = get_object_or_404(CustomStabilizer, pk=part_id)
-
+    context = manager.keyboard_form_context(action_url, request.POST)
+    match context["kind"]:
+        case "prebuilt":
+            kb = manager.add_prebuilt(context, request.POST)
+        case "custom":
+            kb = manager.add_custom(context, request.POST)
         case _:
             return HttpResponse(status=400)
 
-    # stock parts are a shared catalog, custom parts are only visible to users who have them
-    # in their inventory (standalone or as part of a keyboard). 404 so ids aren't confirmed
-    if not stock:
-        owned = (
-            request.user.is_authenticated
-            and Inventory.objects.filter(
-                Q(**{f"{part_type}__custom": obj})
-                | Q(**{f"keyboard__custom__{part_type}__custom": obj}),
-                user=request.user,
-            ).exists()
-        )
-        if not owned:
-            raise Http404
+    if kb is None:
+        return render(request, "partials/keyboard_modal.html", context)
 
-    context["part_title"] = str(obj)
-    context["fields"] = model_to_dict_verbose(
-        obj,
-        exclude=["id", f"custom{part_type}_ptr", f"stock{part_type}_ptr", "quantity"],
-    )
-
-    return render(request, "partials/detail_modal.html", context)
+    response = render(request, "partials/keyboard_row.html", {"kb": manager.keyboard_row(kb)})
+    return htmx_swap(response, "#table-keyboards tbody", "beforeend", const.CLOSE_DIALOG_EVENT)
 
 
 @login_required(login_url="/accounts/login")
-def keyboard_detail(request):
-    kb_id = request.GET.get("id")
-    stock = bool(int(request.GET.get("stock")))
-    # include change forms for each component
-    # include delete button (modal for confirm)
-    pass
+def edit_keyboard(request):
+    params = keyboard_params(request)
+    if params is None:
+        return HttpResponse(status=400)
 
+    manager = KeyboardManager(request.user)
+    inventory = manager.keyboard_inventory(*params)
+    if inventory is None:
+        raise Http404
 
-@login_required(login_url="/accounts/login")
-def add_keyboard(request):
-    # redirect to detail page for created board after form validation
-    pass
+    current = inventory.keyboard.obj
+    action_url = f"{reverse('keyboard_edit')}?id={params[0]}&stock={int(params[1])}"
+    if request.method != "POST":
+        context = manager.keyboard_form_context(action_url, current=current)
+        return render(request, "partials/keyboard_modal.html", context)
 
+    context = manager.keyboard_form_context(action_url, request.POST, current=current)
+    kb = manager.edit_keyboard(inventory, context, request.POST)
+    if kb is None:
+        return render(request, "partials/keyboard_modal.html", context)
 
+    response = render(request, "partials/keyboard_row.html", {"kb": manager.keyboard_row(kb)})
+    return htmx_swap(response, f"#{manager.row_id(current)}", "outerHTML", const.CLOSE_DIALOG_EVENT)
+
+# GET: modal body
+# POST: delete it, but keep the checked parts in parts inventory
 @login_required(login_url="/accounts/login")
 def delete_keyboard(request):
-    kb_id = request.GET.get("id")
-    stock = bool(int(request.GET.get("stock")))
+    params = keyboard_params(request)
+    if params is None:
+        return HttpResponse(status=400)
 
-    # validate inventory user == request user or 403
-    if stock:
-        obj = get_object_or_404(StockKeyboard, pk=kb_id)
-        try:
-            inv_obj = Inventory.objects.get(user=request.user, keyboard__stock=obj)
-        except Inventory.DoesNotExist:
-            return HttpResponse(status=403)
-    else:
-        obj = get_object_or_404(CustomKeyboard, pk=kb_id)
-        try:
-            inv_obj = Inventory.objects.get(user=request.user, keyboard__custom=obj)
-        except Inventory.DoesNotExist:
-            return HttpResponse(status=403)
+    manager = KeyboardManager(request.user)
+    inventory = manager.keyboard_inventory(*params)
+    if inventory is None:
+        raise Http404
 
-    inv_obj.delete()
-    return HttpResponse(status=200)
+    kb = inventory.keyboard.obj
+    if request.method != "POST":
+        context = {
+            "kb": kb,
+            "parts": manager.keyboard_delete_parts(kb),
+            "action_url": f"{reverse('keyboard_delete')}?id={params[0]}&stock={int(params[1])}",
+        }
+        return render(request, "partials/delete_keyboard_modal.html", context)
+
+    row_id = manager.row_id(kb)
+    manager.delete_keyboard(inventory, request.POST.getlist("keep"))
+    return htmx_swap(HttpResponse(), f"#{row_id}", "delete", const.CLOSE_DIALOG_EVENT)
 
 
 # add/change individual parts in inventory
-# 1 view for each form to handle xhr post request from keyboard_detail
+# 1 view for each form to handle xhr post request from edit_keyboard
 # Kit, Keycaps, Switch, Stabilizer, Plate, Mod
 
 
