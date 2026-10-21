@@ -1,28 +1,15 @@
 {% load i18n %}
-{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta name="description" content="Track your mechanical keyboard collection">
-
+        {% include 'base/head.html' %}
         <title>{% block head_title %}{% endblock head_title %} | Keybort</title>
-        <link rel="shortcut icon" href="{% static "logos/keybort_icon.png" %}" />
-
-        <link href="{% static 'site.css' %}" rel="stylesheet">
-
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-        <link href="{% static "fonts/fontawesome/css/fontawesome.min.css" %}" rel="stylesheet">
-        <link href="{% static "fonts/fontawesome/css/solid.min.css" %}" rel="stylesheet">
-        <link href="{% static "fonts/fontawesome/css/regular.min.css" %}" rel="stylesheet">
-
 
         {% block page_css %}{% endblock page_css %}
         {% block extra_head %}
         {% endblock extra_head %}
     </head>
-    <body data-theme="dark">
+    <body>
         {% block body %}
         <main class="flex w-screen h-screen content-center items-center">
             <div class="container flex flex-col m-auto">
@@ -73,17 +60,6 @@
                 </div>
             </div>
         </main>
-        <script src="{% static 'basecoat.min.js' %}" defer></script>
-        <script>
-          (() => {
-            try {
-              const stored = localStorage.getItem("themeMode");
-              if (stored ? stored === "dark" : matchMedia("(prefers-color-scheme: dark").matches) {
-                document.documentElement.classList.add("dark")
-              }
-            } catch (_) {}
-          })();
-        </script>
         {% block page_js %}{% endblock page_js %}
 
         {% endblock body %}

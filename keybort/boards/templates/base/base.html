@@ -1,53 +1,25 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-	<meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<meta name="description" content="Track your mechanical keyboard collection">
-
+    {% include 'base/head.html' %}
     <title>{% block page_title %}{% endblock page_title %} | Keybort</title>
-    <link rel="shortcut icon" href="{% static "logos/keybort_icon.png" %}" />
-
-    <link href="{% static 'site.css' %}" rel="stylesheet">
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link href="{% static "fonts/fontawesome/css/fontawesome.min.css" %}" rel="stylesheet">
-    <link href="{% static "fonts/fontawesome/css/solid.min.css" %}" rel="stylesheet">
-    <link href="{% static "fonts/fontawesome/css/regular.min.css" %}" rel="stylesheet">
-
 
     {% block page_css %}{% endblock page_css %}
 </head>
-<body theme="dark">
-	<div class="wrapper">
-		<nav id="sidebar" class="sidebar">
-            {% include 'base/sidebar.html' %}
-        </nav>
+<body>
+    {% include 'base/sidebar.html' %}
 
-        <div class="main">
-            {% include 'base/header.html' %}
+    <div>
+        {% include 'base/header.html' %}
 
-            <main class="content w-full">
-				<div class="container w-full p-4">
-                    {% block content %}{% endblock content %}
-                </div>
-            </main>
-        </div>
+        <main class="w-full">
+            <div class="container w-full p-4">
+                {% block content %}{% endblock content %}
+            </div>
+        </main>
     </div>
 
-    <script src="{% static 'basecoat.min.js' %}" defer></script>
-    <script>
-      (() => {
-        try {
-          const stored = localStorage.getItem("themeMode");
-          if (stored ? stored === "dark" : matchMedia("(prefers-color-scheme: dark").matches) {
-            document.documentElement.classList.add("dark")
-          }
-        } catch (_) {}
-      })();
-    </script>
     {% block page_js %}{% endblock page_js %}
 
 </body>

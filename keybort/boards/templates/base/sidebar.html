@@ -18,17 +18,18 @@
             </a>
         </header>
         <section class="scrollbar-sm">
+            {% with current=request.resolver_match.url_name %}
             <div role="group" aria-labelledby="group-label-content-1">
                 <h3 id="group-label-content-1">Inventory</h3>
                 <ul>
                     <li>
-                        <a href="{% url 'inventory_keyboards' %}">
+                        <a href="{% url 'inventory_keyboards' %}"{% if current == 'inventory_keyboards' %} aria-current="page"{% endif %}>
                             <i class="fa fa-list"></i>
                             <span>Keyboards</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'inventory_parts' %}">
+                        <a href="{% url 'inventory_parts' %}"{% if current == 'inventory_parts' %} aria-current="page"{% endif %}>
                             <i class="fas fa-cubes-stacked"></i>
                             <span>Parts</span>
                         </a>
@@ -40,43 +41,45 @@
                 <h3 id="group-label-content-2">View Stock Parts</h3>
                 <ul>
                     <li>
-                        <a href="{% url 'stock_prebuilts' %}">
+                        <a href="{% url 'stock_prebuilts' %}"{% if current == 'stock_prebuilts' %} aria-current="page"{% endif %}>
                             <i class="fas fa-hammer"></i>
                             <span>Prebuilts</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'stock_kits' %}">
+                        <a href="{% url 'stock_kits' %}"{% if current == 'stock_kits' %} aria-current="page"{% endif %}>
                             <i class="fas fa-crop-simple"></i>
                             <span>Kits</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'stock_switches' %}">
+                        <a href="{% url 'stock_switches' %}"{% if current == 'stock_switches' %} aria-current="page"{% endif %}>
                             <i class="fas fa-plus"></i>
                             <span>Switches</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'stock_keycaps' %}">
+                        <a href="{% url 'stock_keycaps' %}"{% if current == 'stock_keycaps' %} aria-current="page"{% endif %}>
                             <i class="fa fa-regular fa-square"></i>
                             <span>Keycaps</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'stock_stabilizers' %}">
+                        <a href="{% url 'stock_stabilizers' %}"{% if current == 'stock_stabilizers' %} aria-current="page"{% endif %}>
                             <i class="fa fa-arrows-down-to-line"></i>
                             <span>Stabilizers</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'stock_plates' %}">
+                        <a href="{% url 'stock_plates' %}"{% if current == 'stock_plates' %} aria-current="page"{% endif %}>
                             <i class="fa fa-layer-group"></i>
                             <span>Plates</span>
                         </a>
                     </li>
                 </ul>
             </div>
+
+            {% endwith %}
 
             {% comment %} {# example of collapsible nav menu: #}
             <li>

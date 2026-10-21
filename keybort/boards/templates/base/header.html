@@ -56,38 +56,28 @@
                     >
                         <div role="group">
                             {% if request.user.is_authenticated %}
-                            <div role="menuitem">
-                                <a href="#">Profile</a>
-                            </div>
-                            <div role="menuitem">
-                                <a href="{% url 'account_change_password' %}"
-                                    >Change password</a
-                                >
-                            </div>
-                            <div role="menuitem">
-                                <a href="#">Settings</a>
-                            </div>
-
+                            <a role="menuitem" href="#">Profile</a>
+                            <a role="menuitem" href="{% url 'account_change_password' %}"
+                                >Change password</a
+                            >
+                            <a role="menuitem" href="#">Settings</a>
                             {% else %}
-                            <div role="menuitem">
-                                <a href="{% url 'account_login' %}">Sign in</a>
-                            </div>
+                            <a role="menuitem" href="{% url 'account_login' %}">Sign in</a>
                             {% endif %}
                         </div>
                         <hr role="separator" />
                         <div role="group">
-                            <div role="menuitem">
-                                <a href="https://github.com/astrojord/keybort"
-                                    >GitHub</a
-                                >
-                            </div>
+                            <a role="menuitem" href="https://github.com/astrojord/keybort"
+                                >GitHub</a
+                            >
                         </div>
+                        {% if request.user.is_authenticated %}
                         <hr role="separator" />
-                        <div role="group">
-                            <div role="menuitem">
-                                <a href="{% url 'account_logout' %}">Log out</a>
-                            </div>
-                        </div>
+                        <form role="group" method="post" action="{% url 'account_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" role="menuitem">Log out</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>
