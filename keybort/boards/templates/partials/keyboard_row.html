@@ -40,7 +40,7 @@
         class="hoverable"
         {% endif %}
     >
-        {{kb.switches_str}}
+        {{kb.switches_str}}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}
     </td>
     <td
         {% if kb.keycaps_str %}

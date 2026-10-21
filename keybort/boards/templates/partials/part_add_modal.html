@@ -9,7 +9,6 @@
     {% csrf_token %}
     <header>
         <h2 id="page-dialog-title">Add part</h2>
-        <p id="page-dialog-description">Add a loose part to your inventory, from the catalog or entered by hand.</p>
         <ol class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm" aria-label="Steps">
             <li data-step-label="type" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">Type</li>
             {% for part in parts %}

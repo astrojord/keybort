@@ -104,6 +104,36 @@
     <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
 
     <script>
-        initStepForm(document.getElementById("keyboard-form"));
+        (() => {
+            const form = document.getElementById("keyboard-form");
+            initStepForm(form);
+
+            // the switch count follows the kit's key count (capped at what's left of the chosen parts row)
+            // until it's typed into
+            const count = form.querySelector('[name="switch-count"]');
+            if (!count) return;
+            if (count.value) count.dataset.touched = "";
+            count.addEventListener("input", () => (count.dataset.touched = ""));
+
+            const selected = (name) => form.querySelector(`[name="${name}"]`)?.selectedOptions[0]?.dataset ?? {};
+            function fill() {
+                const switchSource = form.querySelector('[name="switch-source"]:checked')?.value;
+                const available = switchSource === "owned" ? Number(selected("switch-owned").quantity) || null : null;
+                if (available) count.max = available;
+                else count.removeAttribute("max");
+                if ("touched" in count.dataset) return;
+
+                const keys = {
+                    owned: () => selected("kit-owned").totalKeys,
+                    stock: () => selected("kit-stock").totalKeys,
+                    custom: () => form.querySelector('[name="kit-total_keys"]')?.value,
+                }[form.querySelector('[name="kit-source"]:checked')?.value]?.();
+                const value = Math.min(Number(keys) || Infinity, available ?? Infinity);
+                count.value = Number.isFinite(value) ? value : "";
+            }
+            form.addEventListener("change", fill);
+            form.addEventListener("input", (event) => event.target !== count && fill());
+            fill();
+        })();
     </script>
 </form>

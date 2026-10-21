@@ -131,6 +131,7 @@ class KeyboardManager:
                 {
                     "switches_url_params": f"type=switch&id={switch.pk}&stock={int(switch.stock)}",
                     "switches_str": f"{switch.brand} {switch.name}",
+                    "switch_count": getattr(kb, "switch_count", None),
                 }
             )
 
@@ -142,6 +143,14 @@ class KeyboardManager:
                 data[f"{part_type}_str"] = str(obj)
 
         return data
+
+    @classmethod
+    def board_switch_count(cls, kb, fallback=1):
+        """switches on a board: what it recorded, else one per key on its kit"""
+        count = getattr(kb, "switch_count", None)
+        if not count and kb.kit:
+            count = cls.part_obj(kb.kit).total_keys
+        return count or fallback
 
     @classmethod
     def part_type_of(cls, inv):
@@ -195,9 +204,17 @@ class KeyboardManager:
         data = data or {}
         # kit is required (CustomKeyboard.__str__ depends on it)
         parts = [
-            self.part_choice(part_type, data, current=getattr(current, part_type, None), required=part_type == "kit")
+            self.part_choice(
+                part_type,
+                data,
+                current=getattr(current, part_type, None),
+                required=part_type == "kit",
+                owned=self.owned_parts(part_type),
+            )
             for part_type in self.PART_MODELS
         ]
+        switch_default = self.board_switch_count(current, fallback="") if current and current.switch else ""
+        parts[list(self.PART_MODELS).index("switch")]["count"] = data.get("switch-count", switch_default)
 
         if isinstance(current, CustomKeyboard):
             details_form = CustomKeyboardDetailsForm(data or None, prefix="details", instance=current)
@@ -218,19 +235,39 @@ class KeyboardManager:
             "details_form": details_form,
         }
 
+    def owned_parts(self, part_type):
+        return self.standalone_parts().filter(**{f"{part_type}__isnull": False})
+
     @classmethod
-    def part_choice(cls, part_type, data, current=None, required=False):
+    def part_choice(cls, part_type, data, current=None, required=False, owned=None):
         _, _, stock_model, form_class = cls.PART_MODELS[part_type]
         label = const.PART_STEP_LABELS[part_type]
         stock_options = stock_model.objects.all()
+        owned_options = None
+        if owned is not None:
+            owned_options = []
+            for row in owned:
+                obj = getattr(row, part_type).obj
+                owned_options.append(
+                    {
+                        "id": row.pk,
+                        "name": cls.part_name(obj),
+                        "stock": obj.stock,
+                        "quantity": row.quantity,
+                        "total_keys": getattr(obj, "total_keys", None),
+                    }
+                )
         instance = None
         stock_id = ""
         if current is None:
-            # optional parts start skipped
-            if required:
-                default_source = "stock" if stock_options else "custom"
-            else:
+            if not required:
                 default_source = "none"
+            elif owned_options:
+                default_source = "owned"
+            elif stock_options:
+                default_source = "stock"
+            else:
+                default_source = "custom"
         elif isinstance(current, stock_model):
             default_source, stock_id = "stock", str(current.pk)
         elif current.stock_id:
@@ -246,6 +283,13 @@ class KeyboardManager:
             "source": source,
             "stock_options": stock_options,
             "stock_id": data.get(f"{part_type}-stock", stock_id),
+            "owned_rows": owned,
+            "owned_options": owned_options,
+            "owned_id": data.get(f"{part_type}-owned", ""),
+            # stock + custom, plus "from my parts" and skip when they apply
+            "source_cards": 2 + (owned is not None) + (not required),
+            # switch count, filled in by keyboard_form_context for the switch step
+            "count": None,
             "form": form_class((data or None) if source == "custom" else None, prefix=part_type, instance=instance),
             "error": None,
             "current": {"name": str(cls.part_obj(current)), "source": default_source, "stock_id": stock_id}
@@ -262,11 +306,13 @@ class KeyboardManager:
             if part is not None:
                 obj = self.part_obj(part)
                 label = const.PART_STEP_LABELS[part_type]
-                parts.append({"type": part_type, "label": label, "name": str(obj), "stock": obj.stock, "part": part})
+                name = str(obj)
+                if part_type == "switch":
+                    name = f"{name} ×{self.board_switch_count(kb)}"
+                parts.append({"type": part_type, "label": label, "name": name, "stock": obj.stock, "part": part})
         return parts
 
     def add_part_context(self, data=None, part_type=None):
-        """part_type preselects a type (opened from that filter on the parts page) and starts on its step"""
         data = data or {}
         return {
             "part_type": data.get("type", part_type or "kit"),
@@ -323,6 +369,12 @@ class KeyboardManager:
                 if part["form"].is_valid():
                     return ("custom", part["form"])
                 part["error"] = "Some of these details need fixing."
+            case "owned" if part["owned_rows"] is not None:
+                row_id = data.get(f"{part['type']}-owned", "")
+                row = part["owned_rows"].filter(pk=row_id).first() if row_id.isdigit() else None
+                if row is not None:
+                    return ("owned", row)
+                part["error"] = f"Choose {part['label'].lower()} from your parts."
             case "none" if not part["required"]:
                 pass
             case _:
@@ -335,6 +387,8 @@ class KeyboardManager:
             choice = self.validate_part_choice(data, part)
             if choice is not None:
                 chosen[part["type"]] = choice
+            if part["type"] == "switch" and choice is not None:
+                context["switch_count"] = self._validate_switch_count(data, part, choice)
             if part["error"] and context["step"] is None:
                 context["step"] = part["type"]
 
@@ -342,6 +396,15 @@ class KeyboardManager:
             context["step"] = "details"
 
         return None if context["step"] is not None else chosen
+
+    def _validate_switch_count(self, data, part, choice):
+        count = self.parse_quantity(data.get("switch-count"))
+        source, value = choice
+        if count is None:
+            part["error"] = "Enter how many switches are on the board."
+        elif source == "owned" and count > value.quantity:
+            part["error"] = f"You only have {value.quantity} of those switches."
+        return count
 
     # keyboard saves
 
@@ -370,7 +433,7 @@ class KeyboardManager:
 
         with transaction.atomic():
             custom_kb = context["details_form"].save(commit=False)
-            self._save_keyboard_parts(custom_kb, chosen)
+            self._save_keyboard_parts(custom_kb, chosen, context.get("switch_count"))
             keyboard = Keyboard.objects.create(custom=custom_kb)
             Inventory.objects.create(user=self.user, keyboard=keyboard)
 
@@ -385,7 +448,7 @@ class KeyboardManager:
         with transaction.atomic():
             custom_kb = context["details_form"].save(commit=False)
             removal = {part["type"]: part["removal"] for part in context["parts"]}
-            self._save_keyboard_parts(custom_kb, chosen, removal)
+            self._save_keyboard_parts(custom_kb, chosen, context.get("switch_count"), removal)
             if current.stock:
                 inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
                 inventory.save()
@@ -393,7 +456,8 @@ class KeyboardManager:
                 for part_type in self.PART_MODELS:
                     old = getattr(current, part_type)
                     if old is not None and chosen.get(part_type) != ("stock", old):
-                        self.release_part(part_type, old, keep=removal[part_type] != "delete")
+                        quantity = self.board_switch_count(current) if part_type == "switch" else 1
+                        self.release_part(part_type, old, keep=removal[part_type] != "delete", quantity=quantity)
 
         return custom_kb
 
@@ -406,11 +470,15 @@ class KeyboardManager:
                 # Keyboard.custom cascades, the prebuilt itself is catalog data and stays
                 kb.delete()
             for part in parts:
-                self.release_part(part["type"], part["part"], keep=part["type"] in keep)
+                quantity = self.board_switch_count(kb) if part["type"] == "switch" else 1
+                self.release_part(part["type"], part["part"], keep=part["type"] in keep, quantity=quantity)
 
-    def _save_keyboard_parts(self, custom_kb, chosen, removal=None):
+    def _save_keyboard_parts(self, custom_kb, chosen, switch_count=None, removal=None):
         removal = removal or {}
+        old_switch_count = self.board_switch_count(custom_kb) if custom_kb.switch else 1
+        custom_kb.switch_count = switch_count if "switch" in chosen else None
         dropped = []
+        taken = []
         for part_type, (wrapper_model, _, _, _) in self.PART_MODELS.items():
             old = getattr(custom_kb, part_type)
             source, value = chosen.get(part_type, ("none", None))
@@ -418,12 +486,17 @@ class KeyboardManager:
             if source == "stock":
                 # wrapper.stock is one-to-one, share the existing wrapper for a stock part
                 wrapper, _ = wrapper_model.objects.get_or_create(stock=value)
+            elif source == "owned":
+                wrapper = getattr(value, part_type)
+                taken.append((part_type, value))
             elif source == "custom":
                 obj = value.save(commit=False)
-                # the form edits the current custom part in place, unless something else uses it too
+                # the form edits the current custom part in place, unless something else uses it too,
+                # then the board gets its own copy and the original isn't coming off anything
                 if obj.pk is not None and self.part_in_use(old, ignore=custom_kb):
                     obj.pk = None
                     obj._state.adding = True
+                    old = None
                 obj.save()
                 if old is not None and old.custom_id == obj.pk:
                     wrapper = old
@@ -438,8 +511,11 @@ class KeyboardManager:
 
         custom_kb.save()
 
+        for part_type, row in taken:
+            self.take_from_parts(row, custom_kb.switch_count if part_type == "switch" else 1)
         for part_type, old in dropped:
-            self.release_part(part_type, old, keep=removal.get(part_type) != "delete")
+            quantity = old_switch_count if part_type == "switch" else 1
+            self.release_part(part_type, old, keep=removal.get(part_type) != "delete", quantity=quantity)
 
     # part saves
 
@@ -482,7 +558,6 @@ class KeyboardManager:
         return self.standalone_parts().get(pk=inv.pk)
 
     def delete_part(self, inv):
-        """drop the row, and delete a custom part unless a board or mod still uses it"""
         wrapper = getattr(inv, self.part_type_of(inv))
         with transaction.atomic():
             inv.delete()
@@ -490,33 +565,21 @@ class KeyboardManager:
                 # cascades to the wrapper
                 wrapper.custom.delete()
 
-    def release_part(self, part_type, part, keep):
-        """
-        a part came off a board (a wrapper, or a Stock* part straight off a prebuilt): keep it as a standalone part
-        in the user's inventory, or let it go. stock parts are catalog data so letting go never deletes anything
-        """
+    def release_part(self, part_type, part, keep, quantity=1):
         if not hasattr(part, "obj"):
             if keep:
                 wrapper, _ = self.PART_MODELS[part_type][0].objects.get_or_create(stock=part)
-                self.add_to_parts(part_type, wrapper)
+                self.add_to_parts(part_type, wrapper, quantity)
             return
 
-        if part.stock_id:
-            if keep:
-                self.add_to_parts(part_type, part)
-            return
-
-        # a custom part still on another board/mod or already standalone stays where it is
-        if self.part_in_use(part):
-            return
         if keep:
-            self.add_to_parts(part_type, part)
-        else:
+            # stacks onto a row of the same part, e.g. the rest of a set that only partly went onto the board
+            self.add_to_parts(part_type, part, quantity)
+        elif not part.stock_id and not self.part_in_use(part):
             # cascades to the wrapper
             part.custom.delete()
 
     def add_to_parts(self, part_type, wrapper, quantity=1):
-        """add to the user's standalone parts, stacking onto an existing row for the same part. returns (row, stacked)"""
         row = Inventory.objects.filter(user=self.user, keyboard__isnull=True, **{part_type: wrapper}).first()
         if row is None:
             return Inventory.objects.create(user=self.user, quantity=quantity, **{part_type: wrapper}), False
@@ -525,8 +588,16 @@ class KeyboardManager:
         return row, True
 
     @staticmethod
+    def take_from_parts(row, quantity=1):
+        row.refresh_from_db()
+        row.quantity -= quantity
+        if row.quantity > 0:
+            row.save(update_fields=["quantity"])
+        else:
+            row.delete()
+
+    @staticmethod
     def part_in_use(wrapper, ignore=None):
-        """true if anything other than `ignore` points at this part wrapper (inventory, keyboards, mods)"""
         if wrapper is None:
             return False
         for rel in wrapper._meta.related_objects:

@@ -1,6 +1,16 @@
 {% load allauth %}
-{% comment %} one part's source choice (stock / custom / skip unless required) and its fields, used by the keyboard and part modals {% endcomment %}
-<div class="grid gap-3 {% if part.required %}sm:grid-cols-2{% else %}sm:grid-cols-3{% endif %}" role="radiogroup" aria-label="{{ part.label }} source">
+<div class="grid gap-3 {% if part.source_cards == 3 %}sm:grid-cols-3{% else %}sm:grid-cols-2{% endif %}" role="radiogroup" aria-label="{{ part.label }} source">
+    {% if part.owned_options is not None %}
+    <label{% if not part.owned_options %} data-disabled="true"{% endif %}>
+        <div class="field" data-orientation="horizontal">
+            <section>
+                <h3>From my parts</h3>
+                <p>{% if part.owned_options %}{{ part.owned_options|length }} available{% else %}None available{% endif %}</p>
+            </section>
+            <input type="radio" name="{{ part.type }}-source" value="owned" required{% if part.source == "owned" %} checked{% endif %}{% if not part.owned_options %} disabled{% endif %}>
+        </div>
+    </label>
+    {% endif %}
     <label{% if not part.stock_options %} data-disabled="true"{% endif %}>
         <div class="field" data-orientation="horizontal">
             <section>
@@ -52,13 +62,27 @@
 </fieldset>
 {% endif %}
 
+{% if part.owned_options %}
+<fieldset data-source="owned" class="min-w-0">
+    <div class="field">
+        <label for="id_{{ part.type }}-owned">{{ part.label }} from my parts</label>
+        <select id="id_{{ part.type }}-owned" name="{{ part.type }}-owned" required>
+            <option value="">Choose…</option>
+            {% for option in part.owned_options %}
+            <option value="{{ option.id }}" data-quantity="{{ option.quantity }}"{% if option.total_keys %} data-total-keys="{{ option.total_keys }}"{% endif %}{% if part.owned_id == option.id|stringformat:"s" %} selected{% endif %}>{{ option.name }}{% if option.stock %} (stock){% endif %} · {{ option.quantity }} on hand</option>
+            {% endfor %}
+        </select>
+    </div>
+</fieldset>
+{% endif %}
+
 <fieldset data-source="stock" class="min-w-0">
     <div class="field">
         <label for="id_{{ part.type }}-stock">Stock {{ part.label|lower }}</label>
         <select id="id_{{ part.type }}-stock" name="{{ part.type }}-stock" required>
             <option value="">Choose…</option>
             {% for option in part.stock_options %}
-            <option value="{{ option.pk }}"{% if part.stock_id == option.pk|stringformat:"s" %} selected{% endif %}>{{ option }}</option>
+            <option value="{{ option.pk }}"{% if option.total_keys %} data-total-keys="{{ option.total_keys }}"{% endif %}{% if part.stock_id == option.pk|stringformat:"s" %} selected{% endif %}>{{ option }}</option>
             {% endfor %}
         </select>
     </div>
@@ -68,3 +92,14 @@
     {% element fields form=part.form %}
     {% endelement %}
 </fieldset>
+
+{% if part.count is not None %}
+{% comment %} switches only: how many are on the board, whichever source they come from {% endcomment %}
+<fieldset data-source="owned stock custom" class="min-w-0">
+    <div class="field">
+        <label for="id_switch-count">How many switches</label>
+        <input type="number" id="id_switch-count" name="switch-count" value="{{ part.count }}" min="1" step="1" required>
+        <div class="text-muted-foreground text-sm">Starts at the kit's key count. Comes back to your parts inventory if the switches come off the board.</div>
+    </div>
+</fieldset>
+{% endif %}

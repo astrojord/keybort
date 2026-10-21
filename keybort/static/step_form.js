@@ -30,7 +30,8 @@ window.initStepForm = (form) => {
         }
         for (const block of form.querySelectorAll("[data-source]")) {
             const source = block.closest("[data-step]").querySelector('input[name$="-source"]:checked')?.value;
-            block.hidden = block.disabled = block.dataset.source !== source;
+            // a block can belong to several sources, space separated
+            block.hidden = block.disabled = !block.dataset.source.split(" ").includes(source);
         }
         // only asked when the part currently on the board is being swapped out
         for (const block of form.querySelectorAll("[data-removal]")) {

@@ -150,6 +150,9 @@ class CustomKeyboard(models.Model):
         "Keycaps", null=True, blank=True, on_delete=models.SET_NULL
     )
 
+    # how many switches the board took, so the same number goes back to the parts inventory if they come off
+    switch_count = models.PositiveIntegerField(blank=True, null=True)
+
     bluetooth = models.BooleanField(default=False)
     wireless = models.BooleanField(default=False)
 
