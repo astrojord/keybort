@@ -4,3 +4,4 @@ django
 django-allauth
 psycopg2-binary
 django-widget-tweaks
+ruff
