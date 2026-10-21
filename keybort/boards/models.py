@@ -5,6 +5,14 @@ from django.db.models.constraints import CheckConstraint
 
 from . import const
 
+
+def exactly_one_set(*fields):
+    q = Q()
+    for chosen in fields:
+        q |= Q(**{f'{field}__isnull': field != chosen for field in fields})
+    return q
+
+
 # ruff: noqa: RUF012
 # check constraint convention is to instantiate in Meta class, ignore for this file only
 
@@ -69,16 +77,10 @@ class Inventory(models.Model):
     class Meta:
         verbose_name_plural = 'Inventories'
 
-        # todo: surely there's a better way to do this w/ some sort of boolean logic magic
         constraints = [
             CheckConstraint(
-                condition=(
-                    Q(keyboard__isnull=True)
-                    ^ Q(kit__isnull=True)
-                    ^ Q(plate__isnull=True)
-                    ^ Q(switch__isnull=True)
-                    ^ Q(stabilizer__isnull=True)
-                    ^ Q(keycaps__isnull=True)
+                condition=exactly_one_set(
+                    'keyboard', 'kit', 'plate', 'switch', 'stabilizer', 'keycaps'
                 ),
                 name='inventory_data_exists',
             )
@@ -694,15 +696,10 @@ class CustomMod(models.Model):
         return False
 
     class Meta:
-        # todo: surely there's a better way to do this w/ some sort of boolean logic magic
         constraints = [
             CheckConstraint(
-                condition=(
-                    Q(kit__isnull=True)
-                    ^ Q(plate__isnull=True)
-                    ^ Q(switch__isnull=True)
-                    ^ Q(stabilizer__isnull=True)
-                    ^ Q(keycaps__isnull=True)
+                condition=exactly_one_set(
+                    'kit', 'plate', 'switch', 'stabilizer', 'keycaps'
                 ),
                 name='%(class)s_obj_data_exists',
             )

@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import transaction
 from django.db.models import Q
 from django.forms.models import model_to_dict
@@ -35,22 +37,22 @@ from .models import (
 
 
 class KeyboardManager:
+    # part type: wrapper model, custom model, stock model, custom form
+    PART_MODELS: ClassVar[dict] = {
+        'kit': (Kit, CustomKit, StockKit, CustomKitForm),
+        'switch': (Switch, CustomSwitch, StockSwitch, CustomSwitchForm),
+        'keycaps': (Keycaps, CustomKeycaps, StockKeycaps, CustomKeycapsForm),
+        'plate': (Plate, CustomPlate, StockPlate, CustomPlateForm),
+        'stabilizer': (
+            Stabilizer,
+            CustomStabilizer,
+            StockStabilizer,
+            CustomStabilizerForm,
+        ),
+    }
+
     def __init__(self, user):
         self.user = user
-
-        # part type: wrapper model, custom model, stock model, custom form
-        self.PART_MODELS = {
-            'kit': (Kit, CustomKit, StockKit, CustomKitForm),
-            'switch': (Switch, CustomSwitch, StockSwitch, CustomSwitchForm),
-            'keycaps': (Keycaps, CustomKeycaps, StockKeycaps, CustomKeycapsForm),
-            'plate': (Plate, CustomPlate, StockPlate, CustomPlateForm),
-            'stabilizer': (
-                Stabilizer,
-                CustomStabilizer,
-                StockStabilizer,
-                CustomStabilizerForm,
-            ),
-        }
 
     # lookups
 

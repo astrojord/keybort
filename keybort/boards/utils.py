@@ -13,7 +13,7 @@ def model_to_dict_verbose(instance, fields=None, exclude=None):
         if f.choices:
             try:
                 value = next(display for db, display in f.choices if value == db)
-            except IndexError:
+            except StopIteration:
                 continue
 
         data[f.verbose_name.capitalize()] = value

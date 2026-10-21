@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 
 from boards.models import (
     CustomKit,
+    CustomMod,
     CustomPlate,
     Inventory,
     Keyboard,
@@ -16,6 +17,7 @@ from .base import (
     custom_kit_wrapper,
     stock_keyboard,
     stock_kit,
+    stock_plate,
     stock_switch,
 )
 
@@ -98,4 +100,23 @@ class ConstraintTests(UserTestCase):
         switch = Switch.objects.create(stock=stock_switch())
         self.assertRejected(
             lambda: Inventory.objects.create(user=self.user, kit=kit, switch=switch)
+        )
+
+    def test_inventory_cant_hold_three_things(self):
+        kit = custom_kit_wrapper()
+        switch = Switch.objects.create(stock=stock_switch())
+        plate = Plate.objects.create(stock=stock_plate())
+        self.assertRejected(
+            lambda: Inventory.objects.create(
+                user=self.user, kit=kit, switch=switch, plate=plate
+            )
+        )
+
+    def test_mod_needs_exactly_one_part(self):
+        kit = custom_kit_wrapper()
+        switch = Switch.objects.create(stock=stock_switch())
+        CustomMod.objects.create(mod='foam', kit=kit)
+        self.assertRejected(lambda: CustomMod.objects.create(mod='foam'))
+        self.assertRejected(
+            lambda: CustomMod.objects.create(mod='foam', kit=kit, switch=switch)
         )
