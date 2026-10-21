@@ -19,49 +19,71 @@ from boards.models import (
 )
 
 
-def make_user(username="jordan"):
-    return User.objects.create_user(username=username, password="pw")
+def make_user(username='jordan'):
+    return User.objects.create_user(username=username, password='pw')
 
 
 def stock_kit(**fields):
-    return StockKit.objects.create(**{"brand": "Keychron", "name": "Q1", "total_keys": 82, "pcb": "Hotswap", **fields})
+    return StockKit.objects.create(
+        **{
+            'brand': 'Keychron',
+            'name': 'Q1',
+            'total_keys': 82,
+            'pcb': 'Hotswap',
+            **fields,
+        }
+    )
 
 
 def stock_switch(**fields):
     return StockSwitch.objects.create(
-        **{"brand": "Gateron", "name": "Yellow", "category": "l", "bottom_out_force": 50.0, **fields}
+        **{
+            'brand': 'Gateron',
+            'name': 'Yellow',
+            'category': 'l',
+            'bottom_out_force': 50.0,
+            **fields,
+        }
     )
 
 
 def stock_keycaps(**fields):
-    return StockKeycaps.objects.create(**{"brand": "GMK", "name": "Olivia", "material": "ABS", **fields})
+    return StockKeycaps.objects.create(
+        **{'brand': 'GMK', 'name': 'Olivia', 'material': 'ABS', **fields}
+    )
 
 
 def stock_plate(**fields):
-    return StockPlate.objects.create(**{"material": "Aluminum", **fields})
+    return StockPlate.objects.create(**{'material': 'Aluminum', **fields})
 
 
 def stock_stabilizer(**fields):
-    return StockStabilizer.objects.create(**{"brand": "Durock", "name": "V2", **fields})
+    return StockStabilizer.objects.create(**{'brand': 'Durock', 'name': 'V2', **fields})
 
 
 def stock_keyboard(**fields):
-    defaults = {"kit": stock_kit(), "switch": stock_switch()}
+    defaults = {'kit': stock_kit(), 'switch': stock_switch()}
     return StockKeyboard.objects.create(**{**defaults, **fields})
 
 
 def custom_kit_wrapper(**fields):
-    return Kit.objects.create(custom=CustomKit.objects.create(**{"brand": "KBDfans", "name": "Tofu65", **fields}))
+    return Kit.objects.create(
+        custom=CustomKit.objects.create(
+            **{'brand': 'KBDfans', 'name': 'Tofu65', **fields}
+        )
+    )
 
 
 def custom_switch_wrapper(**fields):
     return Switch.objects.create(
-        custom=CustomSwitch.objects.create(**{"brand": "JWK", "name": "Alpaca", "category": "l", **fields})
+        custom=CustomSwitch.objects.create(
+            **{'brand': 'JWK', 'name': 'Alpaca', 'category': 'l', **fields}
+        )
     )
 
 
 def custom_keyboard(user, **fields):
-    kb = CustomKeyboard.objects.create(**{"kit": custom_kit_wrapper(), **fields})
+    kb = CustomKeyboard.objects.create(**{'kit': custom_kit_wrapper(), **fields})
     Inventory.objects.create(user=user, keyboard=Keyboard.objects.create(custom=kb))
     return kb
 
@@ -77,7 +99,7 @@ class UserTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = make_user()
-        cls.other = make_user("someone-else")
+        cls.other = make_user('someone-else')
 
     def setUp(self):
         self.manager = KeyboardManager(self.user)

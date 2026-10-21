@@ -4,6 +4,8 @@ format:
     sudo docker compose exec app ruff format
 check:
     sudo docker compose exec app ruff check --fix
+check-unsafe:
+    sudo docker compose exec app ruff check --fix --unsafe-fixes
 test:
     sudo docker compose exec app python manage.py test
 empty-migration APP:

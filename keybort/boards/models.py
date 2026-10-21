@@ -5,12 +5,14 @@ from django.db.models.constraints import CheckConstraint
 
 from . import const
 
+# ruff: noqa: RUF012
+# check constraint convention is to instantiate in Meta class, ignore for this file only
 
 class BoardsPermissions(models.Model):
     class Meta:
         permissions = (
-            ("can_upload_stock_data", "Can bulk upload stock data"),
-            ("can_delete_stock_data", "Can delete stock data"),
+            ('can_upload_stock_data', 'Can bulk upload stock data'),
+            ('can_delete_stock_data', 'Can delete stock data'),
         )
 
 
@@ -27,18 +29,18 @@ class Inventory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     keyboard = models.ForeignKey(
-        "Keyboard", null=True, blank=True, on_delete=models.SET_NULL
+        'Keyboard', null=True, blank=True, on_delete=models.SET_NULL
     )
-    kit = models.ForeignKey("Kit", null=True, blank=True, on_delete=models.SET_NULL)
-    plate = models.ForeignKey("Plate", null=True, blank=True, on_delete=models.SET_NULL)
+    kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
+    plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
     switch = models.ForeignKey(
-        "Switch", null=True, blank=True, on_delete=models.SET_NULL
+        'Switch', null=True, blank=True, on_delete=models.SET_NULL
     )
     stabilizer = models.ForeignKey(
-        "Stabilizer", null=True, blank=True, on_delete=models.SET_NULL
+        'Stabilizer', null=True, blank=True, on_delete=models.SET_NULL
     )
     keycaps = models.ForeignKey(
-        "Keycaps", null=True, blank=True, on_delete=models.SET_NULL
+        'Keycaps', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     # how many of a standalone part the user has (switches are counted individually)
@@ -59,13 +61,13 @@ class Inventory(models.Model):
         elif self.keycaps:
             return self.keycaps.obj
 
-        raise AssertionError(f"missing data for inventory {self.pk}")
+        raise AssertionError(f'missing data for inventory {self.pk}')
 
     def __str__(self):
-        return f"{self.user.username} - {self.obj}"
+        return f'{self.user.username} - {self.obj}'
 
     class Meta:
-        verbose_name_plural = "Inventories"
+        verbose_name_plural = 'Inventories'
 
         # todo: surely there's a better way to do this w/ some sort of boolean logic magic
         constraints = [
@@ -78,7 +80,7 @@ class Inventory(models.Model):
                     ^ Q(stabilizer__isnull=True)
                     ^ Q(keycaps__isnull=True)
                 ),
-                name="inventory_data_exists",
+                name='inventory_data_exists',
             )
         ]
 
@@ -89,18 +91,18 @@ class Keyboard(models.Model):
     """
 
     custom = models.OneToOneField(
-        "CustomKeyboard",
+        'CustomKeyboard',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockKeyboard",
+        'StockKeyboard',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -110,44 +112,44 @@ class Keyboard(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for keyboard {self.pk}")
+        raise AssertionError(f'missing data for keyboard {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="keyboard_data_exists",
+                name='keyboard_data_exists',
             )
         ]
 
 
 class CustomKeyboard(models.Model):
     # can go to CustomKit or StockKit
-    kit = models.ForeignKey("Kit", null=True, blank=True, on_delete=models.SET_NULL)
+    kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
 
     # can go to CustomPlate or StockPlate
-    plate = models.ForeignKey("Plate", null=True, blank=True, on_delete=models.SET_NULL)
+    plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
 
     # can go to CustomSwitch or StockSwitch
     switch = models.ForeignKey(
-        "Switch", null=True, blank=True, on_delete=models.SET_NULL
+        'Switch', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     # can go to CustomStabilizer or StockStabilizer
     stabilizer = models.ForeignKey(
-        "Stabilizer", null=True, blank=True, on_delete=models.SET_NULL
+        'Stabilizer', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     # can go to CustomKeycaps or StockPlate
     keycaps = models.ForeignKey(
-        "Keycaps", null=True, blank=True, on_delete=models.SET_NULL
+        'Keycaps', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     # how many switches the board took, so the same number goes back to the parts inventory if they come off
@@ -158,7 +160,7 @@ class CustomKeyboard(models.Model):
 
     notes = models.TextField(blank=True, null=True)
     references = models.TextField(
-        blank=True, null=True, help_text="Documentation, QMK info, etc."
+        blank=True, null=True, help_text='Documentation, QMK info, etc.'
     )
 
     @property
@@ -166,24 +168,24 @@ class CustomKeyboard(models.Model):
         return False
 
     def __str__(self):
-        return f"{self.kit.obj.brand} {self.kit.obj.name}"
+        return f'{self.kit.obj.brand} {self.kit.obj.name}'
 
 
 class StockKeyboard(models.Model):
     kit = models.ForeignKey(
-        "StockKit", null=True, blank=True, on_delete=models.SET_NULL
+        'StockKit', null=True, blank=True, on_delete=models.SET_NULL
     )
     plate = models.ForeignKey(
-        "StockPlate", null=True, blank=True, on_delete=models.SET_NULL
+        'StockPlate', null=True, blank=True, on_delete=models.SET_NULL
     )
     switch = models.ForeignKey(
-        "StockSwitch", null=True, blank=True, on_delete=models.SET_NULL
+        'StockSwitch', null=True, blank=True, on_delete=models.SET_NULL
     )
     stabilizer = models.ForeignKey(
-        "StockStabilizer", null=True, blank=True, on_delete=models.SET_NULL
+        'StockStabilizer', null=True, blank=True, on_delete=models.SET_NULL
     )
     keycaps = models.ForeignKey(
-        "StockKeycaps", null=True, blank=True, on_delete=models.SET_NULL
+        'StockKeycaps', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     bluetooth = models.BooleanField(default=False)
@@ -191,7 +193,7 @@ class StockKeyboard(models.Model):
 
     notes = models.TextField(blank=True, null=True)
     references = models.TextField(
-        blank=True, null=True, help_text="Documentation, QMK info, etc."
+        blank=True, null=True, help_text='Documentation, QMK info, etc.'
     )
 
     @property
@@ -199,23 +201,23 @@ class StockKeyboard(models.Model):
         return True
 
     def __str__(self):
-        return f"{self.kit.brand} {self.kit.name}"
+        return f'{self.kit.brand} {self.kit.name}'
 
 
 class Kit(models.Model):
     custom = models.OneToOneField(
-        "CustomKit",
+        'CustomKit',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockKit",
+        'StockKit',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -225,20 +227,20 @@ class Kit(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for kit {self.pk}")
+        raise AssertionError(f'missing data for kit {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="kit_data_exists",
+                name='kit_data_exists',
             )
         ]
 
@@ -254,7 +256,7 @@ class CustomKit(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        help_text="Refers to physical layout, not the individual caps placed on each switch (e.g. Dvorak, QZERTY).",
+        help_text='Refers to physical layout, not the individual caps placed on each switch (e.g. Dvorak, QZERTY).',
     )
     case_material = models.CharField(max_length=255, blank=True, null=True)
     mount_type = models.CharField(max_length=255, blank=True, null=True)
@@ -266,7 +268,7 @@ class CustomKit(models.Model):
         return False
 
     def __str__(self):
-        return f"{self.brand} {self.name} (kit)"
+        return f'{self.brand} {self.name} (kit)'
 
 
 class StockKit(CustomKit):
@@ -279,23 +281,23 @@ class StockKit(CustomKit):
         return True
 
     def __str__(self):
-        return f"{self.brand} {self.name} (kit)"
+        return f'{self.brand} {self.name} (kit)'
 
 
 class Plate(models.Model):
     custom = models.OneToOneField(
-        "CustomPlate",
+        'CustomPlate',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockPlate",
+        'StockPlate',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -305,20 +307,20 @@ class Plate(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for plate {self.pk}")
+        raise AssertionError(f'missing data for plate {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="plate_data_exists",
+                name='plate_data_exists',
             )
         ]
 
@@ -335,11 +337,11 @@ class CustomPlate(models.Model):
         return False
 
     def __str__(self):
-        s = self.material or "Plate"
+        s = self.material or 'Plate'
         if self.flex_cuts:
-            s += " (flex)"
+            s += ' (flex)'
         if self.half:
-            s += " (half)"
+            s += ' (half)'
 
         return s
 
@@ -354,29 +356,29 @@ class StockPlate(CustomPlate):
         return True
 
     def __str__(self):
-        s = self.material or "Plate"
+        s = self.material or 'Plate'
         if self.flex_cuts:
-            s += " (flex)"
+            s += ' (flex)'
         if self.half:
-            s += " (half)"
+            s += ' (half)'
 
         return s
 
 
 class Switch(models.Model):
     custom = models.OneToOneField(
-        "CustomSwitch",
+        'CustomSwitch',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockSwitch",
+        'StockSwitch',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -386,21 +388,21 @@ class Switch(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for switch {self.pk}")
+        raise AssertionError(f'missing data for switch {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
-        verbose_name_plural = "Switches"
+        verbose_name_plural = 'Switches'
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="switch_data_exists",
+                name='switch_data_exists',
             )
         ]
 
@@ -413,11 +415,11 @@ class CustomSwitch(models.Model):
         max_length=255, blank=True, null=True, choices=const.SWITCH_CATEGORIES
     )
     stem = models.CharField(
-        max_length=255, blank=True, null=True, default="mx", choices=const.SWITCH_STEMS
+        max_length=255, blank=True, null=True, default='mx', choices=const.SWITCH_STEMS
     )
-    peak_force = models.FloatField(blank=True, null=True, help_text="gf")
-    bottom_out_force = models.FloatField(blank=True, null=True, help_text="gf")
-    travel_distance = models.FloatField(blank=True, null=True, help_text="mm")
+    peak_force = models.FloatField(blank=True, null=True, help_text='gf')
+    bottom_out_force = models.FloatField(blank=True, null=True, help_text='gf')
+    travel_distance = models.FloatField(blank=True, null=True, help_text='mm')
     top_housing = models.CharField(
         max_length=255, blank=True, null=True, choices=const.SWITCH_MATERIALS
     )
@@ -435,10 +437,10 @@ class CustomSwitch(models.Model):
         return False
 
     def __str__(self):
-        return f"{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)"
+        return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
 
     class Meta:
-        verbose_name_plural = "Custom switches"
+        verbose_name_plural = 'Custom switches'
 
 
 class StockSwitch(CustomSwitch):
@@ -451,26 +453,26 @@ class StockSwitch(CustomSwitch):
         return True
 
     def __str__(self):
-        return f"{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)"
+        return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
 
     class Meta:
-        verbose_name_plural = "Stock switches"
+        verbose_name_plural = 'Stock switches'
 
 
 class Stabilizer(models.Model):
     custom = models.OneToOneField(
-        "CustomStabilizer",
+        'CustomStabilizer',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockStabilizer",
+        'StockStabilizer',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -480,20 +482,20 @@ class Stabilizer(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for stabilizer {self.pk}")
+        raise AssertionError(f'missing data for stabilizer {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="stabilizer_data_exists",
+                name='stabilizer_data_exists',
             )
         ]
 
@@ -509,7 +511,7 @@ class CustomStabilizer(models.Model):
         return False
 
     def __str__(self):
-        return f"{self.brand} {self.name}"
+        return f'{self.brand} {self.name}'
 
 
 class StockStabilizer(CustomStabilizer):
@@ -522,23 +524,23 @@ class StockStabilizer(CustomStabilizer):
         return True
 
     def __str__(self):
-        return f"{self.brand} {self.name}"
+        return f'{self.brand} {self.name}'
 
 
 class Keycaps(models.Model):
     custom = models.OneToOneField(
-        "CustomKeycaps",
+        'CustomKeycaps',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockKeycaps",
+        'StockKeycaps',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -548,21 +550,21 @@ class Keycaps(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for keycaps {self.pk}")
+        raise AssertionError(f'missing data for keycaps {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
-        verbose_name_plural = verbose_name = "Keycaps"
+        verbose_name_plural = verbose_name = 'Keycaps'
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="keycaps_data_exists",
+                name='keycaps_data_exists',
             )
         ]
 
@@ -579,10 +581,10 @@ class CustomKeycaps(models.Model):
         return False
 
     def __str__(self):
-        return f"{self.brand} {self.name}"
+        return f'{self.brand} {self.name}'
 
     class Meta:
-        verbose_name_plural = verbose_name = "Custom keycaps"
+        verbose_name_plural = verbose_name = 'Custom keycaps'
 
 
 class StockKeycaps(CustomKeycaps):
@@ -595,27 +597,27 @@ class StockKeycaps(CustomKeycaps):
         return True
 
     def __str__(self):
-        return f"{self.brand} {self.name}"
+        return f'{self.brand} {self.name}'
 
     class Meta:
-        verbose_name_plural = verbose_name = "Stock keycaps"
+        verbose_name_plural = verbose_name = 'Stock keycaps'
 
 
 # todo: artisans + breaking down for mixed sets (like alphas from one, mods from another or gmk base + highlight)
 class Mod(models.Model):
     custom = models.OneToOneField(
-        "CustomMod",
+        'CustomMod',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_custom_obj",
+        related_name='%(class)s_custom_obj',
     )
     stock = models.OneToOneField(
-        "StockMod",
+        'StockMod',
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="%(class)s_stock_obj",
+        related_name='%(class)s_stock_obj',
     )
 
     @property
@@ -625,20 +627,20 @@ class Mod(models.Model):
         elif self.stock:
             return self.stock
 
-        raise AssertionError(f"missing data for mod {self.pk}")
+        raise AssertionError(f'missing data for mod {self.pk}')
 
     def __str__(self):
         obj = self.obj
         if obj.stock:
-            return f"{obj} (stock)"
+            return f'{obj} (stock)'
         else:
-            return f"{obj} (custom)"
+            return f'{obj} (custom)'
 
     class Meta:
         constraints = [
             CheckConstraint(
                 condition=Q(custom__isnull=True) ^ Q(stock__isnull=True),
-                name="mod_data_exists",
+                name='mod_data_exists',
             )
         ]
 
@@ -649,24 +651,24 @@ class CustomMod(models.Model):
     """
 
     # can go to CustomKit or StockKit
-    kit = models.ForeignKey("Kit", null=True, blank=True, on_delete=models.SET_NULL)
+    kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
 
     # can go to CustomPlate or StockPlate
-    plate = models.ForeignKey("Plate", null=True, blank=True, on_delete=models.SET_NULL)
+    plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
 
     # can go to CustomSwitch or StockSwitch
     switch = models.ForeignKey(
-        "Switch", null=True, blank=True, on_delete=models.SET_NULL
+        'Switch', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     # can go to CustomStabilizer or StockStabilizer
     stabilizer = models.ForeignKey(
-        "Stabilizer", null=True, blank=True, on_delete=models.SET_NULL
+        'Stabilizer', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     # can go to CustomKeycaps or StockPlate
     keycaps = models.ForeignKey(
-        "Keycaps", null=True, blank=True, on_delete=models.SET_NULL
+        'Keycaps', null=True, blank=True, on_delete=models.SET_NULL
     )
 
     mod = models.TextField()
@@ -685,7 +687,7 @@ class CustomMod(models.Model):
         elif self.keycaps:
             return self.keycaps.obj
 
-        raise AssertionError(f"missing data for mod {self.pk}")
+        raise AssertionError(f'missing data for mod {self.pk}')
 
     @property
     def stock(self):
@@ -702,7 +704,7 @@ class CustomMod(models.Model):
                     ^ Q(stabilizer__isnull=True)
                     ^ Q(keycaps__isnull=True)
                 ),
-                name="%(class)s_obj_data_exists",
+                name='%(class)s_obj_data_exists',
             )
         ]
 

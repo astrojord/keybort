@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -17,26 +16,58 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='BoardsPermissions',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
             ],
             options={
-                'permissions': (('can_upload_stock_data', 'Can bulk upload stock data'), ('can_delete_stock_data', 'Can delete stock data')),
+                'permissions': (
+                    ('can_upload_stock_data', 'Can bulk upload stock data'),
+                    ('can_delete_stock_data', 'Can delete stock data'),
+                ),
             },
         ),
         migrations.CreateModel(
             name='CustomKeyboard',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('bluetooth', models.BooleanField(default=False)),
                 ('wireless', models.BooleanField(default=False)),
                 ('notes', models.TextField(blank=True, null=True)),
-                ('references', models.TextField(blank=True, help_text='Documentation, QMK info, etc.', null=True)),
+                (
+                    'references',
+                    models.TextField(
+                        blank=True, help_text='Documentation, QMK info, etc.', null=True
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='CustomKeycaps',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('brand', models.CharField(blank=True, max_length=255, null=True)),
                 ('name', models.CharField(blank=True, max_length=255, null=True)),
                 ('material', models.CharField(blank=True, max_length=255, null=True)),
@@ -50,14 +81,33 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CustomKit',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('brand', models.CharField(blank=True, max_length=255, null=True)),
                 ('name', models.CharField(blank=True, max_length=255, null=True)),
                 ('size', models.CharField(blank=True, max_length=32, null=True)),
                 ('total_keys', models.PositiveIntegerField(blank=True, null=True)),
                 ('pcb', models.CharField(blank=True, max_length=255, null=True)),
-                ('layout', models.CharField(blank=True, help_text='Refers to physical layout, not the individual caps placed on each switch (e.g. Dvorak, QZERTY).', max_length=255, null=True)),
-                ('case_material', models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    'layout',
+                    models.CharField(
+                        blank=True,
+                        help_text='Refers to physical layout, not the individual caps placed on each switch (e.g. Dvorak, QZERTY).',
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    'case_material',
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
                 ('mount_type', models.CharField(blank=True, max_length=255, null=True)),
                 ('notes', models.TextField(blank=True, null=True)),
             ],
@@ -65,7 +115,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CustomMod',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('mod', models.TextField()),
                 ('notes', models.TextField(blank=True, null=True)),
             ],
@@ -73,7 +131,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CustomPlate',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('material', models.CharField(blank=True, max_length=255, null=True)),
                 ('flex_cuts', models.BooleanField(default=False)),
                 ('half', models.BooleanField(default=False)),
@@ -83,7 +149,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CustomStabilizer',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('brand', models.CharField(blank=True, max_length=255, null=True)),
                 ('name', models.CharField(blank=True, max_length=255, null=True)),
                 ('notes', models.TextField(blank=True, null=True)),
@@ -92,17 +166,85 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CustomSwitch',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('quantity', models.PositiveIntegerField(blank=True, null=True)),
                 ('brand', models.CharField(blank=True, max_length=255, null=True)),
                 ('name', models.CharField(blank=True, max_length=255, null=True)),
-                ('category', models.CharField(blank=True, choices=[('l', 'Linear'), ('sl', 'Silent Linear'), ('t', 'Tactile'), ('st', 'Silent Tactile'), ('c', 'Clicky')], max_length=255, null=True)),
-                ('stem', models.CharField(blank=True, choices=[('mx', 'MX'), ('topre', 'Topre'), ('alps', 'Alps')], default='mx', max_length=255, null=True)),
-                ('peak_force', models.FloatField(blank=True, help_text='gf', null=True)),
-                ('bottom_out_force', models.FloatField(blank=True, help_text='gf', null=True)),
-                ('travel_distance', models.FloatField(blank=True, help_text='mm', null=True)),
-                ('top_housing', models.CharField(blank=True, choices=[('abs', 'ABS'), ('nylon', 'Nylon'), ('pc', 'Polycarbonate'), ('pe', 'Polyethylene'), ('pom', 'POM')], max_length=255, null=True)),
-                ('bottom_housing', models.CharField(blank=True, choices=[('abs', 'ABS'), ('nylon', 'Nylon'), ('pc', 'Polycarbonate'), ('pe', 'Polyethylene'), ('pom', 'POM')], max_length=255, null=True)),
+                (
+                    'category',
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ('l', 'Linear'),
+                            ('sl', 'Silent Linear'),
+                            ('t', 'Tactile'),
+                            ('st', 'Silent Tactile'),
+                            ('c', 'Clicky'),
+                        ],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    'stem',
+                    models.CharField(
+                        blank=True,
+                        choices=[('mx', 'MX'), ('topre', 'Topre'), ('alps', 'Alps')],
+                        default='mx',
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    'peak_force',
+                    models.FloatField(blank=True, help_text='gf', null=True),
+                ),
+                (
+                    'bottom_out_force',
+                    models.FloatField(blank=True, help_text='gf', null=True),
+                ),
+                (
+                    'travel_distance',
+                    models.FloatField(blank=True, help_text='mm', null=True),
+                ),
+                (
+                    'top_housing',
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ('abs', 'ABS'),
+                            ('nylon', 'Nylon'),
+                            ('pc', 'Polycarbonate'),
+                            ('pe', 'Polyethylene'),
+                            ('pom', 'POM'),
+                        ],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    'bottom_housing',
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ('abs', 'ABS'),
+                            ('nylon', 'Nylon'),
+                            ('pc', 'Polycarbonate'),
+                            ('pe', 'Polyethylene'),
+                            ('pom', 'POM'),
+                        ],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
                 ('lubed', models.BooleanField(default=False)),
                 ('filmed', models.BooleanField(default=False)),
                 ('notes', models.TextField(blank=True, null=True)),
@@ -114,17 +256,40 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StockKeyboard',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('bluetooth', models.BooleanField(default=False)),
                 ('wireless', models.BooleanField(default=False)),
                 ('notes', models.TextField(blank=True, null=True)),
-                ('references', models.TextField(blank=True, help_text='Documentation, QMK info, etc.', null=True)),
+                (
+                    'references',
+                    models.TextField(
+                        blank=True, help_text='Documentation, QMK info, etc.', null=True
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='StockKeycaps',
             fields=[
-                ('customkeycaps_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='boards.customkeycaps')),
+                (
+                    'customkeycaps_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='boards.customkeycaps',
+                    ),
+                ),
             ],
             options={
                 'verbose_name': 'Stock keycaps',
@@ -135,35 +300,85 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StockKit',
             fields=[
-                ('customkit_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='boards.customkit')),
+                (
+                    'customkit_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='boards.customkit',
+                    ),
+                ),
             ],
             bases=('boards.customkit',),
         ),
         migrations.CreateModel(
             name='StockMod',
             fields=[
-                ('custommod_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='boards.custommod')),
+                (
+                    'custommod_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='boards.custommod',
+                    ),
+                ),
             ],
             bases=('boards.custommod',),
         ),
         migrations.CreateModel(
             name='StockPlate',
             fields=[
-                ('customplate_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='boards.customplate')),
+                (
+                    'customplate_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='boards.customplate',
+                    ),
+                ),
             ],
             bases=('boards.customplate',),
         ),
         migrations.CreateModel(
             name='StockStabilizer',
             fields=[
-                ('customstabilizer_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='boards.customstabilizer')),
+                (
+                    'customstabilizer_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='boards.customstabilizer',
+                    ),
+                ),
             ],
             bases=('boards.customstabilizer',),
         ),
         migrations.CreateModel(
             name='StockSwitch',
             fields=[
-                ('customswitch_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='boards.customswitch')),
+                (
+                    'customswitch_ptr',
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to='boards.customswitch',
+                    ),
+                ),
             ],
             options={
                 'verbose_name_plural': 'Stock switches',
@@ -173,17 +388,69 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Keyboard',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.customkeyboard')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockkeyboard')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.customkeyboard',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockkeyboard',
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='Keycaps',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.customkeycaps')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockkeycaps')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.customkeycaps',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockkeycaps',
+                    ),
+                ),
             ],
             options={
                 'verbose_name': 'Keycaps',
@@ -193,73 +460,217 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='custommod',
             name='keycaps',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.keycaps'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.keycaps',
+            ),
         ),
         migrations.AddField(
             model_name='customkeyboard',
             name='keycaps',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.keycaps'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.keycaps',
+            ),
         ),
         migrations.CreateModel(
             name='Kit',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.customkit')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockkit')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.customkit',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockkit',
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
             model_name='custommod',
             name='kit',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.kit'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.kit',
+            ),
         ),
         migrations.AddField(
             model_name='customkeyboard',
             name='kit',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.kit'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.kit',
+            ),
         ),
         migrations.CreateModel(
             name='Plate',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.customplate')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockplate')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.customplate',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockplate',
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
             model_name='custommod',
             name='plate',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.plate'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.plate',
+            ),
         ),
         migrations.AddField(
             model_name='customkeyboard',
             name='plate',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.plate'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.plate',
+            ),
         ),
         migrations.CreateModel(
             name='Stabilizer',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.customstabilizer')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockstabilizer')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.customstabilizer',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockstabilizer',
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
             model_name='custommod',
             name='stabilizer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stabilizer'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stabilizer',
+            ),
         ),
         migrations.AddField(
             model_name='customkeyboard',
             name='stabilizer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stabilizer'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stabilizer',
+            ),
         ),
         migrations.CreateModel(
             name='Switch',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.customswitch')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockswitch')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.customswitch',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockswitch',
+                    ),
+                ),
             ],
             options={
                 'verbose_name_plural': 'Switches',
@@ -268,14 +679,76 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Inventory',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-                ('keyboard', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.keyboard')),
-                ('keycaps', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.keycaps')),
-                ('kit', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.kit')),
-                ('plate', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.plate')),
-                ('stabilizer', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stabilizer')),
-                ('switch', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.switch')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'user',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    'keyboard',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='boards.keyboard',
+                    ),
+                ),
+                (
+                    'keycaps',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='boards.keycaps',
+                    ),
+                ),
+                (
+                    'kit',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='boards.kit',
+                    ),
+                ),
+                (
+                    'plate',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='boards.plate',
+                    ),
+                ),
+                (
+                    'stabilizer',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='boards.stabilizer',
+                    ),
+                ),
+                (
+                    'switch',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='boards.switch',
+                    ),
+                ),
             ],
             options={
                 'verbose_name_plural': 'Inventories',
@@ -284,80 +757,197 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='custommod',
             name='switch',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.switch'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.switch',
+            ),
         ),
         migrations.AddField(
             model_name='customkeyboard',
             name='switch',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.switch'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.switch',
+            ),
         ),
         migrations.AddField(
             model_name='stockkeyboard',
             name='keycaps',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stockkeycaps'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stockkeycaps',
+            ),
         ),
         migrations.AddField(
             model_name='stockkeyboard',
             name='kit',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stockkit'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stockkit',
+            ),
         ),
         migrations.CreateModel(
             name='Mod',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('custom', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_custom_obj', to='boards.custommod')),
-                ('stock', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_stock_obj', to='boards.stockmod')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'custom',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_custom_obj',
+                        to='boards.custommod',
+                    ),
+                ),
+                (
+                    'stock',
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='%(class)s_stock_obj',
+                        to='boards.stockmod',
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
             model_name='stockkeyboard',
             name='plate',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stockplate'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stockplate',
+            ),
         ),
         migrations.AddField(
             model_name='stockkeyboard',
             name='stabilizer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stockstabilizer'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stockstabilizer',
+            ),
         ),
         migrations.AddField(
             model_name='stockkeyboard',
             name='switch',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='boards.stockswitch'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='boards.stockswitch',
+            ),
         ),
         migrations.AddConstraint(
             model_name='keyboard',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='keyboard_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='keyboard_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='inventory',
-            constraint=models.CheckConstraint(condition=models.Q(('keyboard__isnull', True), ('kit__isnull', True), ('plate__isnull', True), ('switch__isnull', True), ('stabilizer__isnull', True), ('keycaps__isnull', True), _connector='XOR'), name='inventory_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('keyboard__isnull', True),
+                    ('kit__isnull', True),
+                    ('plate__isnull', True),
+                    ('switch__isnull', True),
+                    ('stabilizer__isnull', True),
+                    ('keycaps__isnull', True),
+                    _connector='XOR',
+                ),
+                name='inventory_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='custommod',
-            constraint=models.CheckConstraint(condition=models.Q(('kit__isnull', True), ('plate__isnull', True), ('switch__isnull', True), ('stabilizer__isnull', True), ('keycaps__isnull', True), _connector='XOR'), name='custommod_obj_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('kit__isnull', True),
+                    ('plate__isnull', True),
+                    ('switch__isnull', True),
+                    ('stabilizer__isnull', True),
+                    ('keycaps__isnull', True),
+                    _connector='XOR',
+                ),
+                name='custommod_obj_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='keycaps',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='keycaps_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='keycaps_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='kit',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='kit_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='kit_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='mod',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='mod_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='mod_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='plate',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='plate_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='plate_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='stabilizer',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='stabilizer_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='stabilizer_data_exists',
+            ),
         ),
         migrations.AddConstraint(
             model_name='switch',
-            constraint=models.CheckConstraint(condition=models.Q(('custom__isnull', True), ('stock__isnull', True), _connector='XOR'), name='switch_data_exists'),
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ('custom__isnull', True), ('stock__isnull', True), _connector='XOR'
+                ),
+                name='switch_data_exists',
+            ),
         ),
     ]
