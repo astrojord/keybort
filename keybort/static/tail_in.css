@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "basecoat-css";
+
+@source "../boards/templates";
 
 td.hoverable:hover {
     cursor: pointer;

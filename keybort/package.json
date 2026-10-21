@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "build": "npm run build:css && npm run build:js",
+    "build:css": "tailwindcss -i static/tail_in.css -o static/site.css --minify",
+    "build:js": "cp node_modules/basecoat-css/dist/js/all.min.js static/basecoat.min.js",
+    "watch:css": "tailwindcss -i static/tail_in.css -o static/site.css --watch"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.2",
+    "basecoat-css": "^1.0.2",
+    "tailwindcss": "^4.3.2"
+  }
+}

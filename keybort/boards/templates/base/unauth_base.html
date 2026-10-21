@@ -11,7 +11,6 @@
     <link rel="shortcut icon" href="{% static "logos/keybort_icon.png" %}" />
 
     <link href="{% static 'site.css' %}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@1.0.1/dist/basecoat.cdn.min.css" />
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="{% static "fonts/fontawesome/css/fontawesome.min.css" %}" rel="stylesheet">
@@ -31,7 +30,7 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@1.0.1/dist/js/all.min.js" defer></script>
+    <script src="{% static 'basecoat.min.js' %}" defer></script>
     <script>
       (() => {
         try {

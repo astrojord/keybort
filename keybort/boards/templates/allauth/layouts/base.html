@@ -10,7 +10,6 @@
         <title>{% block head_title %}{% endblock head_title %} | Keybort</title>
         <link rel="shortcut icon" href="{% static "logos/keybort_icon.png" %}" />
 
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@1.0.1/dist/basecoat.cdn.min.css" />
         <link href="{% static 'site.css' %}" rel="stylesheet">
 
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -74,7 +73,7 @@
                 </div>
             </div>
         </main>
-        <script src="https://cdn.jsdelivr.net/npm/basecoat-css@1.0.1/dist/js/all.min.js" defer></script>
+        <script src="{% static 'basecoat.min.js' %}" defer></script>
         <script>
           (() => {
             try {
