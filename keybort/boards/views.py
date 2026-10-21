@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse
+from django.db.models import Q
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from .forms import KeycapsForm, KitForm, ModForm, PlateForm, StabilizerForm, SwitchForm
@@ -121,12 +122,13 @@ def inventory_parts(request):
 # returns view-only modal body on HTMX request from either inventory page
 def part_detail(request):
     part_type = request.GET.get("type")
-    part_id = request.GET.get("id")
-    stock = bool(int(request.GET.get("stock")))
+    part_id = request.GET.get("id", "")
+    stock = request.GET.get("stock")
 
-    if any([x is None for x in [part_type, part_id, stock]]):
+    if part_type is None or not part_id.isdigit() or stock not in ("0", "1"):
         return HttpResponse(status=400)
 
+    stock = stock == "1"
     context = {}
 
     # would love to use model_to_dict here but need user-readable dict keys
@@ -164,6 +166,20 @@ def part_detail(request):
 
         case _:
             return HttpResponse(status=400)
+
+    # stock parts are a shared catalog, custom parts are only visible to users who have them
+    # in their inventory (standalone or as part of a keyboard). 404 so ids aren't confirmed
+    if not stock:
+        owned = (
+            request.user.is_authenticated
+            and Inventory.objects.filter(
+                Q(**{f"{part_type}__custom": obj})
+                | Q(**{f"keyboard__custom__{part_type}__custom": obj}),
+                user=request.user,
+            ).exists()
+        )
+        if not owned:
+            raise Http404
 
     context["part_title"] = str(obj)
     context["fields"] = model_to_dict_verbose(

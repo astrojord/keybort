@@ -52,7 +52,7 @@ class Inventory(models.Model):
         elif self.switch:
             return self.switch.obj
         elif self.stabilizer:
-            return self.switch.obj
+            return self.stabilizer.obj
         elif self.keycaps:
             return self.keycaps.obj
 
@@ -675,7 +675,7 @@ class CustomMod(models.Model):
         elif self.switch:
             return self.switch.obj
         elif self.stabilizer:
-            return self.switch.obj
+            return self.stabilizer.obj
         elif self.keycaps:
             return self.keycaps.obj
 
