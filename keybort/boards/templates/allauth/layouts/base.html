@@ -11,52 +11,31 @@
     </head>
     <body>
         {% block body %}
-        <main class="flex w-screen h-screen content-center items-center">
-            <div class="container flex flex-col m-auto">
-                <div class="w-lg h-lg m-auto">
-                    <div class="text-center mb-2">
-                        <h2><a href="/" class=" text-[#dc143c] font-semibold">Keybort</a> - {% block page_title %}{% endblock page_title %}</h2>
-                    </div>
-                    <div class="card">
-                        <section>
-                            {% if messages %}
-                            <div class="alert alert-info alert-dismissible" role="alert">
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                <div class="alert-message">
-                                    {% for message in messages %}
-                                    <div class="text-muted">
-                                        <i class="fas fa-circle-info"></i> {{message}}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
+        <main class="flex min-h-screen items-center justify-center p-4">
+            <div class="grid w-full max-w-lg gap-4">
+                <h1 class="text-center text-xl"><a href="/" class="text-[#dc143c] font-semibold">Keybort</a> - {% block page_title %}{% endblock page_title %}</h1>
+                <div class="card">
+                    <section class="grid gap-4">
+                        {% for message in messages %}
+                        <div class="alert" role="status"{% if message.level_tag == "error" %} data-variant="destructive"{% endif %}>
+                            <section>
+                                <p><i class="fas fa-circle-info me-1"></i> {{ message }}</p>
+                            </section>
+                        </div>
+                        {% endfor %}
 
-                            {% if form.errors %}
-                            <div class="alert alert-warning alert-dismissible" role="alert">
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                <div class="alert-message">
-                                    {% for field in form %}
-                                        {% for error in field.errors %}
-                                        <div class="text-muted">
-                                            <i class="fas fa-exclamation"></i> {{error|escape}}
-                                        </div>
-                                        {% endfor %}
-                                    {% endfor %}
-                                    {% for error in form.non_field_errors %}
-                                        <div class="text-muted">
-                                            <i class="fas fa-exclamation"></i> {{error|escape}}
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
+                        {% if form.non_field_errors %}
+                        <div class="alert" role="alert" data-variant="destructive">
+                            <section>
+                                {% for error in form.non_field_errors %}
+                                <p><i class="fas fa-exclamation me-1"></i> {{ error }}</p>
+                                {% endfor %}
+                            </section>
+                        </div>
+                        {% endif %}
 
-                            <div class="">
-                                {% block content %}{% endblock content %}
-                            </div>
-                        </section>
-                    </div>
+                        {% block content %}{% endblock content %}
+                    </section>
                 </div>
             </div>
         </main>

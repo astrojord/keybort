@@ -22,21 +22,8 @@
         {% element form form=form method="post" action=login_url tags="entrance,login" %}
             {% slot body %}
                 {% csrf_token %}
-                {% comment %} {% element fields form=form unlabeled=True %}
-                {% endelement %} {% endcomment %}
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Username</label>
-                    <input class="form-control" type="text" name="login" placeholder="Username" autocomplete="username" maxlength="255" required="" id="id_login">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Password</label>
-                    <input class="form-control" type="password" name="password" placeholder="Password" autocomplete="current-password" required="" id="id_password">
-                </div>
-                <div class="mb-3">
-                    <label for="id_remember fw-bold">Remember me: </label>
-                    <input type="checkbox" name="remember" id="id_remember">
-                </div>
+                {% element fields form=form %}
+                {% endelement %}
                 {{ redirect_field }}
             {% endslot %}
             {% slot actions %}

@@ -1,1 +1,22 @@
-{{ attrs.form.as_p }}
+{% load allauth %}
+{% for bound_field in attrs.form %}
+    {% if bound_field.is_hidden %}
+        {{ bound_field }}
+    {% else %}
+        {% element field unlabeled=attrs.unlabeled type=bound_field.field.widget.input_type|default:bound_field.widget_type name=bound_field.html_name id=bound_field.auto_id value=bound_field.value required=bound_field.field.required disabled=bound_field.field.disabled errors=bound_field.errors placeholder=bound_field.field.widget.attrs.placeholder autocomplete=bound_field.field.widget.attrs.autocomplete maxlength=bound_field.field.widget.attrs.maxlength %}
+            {% slot label %}
+                {{ bound_field.label }}
+            {% endslot %}
+            {% if bound_field.widget_type == "select" or bound_field.widget_type == "textarea" %}
+                {% slot widget %}
+                    {{ bound_field }}
+                {% endslot %}
+            {% endif %}
+            {% if bound_field.help_text %}
+                {% slot help_text %}
+                    {{ bound_field.help_text }}
+                {% endslot %}
+            {% endif %}
+        {% endelement %}
+    {% endif %}
+{% endfor %}

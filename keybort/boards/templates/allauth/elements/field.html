@@ -1,48 +1,58 @@
 {% load allauth %}
-{{ attrs.errors }}
-<p>
-    {% if attrs.type == "textarea" %}
-        <label for="{{ attrs.id }}">
+<div class="field"{% if attrs.errors %} data-invalid="true"{% endif %}{% if attrs.type == "checkbox" or attrs.type == "radio" %} data-orientation="horizontal"{% endif %}>
+    {% if attrs.type != "checkbox" and attrs.type != "radio" %}
+        <label for="{{ attrs.id }}"{% if attrs.unlabeled %} class="sr-only"{% endif %}>
             {% slot label %}
             {% endslot %}
         </label>
+    {% endif %}
+    {% if slots.widget %}
+        {% slot widget %}
+        {% endslot %}
+    {% elif attrs.type == "textarea" %}
         <textarea {% if attrs.required %}required{% endif %}
                   {% if attrs.rows %}rows="{{ attrs.rows }}"{% endif %}
                   {% if attrs.disabled %}disabled{% endif %}
                   {% if attrs.readonly %}readonly{% endif %}
-                  {% if attrs.checked %}checked{% endif %}
                   {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
                   {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
-                  {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}>{% slot value %}{% endslot %}</textarea>
+                  {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+                  {% if attrs.errors %}aria-invalid="true" aria-describedby="{{ attrs.id }}-error"{% endif %}>{% slot value %}{% endslot %}</textarea>
     {% else %}
-        {% if attrs.type != "checkbox" and attrs.type != "radio" %}
-            <label for="{{ attrs.id }}" class="form-label fw-bold">
-                {% slot label %}
-                {% endslot %}
-            </label>
-        {% endif %}
         <input {% if attrs.required %}required{% endif %}
                {% if attrs.disabled %}disabled{% endif %}
                {% if attrs.readonly %}readonly{% endif %}
-               {% if attrs.checked %}checked{% endif %}
+               {% if attrs.checked or attrs.value is True %}checked{% endif %}
                {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
                {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
                {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
                {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
-               {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
-               type="{{ attrs.type }}" 
-               class="{% if attrs.type == "checkbox" or attrs.type == "radio" %}form-check{% else %}form-control{% endif %}">
-        {% if attrs.type == "checkbox" or attrs.type == "radio" %}
-            <label for="{{ attrs.id }}" class="form-label fw-bold">
-                {% slot label %}
-                {% endslot %}
-            </label>
-        {% endif %}
+               {% if attrs.maxlength %}maxlength="{{ attrs.maxlength }}"{% endif %}
+               {% if attrs.value is not None and attrs.value is not True and attrs.value is not False and attrs.type != "password" %}value="{{ attrs.value }}"{% endif %}
+               {% if attrs.errors %}aria-invalid="true" aria-describedby="{{ attrs.id }}-error"{% endif %}
+               type="{{ attrs.type }}">
+    {% endif %}
+    {% if attrs.type == "checkbox" or attrs.type == "radio" %}
+        <label for="{{ attrs.id }}">
+            {% slot label %}
+            {% endslot %}
+        </label>
     {% endif %}
     {% if slots.help_text %}
-        <span>
+        <div class="text-muted-foreground text-sm [&_ul]:ms-4 [&_ul]:list-disc">
             {% slot help_text %}
             {% endslot %}
-        </span>
+        </div>
     {% endif %}
-</p>
+    {% if attrs.errors %}
+        <div role="alert" id="{{ attrs.id }}-error" class="text-sm">
+            {% if attrs.errors|length == 1 %}
+                {{ attrs.errors.0 }}
+            {% else %}
+                <ul>
+                    {% for error in attrs.errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

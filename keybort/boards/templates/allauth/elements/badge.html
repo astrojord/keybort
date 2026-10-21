@@ -1,5 +1,5 @@
 {% load allauth %}
-<strong {% if attrs.title %}title="{{ attrs.title }}"{% endif %}>
+<span class="badge"{% if "danger" in attrs.tags %} data-variant="destructive"{% elif "warning" in attrs.tags %} data-variant="outline"{% elif "success" not in attrs.tags and "primary" not in attrs.tags %} data-variant="secondary"{% endif %}{% if attrs.title %} title="{{ attrs.title }}"{% endif %}>
     {% slot %}
     {% endslot %}
-</strong>
+</span>

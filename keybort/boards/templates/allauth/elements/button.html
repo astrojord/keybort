@@ -6,8 +6,9 @@
 {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
 {% if attrs.value %}value="{{ attrs.value }}"{% endif %}
 {% if attrs.type %}type="{{ attrs.type }}"{% endif %}
-{% if attrs.id %}id="{{ attrs.id }}"{% endif %}
-class="btn btn-primary">
+class="btn"
+{% if "danger" in attrs.tags %}data-variant="destructive"{% elif "link" in attrs.tags %}data-variant="link"{% elif "outline" in attrs.tags %}data-variant="outline"{% elif "secondary" in attrs.tags %}data-variant="secondary"{% endif %}
+{% if "minor" in attrs.tags %}data-size="sm"{% endif %}>
 {% slot %}
 {% endslot %}
 </{% if attrs.href %}a{% else %}button{% endif %}>

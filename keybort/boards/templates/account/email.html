@@ -60,12 +60,8 @@
             {% element form form=form method="post" action=action_url tags="email,add" %}
                 {% slot body %}
                     {% csrf_token %}
-                    {% comment %} {% element fields form=form %}
-                    {% endelement %} {% endcomment %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Add email address:</label>
-                        <input class="form-control" type="email" name="email" placeholder="Email address" maxlength="320" required="" id="id_email">
-                    </div>
+                    {% element fields form=form %}
+                    {% endelement %}
                 {% endslot %}
                 {% slot actions %}
                     {% element button name="action_add" type="submit" %}

@@ -1,5 +1,7 @@
 {% load allauth %}
-<p>
-    {% slot message %}
-    {% endslot %}
-</p>
+<div class="alert" role="alert"{% if "danger" in attrs.tags or "error" in attrs.tags %} data-variant="destructive"{% endif %}>
+    <section>
+        {% slot message %}
+        {% endslot %}
+    </section>
+</div>
