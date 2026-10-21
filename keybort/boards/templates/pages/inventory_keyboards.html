@@ -1,18 +1,9 @@
-{% extends "base/base.html" %} {% load static %}
+{% extends "base/base.html" %}
 {% block page_title%}{{page_title}}{% endblock page_title %}
-{% block page_js %}
-<script src="{% static 'htmx-2.0.1.min.js' %}" defer></script>
-<script>
-    function showDetailModal() {
-      console.log('ding');
-      document.getElementById('detail-dialog').showModal();
-    }
-</script>
-{% endblock page_js %}
 {% block content %}
 <div class="w-full flex justify-between items-center">
-    <h1 class="h3 mb-3">
-        <span class="text-[#dc143c] font-semibold">Keyboard Inventory</span> -
+    <h1 class="text-2xl">
+        <span class="text-brand font-semibold">Keyboard Inventory</span> -
         {{request.user}}
     </h1>
     <a href="#" class="btn"
@@ -51,6 +42,8 @@
                                 class="btn text-red-400 p-0 ms-1"
                                 data-variant="ghost"
                                 hx-post="{% url 'keyboard_delete' %}?{{kb.url_params}}"
+                                hx-target="closest tr"
+                                hx-swap="delete"
                                 hx-confirm="Delete? The data will be unrecoverable."
                             >
                                 <i class="fas fa-trash"></i>
@@ -61,7 +54,6 @@
                             hx-get="{% url 'part_detail' %}?{{kb.kit_url_params}}"
                             hx-target="#detail-dialog"
                             hx-trigger="click"
-                            hx-on::after-request="showDetailModal();"
                             class="hoverable"
                             {% endif %}
                         >
@@ -73,7 +65,6 @@
                             hx-get="{% url 'part_detail' %}?{{kb.switches_url_params}}"
                             hx-target="#detail-dialog"
                             hx-trigger="click"
-                            hx-on::after-request="showDetailModal();"
                             class="hoverable"
                             {% endif %}
                         >
@@ -84,7 +75,6 @@
                             hx-get="{% url 'part_detail' %}?{{kb.keycaps_url_params}}"
                             hx-target="#detail-dialog"
                             hx-trigger="click"
-                            hx-on::after-request="showDetailModal();"
                             class="hoverable"
                             {% endif %}
                         >
@@ -95,7 +85,6 @@
                             hx-get="{% url 'part_detail' %}?{{kb.plate_url_params}}"
                             hx-target="#detail-dialog"
                             hx-trigger="click"
-                            hx-on::after-request="showDetailModal();"
                             class="hoverable"
                             {% endif %}
                         >
@@ -106,7 +95,6 @@
                             hx-get="{% url 'part_detail' %}?{{kb.stabilizer_url_params}}"
                             hx-target="#detail-dialog"
                             hx-trigger="click"
-                            hx-on::after-request="showDetailModal();"
                             class="hoverable"
                             {% endif %}
                         >
@@ -122,7 +110,7 @@
     </div>
 </div>
 
-<dialog id="detail-dialog" class="dialog" aria-labelledby="detail-dialog-title" aria-describedby="detail-dialog-description" onclick="if (event.target === this) this.close()">
+<dialog id="detail-dialog" class="dialog" hx-on::after-swap="this.showModal()" aria-labelledby="detail-dialog-title" aria-describedby="detail-dialog-description" onclick="if (event.target === this) this.close()">
 </dialog>
 
 {% endblock content %}

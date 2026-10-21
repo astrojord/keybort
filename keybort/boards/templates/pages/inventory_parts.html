@@ -1,17 +1,9 @@
-{% extends "base/base.html" %} {% load static %}
+{% extends "base/base.html" %}
 {% block page_title%}{{page_title}}{% endblock page_title %}
-{% block page_js %}
-<script src="{% static 'htmx-2.0.1.min.js' %}" defer></script>
-<script>
-    function showDetailModal() {
-      document.getElementById('detail-dialog').showModal();
-    }
-</script>
-{% endblock page_js %}
 {% block content %}
 <div class="w-full flex justify-between items-center">
-    <h1 class="h3 mb-3">
-        <span class="text-[#dc143c] font-semibold">Parts Inventory</span> -
+    <h1 class="text-2xl">
+        <span class="text-brand font-semibold">Parts Inventory</span> -
         {{request.user}}
     </h1>
     <a href="#" class="btn"
@@ -27,19 +19,11 @@
             >
                 <thead>
                     <tr>
-                        <th
-                            class="no-sort text-nowrap"
-                            style="width: 1px"
-                        ></th>
-                        <th class="col-1">Type</th>
-                        <th class="col-2">Name</th>
-                        <th
-                            class="text-center text-nowrap"
-                            style="width: 1px"
-                        >
-                            Quantity
-                        </th>
-                        <th class="col-8">Information</th>
+                        <th class="w-px text-nowrap"></th>
+                        <th class="w-1/12">Type</th>
+                        <th class="w-2/12">Name</th>
+                        <th class="w-px text-center text-nowrap">Quantity</th>
+                        <th class="w-8/12">Information</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -93,7 +77,7 @@
     </div>
 </div>
 
-<dialog id="detail-dialog" class="dialog" aria-labelledby="detail-dialog-title" aria-describedby="detail-dialog-description" onclick="if (event.target === this) this.close()">
+<dialog id="detail-dialog" class="dialog" hx-on::after-swap="this.showModal()" aria-labelledby="detail-dialog-title" aria-describedby="detail-dialog-description" onclick="if (event.target === this) this.close()">
 </dialog>
 
 {% endblock content %}

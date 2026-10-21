@@ -225,27 +225,32 @@ def search_stock(request):
 # 1 view for each list of stock parts: Keyboard, Kit, Keycaps, Switch, Stabilizer, Plate
 def stock_prebuilts(request):
     context = {"page_title": "Prebuilt Keyboards"}
-    return render(request, "pages/stock_prebuilts.html", context)
+    return render(request, "pages/stock_list.html", context)
 
 
 def stock_kits(request):
-    pass
+    context = {"page_title": "Kits"}
+    return render(request, "pages/stock_list.html", context)
 
 
 def stock_keycaps(request):
-    pass
+    context = {"page_title": "Keycaps"}
+    return render(request, "pages/stock_list.html", context)
 
 
 def stock_switches(request):
-    pass
+    context = {"page_title": "Switches"}
+    return render(request, "pages/stock_list.html", context)
 
 
 def stock_stabilizers(request):
-    pass
+    context = {"page_title": "Stabilizers"}
+    return render(request, "pages/stock_list.html", context)
 
 
 def stock_plates(request):
-    pass
+    context = {"page_title": "Plates"}
+    return render(request, "pages/stock_list.html", context)
 
 
 # upload canned parts (needs permission)

@@ -7,7 +7,6 @@ Track personal mechanical keyboard collection and parts inventory. Users can wri
     - htmx 2.0.1
     - [Basecoat UI](https://basecoatui.com) + Tailwind
     - [django allauth](https://docs.allauth.org/en/latest/)
-    - [datatables](https://datatables.net/)
 - Will run via docker + nginx on my homelab server
 
 #### To do

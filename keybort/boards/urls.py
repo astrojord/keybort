@@ -14,8 +14,8 @@ urlpatterns = [
     
     path('stock/', views.search_stock, name='search_stock'),
     path('stock/prebuilts', views.stock_prebuilts, name='stock_prebuilts'),
-    path('stock/kits', views.stock_prebuilts, name='stock_kits'),
-    path('stock/keycaps', views.stock_prebuilts, name='stock_keycaps'),
+    path('stock/kits', views.stock_kits, name='stock_kits'),
+    path('stock/keycaps', views.stock_keycaps, name='stock_keycaps'),
     path('stock/switches', views.stock_switches, name='stock_switches'),
     path('stock/plates', views.stock_plates, name='stock_plates'),
     path('stock/stabilizers', views.stock_stabilizers, name='stock_stabilizers'),

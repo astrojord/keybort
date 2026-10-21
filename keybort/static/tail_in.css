@@ -3,6 +3,10 @@
 
 @source "../boards/templates";
 
+@theme {
+    --color-brand: #dc143c;
+}
+
 td.hoverable:hover {
     cursor: pointer;
 }
