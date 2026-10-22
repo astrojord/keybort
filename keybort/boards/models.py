@@ -715,3 +715,19 @@ class StockMod(CustomMod):
     @property
     def stock(self):
         return True
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+
+    default_part_source = models.CharField(
+        max_length=8,
+        choices=[
+            (source, label) for source, (label, _) in const.PART_SOURCE_DEFAULTS.items()
+        ],
+        default='smart',
+    )
+    keep_parts_on_delete = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f'{self.user.username} profile'

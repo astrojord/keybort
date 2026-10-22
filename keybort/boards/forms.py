@@ -11,6 +11,7 @@ from .models import (
     Kit,
     Mod,
     Plate,
+    Profile,
     Stabilizer,
     Switch,
 )
@@ -102,3 +103,9 @@ class CustomKeyboardDetailsForm(CustomPartForm):
     class Meta:
         model = CustomKeyboard
         fields = ['bluetooth', 'wireless', 'notes', 'references']
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['default_part_source', 'keep_parts_on_delete']

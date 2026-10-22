@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import ClassVar
 
 from django.db import transaction
@@ -25,6 +26,7 @@ from .models import (
     Keycaps,
     Kit,
     Plate,
+    Profile,
     Stabilizer,
     StockKeyboard,
     StockKeycaps,
@@ -53,6 +55,10 @@ class KeyboardManager:
 
     def __init__(self, user):
         self.user = user
+
+    @cached_property
+    def profile(self):
+        return Profile.objects.get_or_create(user=self.user)[0]
 
     # lookups
 
@@ -267,6 +273,7 @@ class KeyboardManager:
                 current=getattr(current, part_type, None),
                 required=part_type == 'kit',
                 owned=self.owned_parts(part_type),
+                preferred=self.profile.default_part_source,
             )
             for part_type in self.PART_MODELS
         ]
@@ -315,7 +322,15 @@ class KeyboardManager:
         return self.standalone_parts().filter(**{f'{part_type}__isnull': False})
 
     @classmethod
-    def part_choice(cls, part_type, data, current=None, required=False, owned=None):
+    def part_choice(
+        cls,
+        part_type,
+        data,
+        current=None,
+        required=False,
+        owned=None,
+        preferred='smart',
+    ):
         _, _, stock_model, form_class = cls.PART_MODELS[part_type]
         label = const.PART_STEP_LABELS[part_type]
         stock_options = stock_model.objects.all()
@@ -338,9 +353,9 @@ class KeyboardManager:
         if current is None:
             if not required:
                 default_source = 'none'
-            elif owned_options:
+            elif preferred == 'smart' and owned_options:
                 default_source = 'owned'
-            elif stock_options:
+            elif preferred != 'custom' and stock_options:
                 default_source = 'stock'
             else:
                 default_source = 'custom'
@@ -409,7 +424,13 @@ class KeyboardManager:
         return {
             'part_type': data.get('type', part_type or 'kit'),
             'parts': [
-                self.part_choice(t, data, required=True) for t in self.PART_MODELS
+                self.part_choice(
+                    t,
+                    data,
+                    required=True,
+                    preferred=self.profile.default_part_source,
+                )
+                for t in self.PART_MODELS
             ],
             'quantity': data.get('quantity', '1'),
             'quantity_error': None,

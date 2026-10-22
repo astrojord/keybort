@@ -38,7 +38,6 @@
                         <th>Keycaps</th>
                         <th>Plate</th>
                         <th>Stabilizer</th>
-                        <th>Mods</th>
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -69,7 +68,7 @@
     hx-vals='{"kind": "{{ open_add }}"}'
     hx-trigger="load"
     hx-target="#page-dialog"
-    hx-on::after-request="history.replaceState(null, '', location.pathname)"
+    hx-on::after-request="const url = new URL(location); url.searchParams.delete('add'); history.replaceState(null, '', url)"
 ></div>
 {% endif %}
 
@@ -91,7 +90,9 @@
     (() => {
         const filter = document.getElementById("keyboards-filter");
         const tbody = document.querySelector("#table-keyboards tbody");
-        let active = "";
+        let active = new URLSearchParams(location.search).get("kind") ?? "";
+        if (!filter.querySelector(`[data-filter="${CSS.escape(active)}"]`)) active = "";
+        filter.dataset.active = active;
 
         // counts and visibility come from the rows, so they stay right after htmx adds/removes one
         function apply() {
@@ -119,6 +120,10 @@
             active = button.dataset.filter;
             // the add buttons send this so the modal opens on the filtered kind
             filter.dataset.active = active;
+            const url = new URL(location);
+            if (active) url.searchParams.set("kind", active);
+            else url.searchParams.delete("kind");
+            history.replaceState(null, "", url);
             apply();
         });
         document.body.addEventListener("htmx:afterSettle", apply);

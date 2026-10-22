@@ -148,3 +148,12 @@ QUICK_ACTIONS = [
         'add': '',
     },
 ]
+
+PART_SOURCE_DEFAULTS = {
+    'smart': (
+        'Smart',
+        'Prefer parts in inventory first, then stock.',
+    ),
+    'stock': ('Stock', 'Pick from the catalog.'),
+    'custom': ('Custom', 'Enter the details yourself.'),
+}

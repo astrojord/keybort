@@ -65,7 +65,7 @@
     hx-vals='{"type": "{{ open_add }}"}'
     hx-trigger="load"
     hx-target="#page-dialog"
-    hx-on::after-request="history.replaceState(null, '', location.pathname)"
+    hx-on::after-request="const url = new URL(location); url.searchParams.delete('add'); history.replaceState(null, '', url)"
 ></div>
 {% endif %}
 
@@ -117,6 +117,10 @@
             active = button.dataset.filter;
             // the add buttons send this so the modal opens on the filtered type
             filter.dataset.active = active;
+            const url = new URL(location);
+            if (active) url.searchParams.set("type", active);
+            else url.searchParams.delete("type");
+            history.replaceState(null, "", url);
             apply();
         });
         document.body.addEventListener("htmx:afterSettle", apply);

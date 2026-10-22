@@ -13,6 +13,7 @@ urlpatterns = [
     path('inventory/parts/add', views.add_part, name='part_add'),
     path('inventory/parts/edit', views.edit_part, name='part_edit'),
     path('inventory/parts/delete', views.delete_part, name='part_delete'),
+    path('account', views.account, name='account'),
     path('stock/', views.search_stock, name='search_stock'),
     path('stock/prebuilts', views.stock_prebuilts, name='stock_prebuilts'),
     path('stock/kits', views.stock_kits, name='stock_kits'),

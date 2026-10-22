@@ -17,7 +17,7 @@
             <p class="text-sm contain-inline-size">Which parts do you still have? Anything unchecked will be deleted, but everything else will go to your parts inventory.</p>
             {% for part in parts %}
             <div class="field" data-orientation="horizontal">
-                <input type="checkbox" id="id_keep-{{ part.type }}" name="keep" value="{{ part.type }}" checked>
+                <input type="checkbox" id="id_keep-{{ part.type }}" name="keep" value="{{ part.type }}"{% if keep_default %} checked{% endif %}>
                 <label for="id_keep-{{ part.type }}" class="sm:whitespace-nowrap"><span class="text-muted-foreground">{{ part.label }}:</span> {{ part.name }}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}</label>
             </div>
             {% endfor %}

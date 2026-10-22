@@ -1,0 +1,35 @@
+{% extends "base/base.html" %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+<div class="w-full flex justify-between items-center">
+    <h1 class="text-2xl">
+        <span class="text-brand font-semibold">Account</span> -
+        {{request.user}}
+    </h1>
+</div>
+
+<div class="mt-4 grid max-w-2xl gap-4">
+    <div class="card">
+        <header>
+            <h2>Profile</h2>
+            <p>
+                Joined {{ request.user.date_joined|date:"F Y" }}.
+                {{ keyboard_count }} keyboard{{ keyboard_count|pluralize }} and {{ part_entries }} part{{ part_entries|pluralize }} in your inventory.
+            </p>
+        </header>
+    </div>
+
+    {% include "partials/account_preferences.html" %}
+
+    <div class="card">
+        <header>
+            <h2>Security</h2>
+            <p>Change the password you sign in with.</p>
+        </header>
+        <section>
+            <a href="{% url 'account_change_password' %}" class="btn" data-variant="outline">Change password</a>
+        </section>
+    </div>
+</div>
+{% endblock content %}

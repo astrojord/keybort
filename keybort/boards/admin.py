@@ -26,5 +26,6 @@ admin.site.register(
         models.StockStabilizer,
         models.StockKeycaps,
         models.StockMod,
+        models.Profile,
     ]
 )

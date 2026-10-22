@@ -5,7 +5,15 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from . import const
-from .forms import KeycapsForm, KitForm, ModForm, PlateForm, StabilizerForm, SwitchForm
+from .forms import (
+    KeycapsForm,
+    KitForm,
+    ModForm,
+    PlateForm,
+    ProfileForm,
+    StabilizerForm,
+    SwitchForm,
+)
 from .handlers import handle_canned_parts_upload
 from .managers import KeyboardManager
 from .utils import htmx_swap, keyboard_params, model_to_dict_verbose
@@ -263,6 +271,7 @@ def delete_keyboard(request):
         context = {
             'kb': kb,
             'parts': manager.keyboard_delete_parts(kb),
+            'keep_default': manager.profile.keep_parts_on_delete,
             'action_url': f'{reverse("keyboard_delete")}?id={params[0]}&stock={int(params[1])}',
         }
         return render(request, 'partials/delete_keyboard_modal.html', context)
@@ -273,11 +282,32 @@ def delete_keyboard(request):
     manager.delete_keyboard(inventory, keep)
     if keep:
         messages.success(
-            request, f'Deleted {name}, kept parts moved to parts inventory.'
+            request, f'Deleted {name}, moved any requested parts to inventory.'
         )
     else:
         messages.success(request, f'Deleted {name}.')
     return htmx_swap(HttpResponse(), f'#{row_id}', 'delete', const.CLOSE_DIALOG_EVENT)
+
+
+@login_required(login_url='/accounts/login')
+def account(request):
+    manager = KeyboardManager(request.user)
+    form = ProfileForm(request.POST or None, instance=manager.profile)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Saved preferences.')
+
+    context = {'form': form, 'source_options': const.PART_SOURCE_DEFAULTS}
+    if 'HX-Request' in request.headers:
+        return render(request, 'partials/account_preferences.html', context)
+
+    stats = manager.dashboard()
+    context.update(
+        page_title='Account',
+        keyboard_count=stats['keyboard_count'],
+        part_entries=stats['part_entries'],
+    )
+    return render(request, 'pages/account.html', context)
 
 
 # add/change individual parts in inventory

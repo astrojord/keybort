@@ -1,0 +1,55 @@
+<form
+    id="account-preferences"
+    class="card"
+    method="post"
+    action="{% url 'account' %}"
+    hx-post="{% url 'account' %}"
+    hx-target="this"
+    hx-swap="outerHTML"
+>
+    {% csrf_token %}
+    <header>
+        <h2>Preferences</h2>
+        <p>Change how forms act when you first open them. You can still make changes after that.</p>
+    </header>
+
+    <section class="grid gap-6">
+        {% if form.errors %}
+        <div class="alert" role="alert" data-variant="destructive">
+            <section>Those preferences couldn't be saved. Pick one option for each and try again.</section>
+        </div>
+        {% endif %}
+
+        <fieldset class="grid min-w-0 gap-3" role="radiogroup" aria-labelledby="part-source-heading" aria-describedby="part-source-hint">
+            <div>
+                <h3 id="part-source-heading" class="text-sm font-medium">New part source</h3>
+                <p id="part-source-hint" class="text-muted-foreground text-sm">Applies to the Add part dialog and new build kits. Optional parts on a new build still start on Skip.</p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3">
+                {% for value, option in source_options.items %}
+                <label>
+                    <div class="field" data-orientation="horizontal">
+                        <section>
+                            <h3>{{ option.0 }}</h3>
+                            <p>{{ option.1 }}</p>
+                        </section>
+                        <input type="radio" name="default_part_source" value="{{ value }}" required{% if form.default_part_source.value == value %} checked{% endif %}>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <div class="field" data-orientation="horizontal">
+            <input type="checkbox" id="id_keep_parts_on_delete" name="keep_parts_on_delete"{% if form.keep_parts_on_delete.value %} checked{% endif %} aria-describedby="keep-parts-hint">
+            <section>
+                <label for="id_keep_parts_on_delete">Keep parts when deleting a keyboard</label>
+                <p id="keep-parts-hint">If turned on, parts start checked in the delete dialog. This makes them move to your parts inventory instead of being deleted as well.</p>
+            </section>
+        </div>
+    </section>
+
+    <footer>
+        <button type="submit" class="btn">Save preferences</button>
+    </footer>
+</form>
