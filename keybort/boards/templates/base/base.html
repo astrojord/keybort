@@ -6,6 +6,7 @@
     {% include 'base/head.html' %}
     <script src="{% static 'htmx-2.0.1.min.js' %}" defer></script>
     <script src="{% static 'step_form.js' %}" defer></script>
+    <script src="{% static 'toasts.js' %}" defer></script>
     <title>{% block page_title %}{% endblock page_title %} | Keybort</title>
 
     {% block page_css %}{% endblock page_css %}
@@ -22,6 +23,8 @@
             </div>
         </main>
     </div>
+
+    {% include 'base/toaster.html' %}
 
     {% block page_js %}{% endblock page_js %}
 

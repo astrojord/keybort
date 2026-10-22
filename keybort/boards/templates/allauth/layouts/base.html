@@ -16,14 +16,6 @@
                 <h1 class="text-center text-xl"><a href="/" class="text-brand font-semibold">Keybort</a> - {% block page_title %}{% endblock page_title %}</h1>
                 <div class="card">
                     <section class="grid gap-4">
-                        {% for message in messages %}
-                        <div class="alert" role="status"{% if message.level_tag == "error" %} data-variant="destructive"{% endif %}>
-                            <section>
-                                <p><i class="fas fa-circle-info me-1"></i> {{ message }}</p>
-                            </section>
-                        </div>
-                        {% endfor %}
-
                         {% if form.non_field_errors %}
                         <div class="alert" role="alert" data-variant="destructive">
                             <section>
@@ -42,6 +34,7 @@
         {% block page_js %}{% endblock page_js %}
 
         {% endblock body %}
+        {% include 'base/toaster.html' %}
         {% block extra_body %}
         {% endblock extra_body %}
     </body>

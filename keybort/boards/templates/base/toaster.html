@@ -1,0 +1,31 @@
+<div id="toaster" class="toaster">
+    {% for message in messages %}
+    {% with category=message.level_tag|default:"info" %}
+    <div
+        class="toast"
+        role="{% if category == 'error' %}alert{% else %}status{% endif %}"
+        aria-atomic="true"
+        aria-hidden="false"
+        data-category="{% if category == 'debug' %}info{% else %}{{ category }}{% endif %}"
+    >
+        <div class="toast-content">
+            {% if category == "success" %}
+            <i class="fas fa-circle-check"></i>
+            {% elif category == "warning" %}
+            <i class="fas fa-triangle-exclamation"></i>
+            {% elif category == "error" %}
+            <i class="fas fa-circle-exclamation"></i>
+            {% else %}
+            <i class="fas fa-circle-info"></i>
+            {% endif %}
+            <section>
+                <p>{{ message }}</p>
+            </section>
+            <footer>
+                <button type="button" class="btn" data-variant="outline" data-size="sm" data-toast-action>Dismiss</button>
+            </footer>
+        </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
