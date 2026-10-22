@@ -19,6 +19,17 @@
         </header>
         <section class="scrollbar-sm">
             {% with current=request.resolver_match.url_name %}
+            <div role="group" aria-label="Home">
+                <ul>
+                    <li>
+                        <a href="{% url 'index' %}"{% if current == 'index' %} aria-current="page"{% endif %}>
+                            <i class="fas fa-house"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             <div role="group" aria-labelledby="group-label-content-1">
                 <h3 id="group-label-content-1">Inventory</h3>
                 <ul>
