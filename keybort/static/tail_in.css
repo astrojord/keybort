@@ -10,3 +10,8 @@
 td.hoverable:hover {
     cursor: pointer;
 }
+
+.toaster .toast .toast-content section p {
+    word-break: normal;
+    overflow-wrap: anywhere;
+}

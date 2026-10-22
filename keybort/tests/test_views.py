@@ -1,3 +1,5 @@
+import json
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -253,6 +255,25 @@ class EditDeletePartViewTests(ClientTestCase):
         self.assertEqual(response['HX-Retarget'], f'#part-{inv.pk}')
         self.assertEqual(response['HX-Reswap'], 'delete')
         self.assertFalse(CustomKit.objects.exists())
+
+    def test_htmx_delete_sends_toast(self):
+        inv = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
+        response = self.client.post(
+            f'{reverse("part_delete")}?id={inv.pk}', headers={'HX-Request': 'true'}
+        )
+        trigger = json.loads(response['HX-Trigger'])
+        self.assertIn(const.CLOSE_DIALOG_EVENT, trigger)
+        self.assertEqual(trigger['messages'][0]['level'], 'success')
+        self.assertIn('Removed', trigger['messages'][0]['message'])
+
+    def test_htmx_missing_part_sends_error_toast(self):
+        inv = Inventory.objects.create(user=self.other, kit=custom_kit_wrapper())
+        response = self.client.get(
+            reverse('part_edit'), {'id': inv.pk}, headers={'HX-Request': 'true'}
+        )
+        self.assertEqual(response.status_code, 404)
+        trigger = json.loads(response['HX-Trigger'])
+        self.assertEqual(trigger['messages'][0]['level'], 'error')
 
 
 class PartDetailViewTests(TestCase):

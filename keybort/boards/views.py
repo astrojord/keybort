@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import Http404, HttpResponse
 from django.shortcuts import render
@@ -8,6 +9,10 @@ from .forms import KeycapsForm, KitForm, ModForm, PlateForm, StabilizerForm, Swi
 from .handlers import handle_canned_parts_upload
 from .managers import KeyboardManager
 from .utils import htmx_swap, keyboard_params, model_to_dict_verbose
+
+
+def keyboard_name(row):
+    return row.get('kit_str', 'keyboard')
 
 
 # home/dashboard
@@ -66,9 +71,14 @@ def add_part(request):
         return render(request, 'partials/part_add_modal.html', context)
 
     inv, stacked = result
-    response = render(
-        request, 'partials/part_row.html', {'part': manager.part_row(inv)}
-    )
+    row = manager.part_row(inv)
+    if stacked:
+        messages.success(
+            request, f'Updated quantity of {row["name"]} to {inv.quantity}.'
+        )
+    else:
+        messages.success(request, f'Added {row["name"]} to parts.')
+    response = render(request, 'partials/part_row.html', {'part': row})
     if stacked:
         return htmx_swap(
             response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT
@@ -87,6 +97,7 @@ def edit_part(request):
     manager = KeyboardManager(request.user)
     inv = manager.standalone_part(part_id)
     if inv is None:
+        messages.error(request, 'That part no longer exists.')
         raise Http404
 
     action_url = f'{reverse("part_edit")}?id={inv.pk}'
@@ -102,9 +113,9 @@ def edit_part(request):
     if inv is None:
         return render(request, 'partials/part_edit_modal.html', context)
 
-    response = render(
-        request, 'partials/part_row.html', {'part': manager.part_row(inv)}
-    )
+    row = manager.part_row(inv)
+    messages.success(request, f'Saved {row["name"]}.')
+    response = render(request, 'partials/part_row.html', {'part': row})
     return htmx_swap(response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT)
 
 
@@ -119,6 +130,7 @@ def delete_part(request):
     manager = KeyboardManager(request.user)
     inv = manager.standalone_part(part_id)
     if inv is None:
+        messages.error(request, 'That part no longer exists.')
         raise Http404
 
     if request.method != 'POST':
@@ -127,8 +139,10 @@ def delete_part(request):
         )
         return render(request, 'partials/part_delete_modal.html', context)
 
-    row_id = f'part-{inv.pk}'
+    row = manager.part_row(inv)
     manager.delete_part(inv)
+    messages.success(request, f'Removed {row["name"]} from parts.')
+    row_id = row['row_id']
     return htmx_swap(HttpResponse(), f'#{row_id}', 'delete', const.CLOSE_DIALOG_EVENT)
 
 
@@ -191,9 +205,9 @@ def add_keyboard(request):
     if kb is None:
         return render(request, 'partials/keyboard_modal.html', context)
 
-    response = render(
-        request, 'partials/keyboard_row.html', {'kb': manager.keyboard_row(kb)}
-    )
+    row = manager.keyboard_row(kb)
+    messages.success(request, f'Added {keyboard_name(row)} to keyboards.')
+    response = render(request, 'partials/keyboard_row.html', {'kb': row})
     return htmx_swap(
         response, '#table-keyboards tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
     )
@@ -208,6 +222,7 @@ def edit_keyboard(request):
     manager = KeyboardManager(request.user)
     inventory = manager.keyboard_inventory(*params)
     if inventory is None:
+        messages.error(request, 'That keyboard no longer exists.')
         raise Http404
 
     current = inventory.keyboard.obj
@@ -221,9 +236,9 @@ def edit_keyboard(request):
     if kb is None:
         return render(request, 'partials/keyboard_modal.html', context)
 
-    response = render(
-        request, 'partials/keyboard_row.html', {'kb': manager.keyboard_row(kb)}
-    )
+    row = manager.keyboard_row(kb)
+    messages.success(request, f'Saved {keyboard_name(row)}.')
+    response = render(request, 'partials/keyboard_row.html', {'kb': row})
     return htmx_swap(
         response, f'#{manager.row_id(current)}', 'outerHTML', const.CLOSE_DIALOG_EVENT
     )
@@ -240,6 +255,7 @@ def delete_keyboard(request):
     manager = KeyboardManager(request.user)
     inventory = manager.keyboard_inventory(*params)
     if inventory is None:
+        messages.error(request, 'That keyboard no longer exists.')
         raise Http404
 
     kb = inventory.keyboard.obj
@@ -252,7 +268,15 @@ def delete_keyboard(request):
         return render(request, 'partials/delete_keyboard_modal.html', context)
 
     row_id = manager.row_id(kb)
-    manager.delete_keyboard(inventory, request.POST.getlist('keep'))
+    name = keyboard_name(manager.keyboard_row(kb))
+    keep = request.POST.getlist('keep')
+    manager.delete_keyboard(inventory, keep)
+    if keep:
+        messages.success(
+            request, f'Deleted {name}, kept parts moved to parts inventory.'
+        )
+    else:
+        messages.success(request, f'Deleted {name}.')
     return htmx_swap(HttpResponse(), f'#{row_id}', 'delete', const.CLOSE_DIALOG_EVENT)
 
 

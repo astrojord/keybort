@@ -2,7 +2,7 @@ import json
 
 from django.contrib.messages import get_messages
 
-HTMX_NAVIGATION_HEADERS = ("HX-Redirect", "HX-Refresh", "HX-Location")
+HTMX_NAVIGATION_HEADERS = ('HX-Redirect', 'HX-Refresh', 'HX-Location')
 
 
 class HtmxMessagesMiddleware:
@@ -12,7 +12,7 @@ class HtmxMessagesMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        if "HX-Request" not in request.headers or response.status_code in range(300, 400):
+        if 'HX-Request' not in request.headers or 300 <= response.status_code < 400:
             return response
         if any(header in response for header in HTMX_NAVIGATION_HEADERS):
             return response
@@ -21,18 +21,22 @@ class HtmxMessagesMiddleware:
         if storage.used:
             return response
 
-        messages = [{"level": message.level_tag, "message": str(message)} for message in storage]
+        messages = [
+            {'level': message.level_tag, 'message': str(message)} for message in storage
+        ]
         if not messages:
             return response
 
-        response["HX-Trigger"] = json.dumps({**self._existing_triggers(response), "messages": messages})
+        response['HX-Trigger'] = json.dumps(
+            {**self._existing_triggers(response), 'messages': messages}
+        )
         return response
 
     @staticmethod
     def _existing_triggers(response):
-        header = response.get("HX-Trigger", "").strip()
+        header = response.get('HX-Trigger', '').strip()
         if not header:
             return {}
-        if header.startswith("{"):
+        if header.startswith('{'):
             return json.loads(header)
-        return {name.strip(): "" for name in header.split(",") if name.strip()}
+        return {name.strip(): '' for name in header.split(',') if name.strip()}
