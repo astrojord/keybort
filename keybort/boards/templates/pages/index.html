@@ -2,6 +2,116 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
 {% block content %}
-test
+{% if request.user.is_authenticated %}
+<div class="w-full flex flex-wrap justify-between items-center gap-2">
+    <h1 class="text-2xl">
+        <span class="text-brand font-semibold">Dashboard</span> -
+        {{request.user}}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{% url 'inventory_keyboards' %}" class="btn" data-variant="outline"><i class="fa fa-keyboard me-1"></i>Keyboards</a>
+        <a href="{% url 'inventory_parts' %}" class="btn" data-variant="outline"><i class="fas fa-cubes-stacked me-1"></i>Parts</a>
+    </div>
+</div>
+
+<div class="mt-4 grid gap-4 sm:grid-cols-3">
+    <a href="{% url 'inventory_keyboards' %}" class="card hover:bg-accent/50 transition-colors">
+        <header>
+            <p class="text-muted-foreground text-sm">Keyboards</p>
+            <h2 class="text-3xl font-semibold tabular-nums">{{ keyboard_count }}</h2>
+        </header>
+        <section class="text-muted-foreground text-sm">
+            {{ prebuilt_count }} prebuilt · {{ custom_count }} custom
+        </section>
+    </a>
+    <a href="{% url 'inventory_parts' %}" class="card hover:bg-accent/50 transition-colors">
+        <header>
+            <p class="text-muted-foreground text-sm">Parts on hand</p>
+            <h2 class="text-3xl font-semibold tabular-nums">{{ part_entries }}</h2>
+        </header>
+        <section class="text-muted-foreground text-sm">
+            entries not on a board
+        </section>
+    </a>
+    <a href="{% url 'inventory_parts' %}?type=switch" class="card hover:bg-accent/50 transition-colors">
+        <header>
+            <p class="text-muted-foreground text-sm">Loose switches</p>
+            <h2 class="text-3xl font-semibold tabular-nums">{{ switches_loose }}</h2>
+        </header>
+        <section class="text-muted-foreground text-sm">
+            {{ switches_on_boards }} more on boards
+        </section>
+    </a>
+</div>
+
+<div class="mt-4 grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-4">
+    {% for action in quick_actions %}
+    <a href="{% url action.url_name %}?add={{ action.add }}" class="card py-3 lg:py-6 hover:bg-accent/50 transition-colors">
+        <header class="flex items-center gap-2 lg:gap-3">
+            <span class="badge size-7 lg:size-9 aspect-square shrink-0" data-variant="secondary"><i class="{{ action.icon }}"></i></span>
+            <div>
+                <h2 class="font-semibold text-sm lg:text-base">{{ action.label }}</h2>
+                <p class="hidden lg:block text-muted-foreground text-sm">{{ action.description }}</p>
+            </div>
+        </header>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="mt-4 card">
+    <header class="flex items-center justify-between">
+        <h2 class="font-semibold">Recent keyboards</h2>
+        <a href="{% url 'inventory_keyboards' %}" class="btn" data-variant="ghost" data-size="sm">View all</a>
+    </header>
+    <section>
+        {% if recent_keyboards %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Kit</th>
+                    <th>Switches</th>
+                    <th>Keycaps</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kb in recent_keyboards %}
+                <tr>
+                    <td class="font-medium">{{ kb.kit_str|default:"—" }}</td>
+                    <td>{{ kb.switches_str|default:"—" }}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}</td>
+                    <td>{{ kb.keycaps_str|default:"—" }}</td>
+                    <td class="text-right">
+                        <span class="badge" data-variant="{% if kb.stock %}secondary{% else %}outline{% endif %}">{% if kb.stock %}Prebuilt{% else %}Custom{% endif %}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            <header>
+                <h3>No keyboards yet</h3>
+                <p>Add a prebuilt from the catalog or put together a custom build.</p>
+            </header>
+            <section>
+                <a href="{% url 'inventory_keyboards' %}?add=custom" class="btn"><i class="fas fa-plus me-1"></i>Add keyboard</a>
+            </section>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% else %}
+<div class="mx-auto max-w-2xl py-12 text-center">
+    <span class="badge size-12 aspect-square text-xl"><i class="fa fa-keyboard"></i></span>
+    <h1 class="mt-4 text-3xl font-semibold"><span class="text-brand">Keybort</span></h1>
+    <p class="mt-2 text-muted-foreground">
+        Track your mechanical keyboard collection and parts inventory.<br>Input your own parts or pick and choose from prebuilt and stock catalogs.
+    </p>
+    <div class="mt-6 flex justify-center gap-2">
+        <a href="{% url 'account_login' %}" class="btn">Sign in</a>
+        <a href="{% url 'stock_prebuilts' %}" class="btn" data-variant="outline">Browse the catalog</a>
+    </div>
+</div>
+{% endif %}
 
 {% endblock content %}

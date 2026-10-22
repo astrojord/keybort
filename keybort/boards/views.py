@@ -13,6 +13,9 @@ from .utils import htmx_swap, keyboard_params, model_to_dict_verbose
 # home/dashboard
 def index(request):
     context = {'page_title': 'Home'}
+    if request.user.is_authenticated:
+        context.update(KeyboardManager(request.user).dashboard())
+        context['quick_actions'] = const.QUICK_ACTIONS
     return render(request, 'pages/index.html', context)
 
 
@@ -21,6 +24,8 @@ def inventory_keyboards(request):
     context = {'page_title': 'Keyboard Inventory'}
     context['inventory'] = KeyboardManager(request.user).keyboard_rows()
     context['filters'] = list(const.KEYBOARD_KINDS.items())
+    add = request.GET.get('add')
+    context['open_add'] = add if add in const.KEYBOARD_KINDS else None
     # cut off text for part names after maybe 50 characters?
     # cut off text for mods + notes after some longer amount of characters
     return render(request, 'pages/inventory_keyboards.html', context)
@@ -31,6 +36,9 @@ def inventory_parts(request):
     context = {'page_title': 'Parts Inventory'}
     context['inventory'] = KeyboardManager(request.user).part_rows()
     context['filters'] = list(const.PART_PLURALS.items())
+    add = request.GET.get('add')
+    if add is not None:
+        context['open_add'] = add if add in KeyboardManager.PART_MODELS else ''
     return render(request, 'pages/inventory_parts.html', context)
 
 

@@ -117,3 +117,34 @@ PART_STEP_LABELS = {
 CLOSE_DIALOG_EVENT = 'close-dialog'
 
 QUANTITY_ERROR = 'Enter a whole number, 1 or more.'
+
+QUICK_ACTIONS = [
+    {
+        'label': 'New custom build',
+        'description': 'Put a board together from parts',
+        'icon': 'fas fa-screwdriver-wrench',
+        'url_name': 'inventory_keyboards',
+        'add': 'custom',
+    },
+    {
+        'label': 'Add a prebuilt',
+        'description': 'Pick one from the catalog',
+        'icon': 'fas fa-hammer',
+        'url_name': 'inventory_keyboards',
+        'add': 'prebuilt',
+    },
+    {
+        'label': 'Add switches',
+        'description': 'Log a new batch of switches',
+        'icon': 'fas fa-plus',
+        'url_name': 'inventory_parts',
+        'add': 'switch',
+    },
+    {
+        'label': 'Add a part',
+        'description': 'Kits, keycaps, plates, stabs',
+        'icon': 'fas fa-cubes-stacked',
+        'url_name': 'inventory_parts',
+        'add': '',
+    },
+]

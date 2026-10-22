@@ -1,18 +1,18 @@
 set dotenv-filename := "env/local.env"
 
 format:
-    sudo docker compose exec app ruff format
+    docker compose exec app ruff format
 check:
-    sudo docker compose exec app ruff check --fix
+    docker compose exec app ruff check --fix
 check-unsafe:
-    sudo docker compose exec app ruff check --fix --unsafe-fixes
+    docker compose exec app ruff check --fix --unsafe-fixes
 test:
-    sudo docker compose exec app python manage.py test
+    docker compose exec app python manage.py test
 empty-migration APP:
-    sudo docker compose exec app python manage.py makemigrations {{APP}} --empty
+    docker compose exec app python manage.py makemigrations {{APP}} --empty
 makemigrations *APPS:
-    sudo docker compose exec app python manage.py makemigrations {{APPS}}
+    docker compose exec app python manage.py makemigrations {{APPS}}
 migrate *APPS:
-    sudo docker compose exec app python manage.py migrate {{APPS}}
+    docker compose exec app python manage.py migrate {{APPS}}
 psql:
-    sudo docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
+    docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB

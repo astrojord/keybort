@@ -62,6 +62,17 @@
     </div>
 </div>
 
+{% if open_add %}
+<div
+    hidden
+    hx-get="{% url 'keyboard_add' %}"
+    hx-vals='{"kind": "{{ open_add }}"}'
+    hx-trigger="load"
+    hx-target="#page-dialog"
+    hx-on::after-request="history.replaceState(null, '', location.pathname)"
+></div>
+{% endif %}
+
 <dialog
     id="page-dialog"
     class="dialog"

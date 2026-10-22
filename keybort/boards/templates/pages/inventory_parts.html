@@ -58,6 +58,17 @@
     </div>
 </div>
 
+{% if open_add is not None %}
+<div
+    hidden
+    hx-get="{% url 'part_add' %}"
+    hx-vals='{"type": "{{ open_add }}"}'
+    hx-trigger="load"
+    hx-target="#page-dialog"
+    hx-on::after-request="history.replaceState(null, '', location.pathname)"
+></div>
+{% endif %}
+
 <dialog
     id="page-dialog"
     class="dialog"
@@ -76,7 +87,9 @@
     (() => {
         const filter = document.getElementById("parts-filter");
         const tbody = document.querySelector("#table-parts tbody");
-        let active = "";
+        let active = new URLSearchParams(location.search).get("type") ?? "";
+        if (!filter.querySelector(`[data-filter="${CSS.escape(active)}"]`)) active = "";
+        filter.dataset.active = active;
 
         // counts and visibility come from the rows, so they stay right after htmx adds/removes one
         function apply() {

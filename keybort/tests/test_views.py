@@ -281,3 +281,64 @@ class PartDetailViewTests(TestCase):
                 self.assertEqual(
                     self.client.get(reverse('part_detail'), params).status_code, 400
                 )
+
+
+class DashboardTests(ClientTestCase):
+    def test_counts(self):
+        prebuilt_in_inventory(self.user)
+        custom_keyboard(self.user)
+        custom_keyboard(self.other)
+        self.manager.add_to_parts(
+            'switch', Switch.objects.create(stock=stock_switch()), quantity=70
+        )
+        response = self.client.get(reverse('index'))
+
+        self.assertEqual(response.context['keyboard_count'], 2)
+        self.assertEqual(response.context['prebuilt_count'], 1)
+        self.assertEqual(response.context['custom_count'], 1)
+        self.assertEqual(response.context['part_entries'], 1)
+        self.assertEqual(response.context['switches_loose'], 70)
+        self.assertEqual(response.context['switches_on_boards'], 82)
+        self.assertEqual(len(response.context['recent_keyboards']), 2)
+        self.assertContains(response, '?add=custom')
+        self.assertContains(response, '?add=switch')
+
+    def test_empty_inventory(self):
+        response = self.client.get(reverse('index'))
+        self.assertEqual(response.context['keyboard_count'], 0)
+        self.assertEqual(response.context['recent_keyboards'], [])
+        self.assertContains(response, 'No keyboards yet')
+
+
+class AnonymousDashboardTests(TestCase):
+    def test_landing_page(self):
+        response = self.client.get(reverse('index'))
+        self.assertNotIn('keyboard_count', response.context)
+        self.assertContains(response, 'Sign in')
+
+
+class OpenAddModalTests(ClientTestCase):
+    def test_keyboards_page_opens_add_for_kind(self):
+        response = self.client.get(reverse('inventory_keyboards') + '?add=custom')
+        self.assertEqual(response.context['open_add'], 'custom')
+        self.assertContains(response, 'hx-trigger="load"')
+
+    def test_keyboards_page_ignores_unknown_kind(self):
+        response = self.client.get(reverse('inventory_keyboards') + '?add=bogus')
+        self.assertIsNone(response.context['open_add'])
+        self.assertNotContains(response, 'hx-trigger="load"')
+
+    def test_parts_page_opens_add_for_type(self):
+        response = self.client.get(reverse('inventory_parts') + '?add=switch')
+        self.assertEqual(response.context['open_add'], 'switch')
+        self.assertContains(response, 'hx-trigger="load"')
+
+    def test_parts_page_opens_type_picker(self):
+        response = self.client.get(reverse('inventory_parts') + '?add=bogus')
+        self.assertEqual(response.context['open_add'], '')
+        self.assertContains(response, 'hx-trigger="load"')
+
+    def test_parts_page_without_add(self):
+        response = self.client.get(reverse('inventory_parts'))
+        self.assertNotIn('open_add', response.context)
+        self.assertNotContains(response, 'hx-trigger="load"')

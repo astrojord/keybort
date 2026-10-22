@@ -16,6 +16,7 @@ def exactly_one_set(*fields):
 # ruff: noqa: RUF012
 # check constraint convention is to instantiate in Meta class, ignore for this file only
 
+
 class BoardsPermissions(models.Model):
     class Meta:
         permissions = (

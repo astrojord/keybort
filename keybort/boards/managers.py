@@ -228,6 +228,33 @@ class KeyboardManager:
             'detail_params': f'type={part_type}&id={obj.pk}&stock={int(obj.stock)}',
         }
 
+    # dashboard
+
+    def dashboard(self):
+        keyboards = [
+            inv.obj
+            for inv in Inventory.objects.filter(user=self.user, keyboard__isnull=False)
+            .select_related('keyboard__custom', 'keyboard__stock')
+            .order_by('-pk')
+        ]
+        prebuilts = sum(kb.stock for kb in keyboards)
+
+        parts = self.part_rows()
+
+        return {
+            'keyboard_count': len(keyboards),
+            'prebuilt_count': prebuilts,
+            'custom_count': len(keyboards) - prebuilts,
+            'part_entries': len(parts),
+            'switches_loose': sum(
+                row['quantity'] for row in parts if row['type'] == 'switch'
+            ),
+            'switches_on_boards': sum(
+                self.board_switch_count(kb) for kb in keyboards if kb.switch
+            ),
+            'recent_keyboards': [self.keyboard_row(kb) for kb in keyboards[:5]],
+        }
+
     # modal form state
 
     def keyboard_form_context(self, action_url, data=None, current=None, kind=None):
