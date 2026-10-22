@@ -12,6 +12,8 @@ Track personal mechanical keyboard collection and parts inventory. Users can wri
 #### To do
 - [ ] Stock part setup, including handler for CSV upload
 - [ ] UI/UX improvements - brainstorm
+  - [ ] Mobile tables are way too long - switch to some sort of stacked card/collapsible approach perhaps
+  - [ ] Overall, just needs more juice/visual interest
 - [ ] Use comboboxes for custom parts forms to allow a set of common brands/names etc, like the Gaterons, GMKs, SPs of the world
 - [ ] Break out part-specific table headers for specific part inventory - eg the switches table should have the stem type and actuation force etc etc
 - [ ] Typing minigame on dashboard?
