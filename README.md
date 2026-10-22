@@ -10,10 +10,12 @@ Track personal mechanical keyboard collection and parts inventory. Users can wri
 - Will run via docker + nginx on my homelab server
 
 #### To do
-- [ ] Tests
 - [ ] Stock part setup, including handler for CSV upload
 - [ ] UI/UX improvements - brainstorm
+- [ ] Use comboboxes for custom parts forms to allow a set of common brands/names etc, like the Gaterons, GMKs, SPs of the world
 - [ ] Break out part-specific table headers for specific part inventory - eg the switches table should have the stem type and actuation force etc etc
+- [ ] Typing minigame on dashboard?
+- [ ] allauth social account stuff, or at the very least, email verification
 
 #### Feature/docs wishlist
 - Stock prebuilt section for stuff like Logitech/Razer/Corsair, Keychron's prebuilts, etc
