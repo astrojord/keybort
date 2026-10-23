@@ -329,13 +329,29 @@ class KeyboardManager:
             ],
         }
 
-    def delete_stock_part(self, part_type, obj):
-        wrapper_model, custom_model, _, _ = self.PART_MODELS[part_type]
-        fields = {
+    @staticmethod
+    def part_fields(obj, custom_model):
+        return {
             field.attname: getattr(obj, field.attname)
             for field in custom_model._meta.concrete_fields
             if not field.primary_key
         }
+
+    def promote_part(self, inv):
+        part_type = self.part_type_of(inv)
+        wrapper = getattr(inv, part_type)
+        _, custom_model, stock_model, _ = self.PART_MODELS[part_type]
+        custom = wrapper.custom
+        with transaction.atomic():
+            stock = stock_model.objects.create(**self.part_fields(custom, custom_model))
+            wrapper.custom, wrapper.stock = None, stock
+            wrapper.save()
+            custom.delete()
+        return stock
+
+    def delete_stock_part(self, part_type, obj):
+        wrapper_model, custom_model, _, _ = self.PART_MODELS[part_type]
+        fields = self.part_fields(obj, custom_model)
         with transaction.atomic():
             for wrapper in wrapper_model.objects.filter(stock=obj):
                 for rel in wrapper._meta.related_objects:

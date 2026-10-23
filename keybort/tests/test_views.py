@@ -9,6 +9,7 @@ from boards.managers import KeyboardManager
 from boards.models import (
     CustomKit,
     Inventory,
+    Kit,
     Profile,
     StockKeyboard,
     StockKeycaps,
@@ -1199,3 +1200,69 @@ class MultiDeleteViewTests(ClientTestCase):
         response = self.client.get(reverse('stock_switches'))
         self.assertContains(response, 'data-bulk-all')
         self.assertContains(response, 'data-bulk value=')
+
+
+class PromotePartViewTests(ClientTestCase):
+    def setUp(self):
+        super().setUp()
+        self.uploader = make_user('uploader')
+        grant(self.uploader, 'can_upload_stock_data')
+        self.client.force_login(self.uploader)
+        self.wrapper = custom_kit_wrapper(size='65%', notes='promote me')
+        self.inv = Inventory.objects.create(
+            user=self.uploader, kit=self.wrapper, quantity=2
+        )
+        self.url = f'{reverse("part_promote")}?id={self.inv.pk}'
+
+    def test_without_permission_forbidden(self):
+        Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+        self.assertEqual(self.client.post(self.url).status_code, 403)
+        self.assertFalse(StockKit.objects.exists())
+
+    def test_edit_popup_button_follows_permission(self):
+        edit_url = f'{reverse("part_edit")}?id={self.inv.pk}'
+        self.assertContains(self.client.get(edit_url), self.url)
+        mine = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
+        self.client.force_login(self.user)
+        response = self.client.get(f'{reverse("part_edit")}?id={mine.pk}')
+        self.assertNotContains(response, reverse('part_promote'))
+
+    def test_get_confirms(self):
+        response = self.client.get(self.url)
+        self.assertTemplateUsed(response, 'partials/part_promote_modal.html')
+        self.assertContains(response, reverse('stock_kits'))
+
+    def test_post_turns_custom_into_stock(self):
+        build = custom_keyboard(self.uploader, kit=self.wrapper)
+        custom_id = self.wrapper.custom_id
+        response = self.client.post(self.url)
+        self.assertEqual(response['HX-Retarget'], f'#part-{self.inv.pk}')
+        self.assertTrue(response.context['part']['stock'])
+
+        stock = StockKit.objects.get()
+        self.assertEqual(
+            (stock.brand, stock.name, stock.size, stock.notes),
+            ('KBDfans', 'Tofu65', '65%', 'promote me'),
+        )
+        self.wrapper.refresh_from_db()
+        self.assertEqual((self.wrapper.stock, self.wrapper.custom), (stock, None))
+        self.inv.refresh_from_db()
+        self.assertEqual(self.inv.quantity, 2)
+        build.refresh_from_db()
+        self.assertEqual(build.kit.obj, stock)
+        self.assertFalse(
+            CustomKit.objects.filter(pk=custom_id, stockkit__isnull=True).exists()
+        )
+
+    def test_stock_part_and_bad_params(self):
+        inv, _ = KeyboardManager(self.uploader).collect_stock_part(
+            'switch', stock_switch(), 1
+        )
+        url = reverse('part_promote')
+        self.assertEqual(self.client.get(f'{url}?id={inv.pk}').status_code, 400)
+        self.assertEqual(self.client.get(f'{url}?id=x').status_code, 400)
+        theirs = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
+        self.assertEqual(self.client.post(f'{url}?id={theirs.pk}').status_code, 404)
+        self.assertIsNotNone(Kit.objects.get(pk=theirs.kit_id).custom_id)

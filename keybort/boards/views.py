@@ -120,14 +120,16 @@ def edit_part(request):
         raise Http404
 
     action_url = f'{reverse("part_edit")}?id={inv.pk}'
-    delete_url = f'{reverse("part_delete")}?ids={inv.pk}'
+    urls = {'delete_url': f'{reverse("part_delete")}?ids={inv.pk}', 'promote_url': None}
+    if request.user.has_perm('boards.can_upload_stock_data'):
+        urls['promote_url'] = f'{reverse("part_promote")}?id={inv.pk}'
     if request.method != 'POST':
         context = manager.edit_part_context(inv, action_url)
-        context['delete_url'] = delete_url
+        context.update(urls)
         return render(request, 'partials/part_edit_modal.html', context)
 
     context = manager.edit_part_context(inv, action_url, request.POST)
-    context['delete_url'] = delete_url
+    context.update(urls)
     inv = manager.edit_part(context, request.POST)
     if inv is None:
         return render(request, 'partials/part_edit_modal.html', context)
@@ -136,6 +138,42 @@ def edit_part(request):
     messages.success(request, f'Saved {row["name"]}.')
     response = render(request, 'partials/part_row.html', {'part': row})
     return htmx_swap(response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT)
+
+
+@permission_required('boards.can_upload_stock_data', raise_exception=True)
+def promote_part(request):
+    part_id = request.GET.get('id', '')
+    if not part_id.isdigit():
+        return HttpResponse(status=400)
+
+    manager = KeyboardManager(request.user)
+    inv = manager.standalone_part(part_id)
+    if inv is None:
+        messages.error(request, 'That part no longer exists.')
+        raise Http404
+
+    part_type = manager.part_type_of(inv)
+    wrapper = getattr(inv, part_type)
+    if not wrapper.custom_id:
+        return HttpResponse(status=400)
+
+    name = manager.part_name(wrapper.obj)
+    if request.method != 'POST':
+        context = {
+            'name': name,
+            'type_label': const.PART_SINGULARS[part_type],
+            'catalog_url': reverse(f'stock_{const.PART_PLURALS[part_type].lower()}'),
+            'action_url': f'{reverse("part_promote")}?id={inv.pk}',
+        }
+        return render(request, 'partials/part_promote_modal.html', context)
+
+    manager.promote_part(inv)
+    messages.success(request, f'Added {name} to the catalog.')
+    row = manager.part_row(manager.standalone_part(inv.pk))
+    response = render(request, 'partials/part_row.html', {'part': row})
+    return htmx_swap(
+        response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
+    )
 
 
 @login_required(login_url='/accounts/login')
