@@ -5,6 +5,7 @@
 
 @theme {
     --color-brand: #dc143c;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 .toaster .toast .toast-content section p {
