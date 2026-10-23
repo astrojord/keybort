@@ -99,6 +99,9 @@
     </section>
 
     <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {% if delete_url %}
+        <button type="button" class="btn sm:me-auto" data-variant="destructive" hx-get="{{ delete_url }}" hx-target="#page-dialog"><i class="fas fa-trash"></i>Delete</button>
+        {% endif %}
         <button type="button" class="btn" data-variant="outline" data-action="back">Back</button>
         <button type="button" class="btn" data-action="next">Next</button>
         {% if editing %}

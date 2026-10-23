@@ -23,8 +23,8 @@
     <label>
         <div class="field" data-orientation="horizontal">
             <section>
-                <h3>Custom</h3>
-                <p>Enter details</p>
+                <h3>{% if part.catalog %}New{% else %}Custom{% endif %}</h3>
+                <p>{% if part.catalog %}Add it to the catalog{% else %}Enter details{% endif %}</p>
             </section>
             <input type="radio" name="{{ part.type }}-source" value="custom" required{% if part.source == "custom" %} checked{% endif %}>
         </div>
@@ -48,7 +48,7 @@
 </div>
 {% endif %}
 
-{% if part.current %}
+{% if part.current and not part.catalog %}
 <fieldset data-removal data-current-source="{{ part.current.source }}" data-current-stock="{{ part.current.stock_id }}" class="grid min-w-0 gap-3 rounded-lg border p-4" aria-label="What to do with {{ part.current.name }}">
     <p class="text-sm">This takes <strong>{{ part.current.name }}</strong> off the board. What should happen to it?</p>
     <div class="field" data-orientation="horizontal">

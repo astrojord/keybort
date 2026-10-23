@@ -1,0 +1,18 @@
+<div id="{{ id_prefix }}-filters" class="card mt-4 overflow-visible" role="search" aria-label="Filter {{ noun }}">
+    <header class="flex flex-wrap items-center justify-between gap-2">
+        <h2>Filters</h2>
+        <div class="flex items-center gap-3">
+            <span class="text-muted-foreground text-sm tabular-nums" data-filter-summary aria-live="polite"></span>
+            <button type="button" class="btn" data-variant="outline" data-size="sm" data-filter-clear hidden><i class="fas fa-xmark"></i>Clear filters</button>
+        </div>
+    </header>
+    <section class="grid gap-4 grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
+        <div class="grid content-start gap-2">
+            <label for="{{ id_prefix }}-search" class="label">Search</label>
+            <input type="search" id="{{ id_prefix }}-search" class="input" placeholder="{{ placeholder }}" value="{{ query }}" data-filter-search>
+        </div>
+        {% for facet in facets %}
+        {% include "partials/filter_combobox.html" %}
+        {% endfor %}
+    </section>
+</div>

@@ -21,6 +21,7 @@ class BoardsPermissions(models.Model):
     class Meta:
         permissions = (
             ('can_upload_stock_data', 'Can bulk upload stock data'),
+            ('can_edit_stock_data', 'Can edit stock data'),
             ('can_delete_stock_data', 'Can delete stock data'),
         )
 

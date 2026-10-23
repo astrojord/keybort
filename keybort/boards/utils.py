@@ -1,3 +1,8 @@
+import json
+
+from django.http import HttpResponse
+
+
 def model_to_dict_verbose(instance, fields=None, exclude=None):
     opts = instance._meta
     data = {}
@@ -29,6 +34,11 @@ def keyboard_params(request):
     return kb_id, stock == '1'
 
 
+def bulk_ids(request):
+    values = request.POST.getlist('ids') or request.GET.getlist('ids')
+    return [value for value in values if value]
+
+
 def htmx_swap(response, target, swap, trigger=None):
     """send an htmx response somewhere other than the requesting element's target"""
     response['HX-Retarget'] = target
@@ -36,3 +46,8 @@ def htmx_swap(response, target, swap, trigger=None):
     if trigger:
         response['HX-Trigger'] = trigger
     return response
+
+
+def bulk_deleted(row_ids, close_event):
+    triggers = {close_event: '', 'rows-deleted': {'ids': row_ids}}
+    return htmx_swap(HttpResponse(), '#page-dialog', 'none', json.dumps(triggers))

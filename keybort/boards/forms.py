@@ -13,6 +13,12 @@ from .models import (
     Plate,
     Profile,
     Stabilizer,
+    StockKeyboard,
+    StockKeycaps,
+    StockKit,
+    StockPlate,
+    StockStabilizer,
+    StockSwitch,
     Switch,
 )
 
@@ -102,6 +108,37 @@ class CustomStabilizerForm(CustomPartForm):
 class CustomKeyboardDetailsForm(CustomPartForm):
     class Meta:
         model = CustomKeyboard
+        fields = ['bluetooth', 'wireless', 'notes', 'references']
+
+
+class StockKitForm(CustomKitForm):
+    class Meta(CustomKitForm.Meta):
+        model = StockKit
+
+
+class StockSwitchForm(CustomSwitchForm):
+    class Meta(CustomSwitchForm.Meta):
+        model = StockSwitch
+
+
+class StockKeycapsForm(CustomKeycapsForm):
+    class Meta(CustomKeycapsForm.Meta):
+        model = StockKeycaps
+
+
+class StockPlateForm(CustomPlateForm):
+    class Meta(CustomPlateForm.Meta):
+        model = StockPlate
+
+
+class StockStabilizerForm(CustomStabilizerForm):
+    class Meta(CustomStabilizerForm.Meta):
+        model = StockStabilizer
+
+
+class StockKeyboardDetailsForm(CustomPartForm):
+    class Meta:
+        model = StockKeyboard
         fields = ['bluetooth', 'wireless', 'notes', 'references']
 
 

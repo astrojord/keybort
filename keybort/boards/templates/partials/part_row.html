@@ -1,4 +1,5 @@
 <tr id="{{part.row_id}}" data-type="{{part.type}}">
+    <td><input type="checkbox" class="input" data-bulk value="{{part.id}}" aria-label="Select {{part.name}}"></td>
     <td>
         <div class="flex items-center gap-1">
             <button
@@ -12,18 +13,6 @@
                 hx-target="#page-dialog"
             >
                 <i class="fas fa-edit"></i>
-            </button>
-            <button
-                type="button"
-                class="btn text-red-400"
-                data-variant="ghost"
-                data-size="icon-sm"
-                aria-label="Delete {{part.name}}"
-                data-tooltip="Delete"
-                hx-get="{% url 'part_delete' %}?id={{part.id}}"
-                hx-target="#page-dialog"
-            >
-                <i class="fas fa-trash"></i>
             </button>
         </div>
     </td>

@@ -23,6 +23,7 @@
     </div>
     <input type="search" id="keyboards-search" class="input w-full sm:w-64" placeholder="Search keyboards" aria-label="Search keyboards">
 </div>
+{% include "partials/bulk_bar.html" with id_prefix="keyboards" %}
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
@@ -32,6 +33,7 @@
             >
                 <thead>
                     <tr>
+                        <th class="w-px"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"></th>
                         <th></th>
                         {% include "partials/sort_header.html" with key="kit" label="Kit" %}
                         {% include "partials/sort_header.html" with key="pcb" label="PCB" %}
@@ -88,6 +90,7 @@
 {% endblock content %}
 
 {% block page_js %}
+<script src="{% static 'tables.js' %}"></script>
 <script src="{% static 'table_filter.js' %}"></script>
 <script>
     initTableFilter({
@@ -96,6 +99,14 @@
         search: document.getElementById("keyboards-search"),
         empty: document.getElementById("keyboards-empty"),
         param: "kind",
+    });
+</script>
+<script src="{% static 'bulk_select.js' %}"></script>
+<script>
+    initBulkSelect({
+        table: document.getElementById("table-keyboards"),
+        bar: document.getElementById("keyboards-bulk"),
+        url: "{% url 'keyboard_delete' %}",
     });
 </script>
 {% endblock page_js %}

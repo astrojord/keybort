@@ -113,6 +113,47 @@ PART_STEP_LABELS = {
     'stabilizer': 'Stabilizers',
 }
 
+CONNECTIVITY = ['Wired', 'Wireless', 'Bluetooth']
+
+STOCK_PREBUILT_FACETS = [
+    ('brand', 'Brand', None),
+    ('size', 'Size', None),
+    ('layout', 'Layout', None),
+    ('connectivity', 'Connectivity', CONNECTIVITY),
+]
+
+STOCK_PART_FIELDS = {
+    'kit': {
+        'columns': ['size', 'layout', 'pcb', 'case_material', 'mount_type'],
+        'facets': ['brand', 'size', 'layout', 'mount_type'],
+    },
+    'switch': {
+        'columns': [
+            'category',
+            'stem',
+            'bottom_out_force',
+            'travel_distance',
+            'top_housing',
+            'bottom_housing',
+        ],
+        'facets': ['brand', 'category', 'stem', 'top_housing', 'bottom_housing'],
+    },
+    'keycaps': {
+        'columns': ['material'],
+        'facets': ['brand', 'material'],
+    },
+    'plate': {
+        'columns': ['material', 'flex_cuts', 'half'],
+        'facets': ['material', 'flex_cuts', 'half'],
+    },
+    'stabilizer': {
+        'columns': [],
+        'facets': ['brand'],
+    },
+}
+
+FIELD_LABELS = {'pcb': 'PCB', 'category': 'Type', 'half': 'Half plate'}
+
 # htmx event the page dialogs listen for to close themselves after a save
 CLOSE_DIALOG_EVENT = 'close-dialog'
 

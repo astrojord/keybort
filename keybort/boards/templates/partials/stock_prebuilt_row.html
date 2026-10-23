@@ -1,0 +1,46 @@
+<tr id="{{kb.row_id}}"{% for key, values in kb.facets.items %} data-facet-{{key}}="{{values|join:'|'}}"{% endfor %}>
+    {% if perms.boards.can_delete_stock_data %}<td><input type="checkbox" class="input" data-bulk value="{{kb.id}}" aria-label="Select {{kb.name}}"></td>{% endif %}
+    {% if user.is_authenticated %}
+    <td>
+        <div class="flex items-center gap-1">
+        {% if perms.boards.can_edit_stock_data %}
+        <button
+            type="button"
+            class="btn"
+            data-variant="ghost"
+            data-size="icon-sm"
+            aria-label="Edit {{kb.name}}"
+            data-tooltip="Edit"
+            hx-get="{% url 'stock_prebuilt_edit' %}?id={{kb.id}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-edit"></i>
+        </button>
+        {% endif %}
+        {% if kb.owned %}
+        <a href="{% url 'inventory_keyboards' %}?kind=prebuilt" class="badge" data-variant="secondary"><i class="fas fa-check"></i>In inventory</a>
+        {% else %}
+        <button
+            type="button"
+            class="btn"
+            data-variant="outline"
+            data-size="sm"
+            aria-label="Add {{kb.name}} to my keyboards"
+            hx-post="{% url 'stock_prebuilt_collect' %}?id={{kb.id}}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+        >
+            <i class="fas fa-plus"></i>Add
+        </button>
+        {% endif %}
+        </div>
+    </td>
+    {% endif %}
+    <td class="font-medium" data-sort-value="{{kb.name}}">{% if kb.kit_params %}{% include "partials/part_link.html" with label=kb.name params=kb.kit_params %}{% else %}{{kb.name}}{% endif %}</td>
+    <td>{{kb.size|default:''}}</td>
+    <td>{{kb.layout|default:''}}</td>
+    <td>{% if kb.switch_str %}{% include "partials/part_link.html" with label=kb.switch_str params=kb.switch_params %}{% endif %}</td>
+    <td>{% if kb.keycaps_str %}{% include "partials/part_link.html" with label=kb.keycaps_str params=kb.keycaps_params %}{% endif %}</td>
+    <td>{{kb.connectivity}}</td>
+    <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{kb.notes|default:''}}">{{kb.notes|default:''}}</p></td>
+</tr>

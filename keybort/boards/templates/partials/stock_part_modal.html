@@ -1,0 +1,34 @@
+{% load allauth %}
+<form id="stock-part-form" class="sm:max-w-2xl" hx-post="{{ action_url }}" hx-target="#page-dialog">
+    {% csrf_token %}
+    <header>
+        {% if editing %}
+        <h2 id="page-dialog-title">Edit catalog {{ type_label|lower }}</h2>
+        <p id="page-dialog-description">Changes show up for everyone using this {{ type_label|lower }}, including catalog prebuilts.</p>
+        {% else %}
+        <h2 id="page-dialog-title">Add {{ type_label|lower }} to catalog</h2>
+        <p id="page-dialog-description">Everyone can see and add catalog parts.</p>
+        {% endif %}
+    </header>
+
+    <section class="-mx-6 min-h-0 overflow-y-auto px-6">
+        <div class="grid min-w-0 gap-4">
+            {% element fields form=form %}
+            {% endelement %}
+        </div>
+    </section>
+
+    <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {% if delete_url %}
+        <button type="button" class="btn sm:me-auto" data-variant="destructive" hx-get="{{ delete_url }}" hx-target="#page-dialog"><i class="fas fa-trash"></i>Delete</button>
+        {% endif %}
+        <button type="button" class="btn" data-variant="outline" onclick="this.closest('dialog').close()">Cancel</button>
+        {% if editing %}
+        <button type="submit" class="btn bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/50">Save changes</button>
+        {% else %}
+        <button type="submit" class="btn">Add to catalog</button>
+        {% endif %}
+    </footer>
+
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+</form>

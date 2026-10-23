@@ -1,0 +1,70 @@
+<form id="delete-form" class="sm:w-fit sm:min-w-md sm:max-w-[calc(100%-2rem)]" hx-post="{{ action_url }}" hx-target="#page-dialog">
+    {% csrf_token %}
+    {% for id in ids %}
+    <input type="hidden" name="ids" value="{{ id }}">
+    {% endfor %}
+    <header>
+        {% if items %}
+        <h2 id="page-dialog-title">{{ title }}</h2>
+        <p id="page-dialog-description" class="contain-inline-size">{{ description }}</p>
+        {% else %}
+        <h2 id="page-dialog-title">Nothing can be deleted</h2>
+        <p id="page-dialog-description">Everything selected is used by catalog prebuilts. Swap them out of those prebuilts first.</p>
+        {% endif %}
+    </header>
+
+    {% if items|length > 1 or blocked or parts or reminder %}
+    <section class="-mx-6 min-h-0 overflow-y-auto px-6 grid gap-4">
+        {% if items|length > 1 %}
+        <ul class="list-disc ps-5 text-sm">
+            {% for item in items %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if blocked %}
+        <div class="alert" data-variant="destructive">
+            <section>
+                <p>{% if items %}These stay because catalog prebuilts use them:{% else %}Used by prebuilts:{% endif %}</p>
+                <ul class="list-disc ps-5">
+                    {% for name, prebuilts in blocked %}
+                    <li><strong>{{ name }}</strong> ({{ prebuilts }})</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+        {% endif %}
+
+        {% if parts %}
+        <fieldset class="grid gap-3">
+            <p class="text-sm contain-inline-size">Which parts do you still have? Anything unchecked will be deleted, but everything else will go to your parts inventory.</p>
+            {% for part in parts %}
+            <div class="field" data-orientation="horizontal">
+                <input type="checkbox" id="id_keep-{{ part.type }}" name="keep" value="{{ part.type }}"{% if keep_default %} checked{% endif %}>
+                <label for="id_keep-{{ part.type }}" class="sm:whitespace-nowrap"><span class="text-muted-foreground">{{ part.label }}:</span> {{ part.name }}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}</label>
+            </div>
+            {% endfor %}
+        </fieldset>
+        {% endif %}
+
+        {% if reminder %}
+        <div class="alert">
+            <i class="fas fa-circle-info" aria-hidden="true"></i>
+            <section class="contain-inline-size">{{ reminder }}</section>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {% if items %}
+        <button type="button" class="btn" data-variant="outline" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn" data-variant="destructive">Delete{% if items|length > 1 %} {{ items|length }}{% endif %}</button>
+        {% else %}
+        <button type="button" class="btn" onclick="this.closest('dialog').close()">Close</button>
+        {% endif %}
+    </footer>
+
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+</form>

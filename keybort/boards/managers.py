@@ -15,6 +15,12 @@ from .forms import (
     CustomPlateForm,
     CustomStabilizerForm,
     CustomSwitchForm,
+    StockKeyboardDetailsForm,
+    StockKeycapsForm,
+    StockKitForm,
+    StockPlateForm,
+    StockStabilizerForm,
+    StockSwitchForm,
 )
 from .models import (
     CustomKeyboard,
@@ -53,6 +59,14 @@ class KeyboardManager:
             StockStabilizer,
             CustomStabilizerForm,
         ),
+    }
+
+    STOCK_FORMS: ClassVar[dict] = {
+        'kit': StockKitForm,
+        'switch': StockSwitchForm,
+        'keycaps': StockKeycapsForm,
+        'plate': StockPlateForm,
+        'stabilizer': StockStabilizerForm,
     }
 
     def __init__(self, user):
@@ -178,6 +192,201 @@ class KeyboardManager:
                 )
                 data[f'{part_type}_str'] = str(obj)
 
+        return data
+
+    def owned_prebuilt_ids(self):
+        if not self.user.is_authenticated:
+            return set()
+        return set(
+            Inventory.objects.filter(
+                user=self.user, keyboard__stock__isnull=False
+            ).values_list('keyboard__stock', flat=True)
+        )
+
+    def stock_prebuilt_rows(self):
+        owned = self.owned_prebuilt_ids()
+        stock_keyboards = StockKeyboard.objects.select_related(
+            'kit', 'switch', 'keycaps', 'plate', 'stabilizer'
+        )
+        rows = [self.stock_prebuilt_row(kb, kb.pk in owned) for kb in stock_keyboards]
+        rows.sort(key=lambda row: row['name'].lower())
+        return rows
+
+    @staticmethod
+    def filter_facets(rows, selected, specs):
+        facets = []
+        for key, label, fixed in specs:
+            values = fixed or sorted(
+                {value for row in rows for value in row['facets'].get(key, [])},
+                key=str.lower,
+            )
+            chosen = selected.getlist(key)
+            facets.append(
+                {
+                    'key': key,
+                    'label': label,
+                    'options': [(value, value in chosen) for value in values],
+                }
+            )
+        return facets
+
+    @staticmethod
+    def field_label(model, name):
+        return const.FIELD_LABELS.get(
+            name, model._meta.get_field(name).verbose_name.capitalize()
+        )
+
+    @staticmethod
+    def field_display(obj, name):
+        field = obj._meta.get_field(name)
+        value = getattr(obj, name)
+        if value is None or value == '':
+            return ''
+        if field.choices:
+            return getattr(obj, f'get_{name}_display')()
+        if isinstance(value, bool):
+            return 'Yes' if value else 'No'
+        if isinstance(value, float):
+            return f'{value:g}{field.help_text}'
+        return str(value)
+
+    @classmethod
+    def stock_part_specs(cls, part_type):
+        stock_model = cls.PART_MODELS[part_type][2]
+        fields = const.STOCK_PART_FIELDS[part_type]
+        columns = [
+            (name, cls.field_label(stock_model, name)) for name in fields['columns']
+        ]
+        facets = [
+            (name, cls.field_label(stock_model, name), None)
+            for name in fields['facets']
+        ]
+        return columns, facets
+
+    def stock_part_quantities(self, part_type):
+        if not self.user.is_authenticated:
+            return {}
+        return dict(
+            Inventory.objects.filter(
+                user=self.user,
+                keyboard__isnull=True,
+                **{f'{part_type}__stock__isnull': False},
+            ).values_list(f'{part_type}__stock', 'quantity')
+        )
+
+    def stock_part_rows(self, part_type):
+        quantities = self.stock_part_quantities(part_type)
+        rows = [
+            self.stock_part_row(part_type, obj, quantities.get(obj.pk, 0))
+            for obj in self.PART_MODELS[part_type][2].objects.all()
+        ]
+        rows.sort(key=lambda row: row['name'].lower())
+        return rows
+
+    @classmethod
+    def stock_part_row(cls, part_type, obj, quantity=0):
+        fields = const.STOCK_PART_FIELDS[part_type]
+        facets = {}
+        for name in fields['facets']:
+            value = cls.field_display(obj, name)
+            if value:
+                facets[name] = [value]
+        return {
+            'id': obj.pk,
+            'row_id': f'stock-{part_type}-{obj.pk}',
+            'type': part_type,
+            'url_params': f'type={part_type}&id={obj.pk}',
+            'name': cls.part_name(obj),
+            'detail_params': cls.detail_params(part_type, obj, ''),
+            'columns': [cls.field_display(obj, name) for name in fields['columns']],
+            'facets': facets,
+            'notes': obj.notes,
+            'quantity': quantity,
+        }
+
+    def stock_part(self, part_type, part_id):
+        return self.PART_MODELS[part_type][2].objects.filter(pk=part_id).first()
+
+    def collect_stock_part(self, part_type, obj, quantity):
+        wrapper, _ = self.PART_MODELS[part_type][0].objects.get_or_create(stock=obj)
+        return self.add_to_parts(part_type, wrapper, quantity)
+
+    @staticmethod
+    def stock_part_usage(part_type, obj):
+        return {
+            'owner_count': Inventory.objects.filter(
+                Q(**{f'{part_type}__stock': obj})
+                | Q(**{f'keyboard__custom__{part_type}__stock': obj})
+            )
+            .values('user')
+            .distinct()
+            .count(),
+            'prebuilts': [
+                str(kb) if kb.kit else 'Unnamed prebuilt'
+                for kb in StockKeyboard.objects.filter(
+                    **{part_type: obj}
+                ).select_related('kit')
+            ],
+        }
+
+    def delete_stock_part(self, part_type, obj):
+        wrapper_model, custom_model, _, _ = self.PART_MODELS[part_type]
+        fields = {
+            field.attname: getattr(obj, field.attname)
+            for field in custom_model._meta.concrete_fields
+            if not field.primary_key
+        }
+        with transaction.atomic():
+            for wrapper in wrapper_model.objects.filter(stock=obj):
+                for rel in wrapper._meta.related_objects:
+                    rows = rel.related_model._base_manager.filter(
+                        **{rel.field.name: wrapper}
+                    )
+                    for row in rows:
+                        copy = wrapper_model.objects.create(
+                            custom=custom_model.objects.create(**fields)
+                        )
+                        setattr(row, rel.field.name, copy)
+                        row.save(update_fields=[rel.field.name])
+            obj.delete()
+
+    @classmethod
+    def stock_prebuilt_row(cls, kb, owned=False):
+        connectivity = [
+            label
+            for label, enabled in (
+                ('Wireless', kb.wireless),
+                ('Bluetooth', kb.bluetooth),
+            )
+            if enabled
+        ]
+        data = {
+            'id': kb.pk,
+            'row_id': f'prebuilt-{kb.pk}',
+            'name': str(kb) if kb.kit else 'Unnamed prebuilt',
+            'brand': (kb.kit.brand or '') if kb.kit else '',
+            'owned': owned,
+            'connectivity': ', '.join(connectivity) or 'Wired',
+            'facets': {'connectivity': connectivity or ['Wired']},
+            'notes': kb.notes,
+        }
+        if kb.kit:
+            for key in ('brand', 'size', 'layout'):
+                if getattr(kb.kit, key):
+                    data['facets'][key] = [getattr(kb.kit, key)]
+            data.update(
+                {
+                    'kit_params': cls.detail_params('kit', kb.kit, ''),
+                    'size': kb.kit.size,
+                    'layout': kb.kit.layout,
+                    'pcb': kb.kit.pcb,
+                }
+            )
+        for part_type in ('switch', 'keycaps', 'plate', 'stabilizer'):
+            part = getattr(kb, part_type)
+            if part:
+                data[f'{part_type}_str'] = cls.part_name(part)
+                data[f'{part_type}_params'] = cls.detail_params(part_type, part, '')
         return data
 
     @classmethod
@@ -333,6 +542,28 @@ class KeyboardManager:
             'details_form': details_form,
         }
 
+    def stock_keyboard_form_context(self, action_url, data=None, current=None):
+        data = data or {}
+        return {
+            'action_url': action_url,
+            'editing': current is not None,
+            'parts': [
+                self.part_choice(
+                    part_type,
+                    data,
+                    current=getattr(current, part_type, None),
+                    required=part_type == 'kit',
+                    preferred='stock',
+                    catalog=True,
+                )
+                for part_type in self.PART_MODELS
+            ],
+            'details_form': StockKeyboardDetailsForm(
+                data or None, prefix='details', instance=current
+            ),
+            'step': None,
+        }
+
     def owned_parts(self, part_type):
         return self.standalone_parts().filter(**{f'{part_type}__isnull': False})
 
@@ -345,8 +576,11 @@ class KeyboardManager:
         required=False,
         owned=None,
         preferred='smart',
+        catalog=False,
     ):
         _, _, stock_model, form_class = cls.PART_MODELS[part_type]
+        if catalog:
+            form_class = cls.STOCK_FORMS[part_type]
         label = const.PART_STEP_LABELS[part_type]
         stock_options = stock_model.objects.all()
         owned_options = None
@@ -386,6 +620,7 @@ class KeyboardManager:
             'type': part_type,
             'label': label,
             'required': required,
+            'catalog': catalog,
             'source': source,
             'stock_options': stock_options,
             'stock_id': data.get(f'{part_type}-stock', stock_id),
@@ -568,13 +803,62 @@ class KeyboardManager:
             # keyboard_inventory looks these up by stock board, so one per user
             context['prebuilt_error'] = 'That prebuilt is already in your inventory.'
         else:
-            # Keyboard.stock is one-to-one, every user shares the same wrapper for a stock board
-            keyboard, _ = Keyboard.objects.get_or_create(stock=stock_kb)
-            Inventory.objects.create(user=self.user, keyboard=keyboard)
+            self.collect_prebuilt(stock_kb)
             return stock_kb
 
         context['step'] = 'prebuilt'
         return None
+
+    def collect_prebuilt(self, stock_kb):
+        # Keyboard.stock is one-to-one, every user shares the same wrapper for a stock board
+        keyboard, _ = Keyboard.objects.get_or_create(stock=stock_kb)
+        return Inventory.objects.create(user=self.user, keyboard=keyboard)
+
+    def save_stock_keyboard(self, context, data):
+        chosen = {}
+        for part in context['parts']:
+            choice = self.validate_part_choice(data, part)
+            if choice is not None:
+                chosen[part['type']] = choice
+            if part['error'] and context['step'] is None:
+                context['step'] = part['type']
+        if not context['details_form'].is_valid() and context['step'] is None:
+            context['step'] = 'details'
+        if context['step'] is not None:
+            return None
+
+        with transaction.atomic():
+            stock_kb = context['details_form'].save(commit=False)
+            for part_type in self.PART_MODELS:
+                source, value = chosen.get(part_type, ('none', None))
+                if source == 'custom':
+                    value = value.save()
+                setattr(stock_kb, part_type, value)
+            stock_kb.save()
+        return stock_kb
+
+    @staticmethod
+    def stock_keyboard_owners(stock_kb):
+        return Inventory.objects.filter(keyboard__stock=stock_kb)
+
+    def delete_stock_keyboard(self, stock_kb):
+        with transaction.atomic():
+            for inventory in self.stock_keyboard_owners(stock_kb):
+                custom_kb = CustomKeyboard(
+                    bluetooth=stock_kb.bluetooth,
+                    wireless=stock_kb.wireless,
+                    notes=stock_kb.notes,
+                    references=stock_kb.references,
+                )
+                for part_type, (wrapper_model, _, _, _) in self.PART_MODELS.items():
+                    part = getattr(stock_kb, part_type)
+                    if part is not None:
+                        wrapper, _ = wrapper_model.objects.get_or_create(stock=part)
+                        setattr(custom_kb, part_type, wrapper)
+                custom_kb.save()
+                inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
+                inventory.save(update_fields=['keyboard'])
+            stock_kb.delete()
 
     def add_custom(self, context, data):
         chosen = self.validate_custom_keyboard(data, context)

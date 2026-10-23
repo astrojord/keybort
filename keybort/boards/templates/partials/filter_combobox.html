@@ -1,0 +1,26 @@
+<div class="grid content-start gap-2">
+    <label for="{{ id_prefix }}-{{ facet.key }}-input" class="label">{{ facet.label }}</label>
+    <div class="combobox" id="{{ id_prefix }}-{{ facet.key }}" data-filter-key="{{ facet.key }}">
+        <input
+            type="text"
+            id="{{ id_prefix }}-{{ facet.key }}-input"
+            role="combobox"
+            placeholder="{% if facet.options %}Any {{ facet.label|lower }}{% else %}None in the catalog{% endif %}"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            aria-autocomplete="list"
+            aria-expanded="false"
+            aria-controls="{{ id_prefix }}-{{ facet.key }}-listbox"
+            {% if not facet.options %}disabled{% endif %}
+        >
+        <div data-popover aria-hidden="true">
+            <div role="listbox" id="{{ id_prefix }}-{{ facet.key }}-listbox" aria-orientation="vertical" aria-multiselectable="true" data-empty="No matches">
+                {% for value, selected in facet.options %}
+                <div role="option" data-value="{{ value }}"{% if selected %} aria-selected="true"{% endif %}>{{ value }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <input type="hidden">
+    </div>
+</div>

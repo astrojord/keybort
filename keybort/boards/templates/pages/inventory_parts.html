@@ -23,6 +23,7 @@
     </div>
     <input type="search" id="parts-search" class="input w-full sm:w-64" placeholder="Search parts" aria-label="Search parts">
 </div>
+{% include "partials/bulk_bar.html" with id_prefix="parts" %}
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
@@ -32,6 +33,7 @@
             >
                 <thead>
                     <tr>
+                        <th class="w-px"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"></th>
                         <th class="w-px text-nowrap"></th>
                         {% include "partials/sort_header.html" with key="type" label="Type" class="w-1/12" %}
                         {% include "partials/sort_header.html" with key="name" label="Name" class="w-3/12" %}
@@ -85,6 +87,7 @@
 {% endblock content %}
 
 {% block page_js %}
+<script src="{% static 'tables.js' %}"></script>
 <script src="{% static 'table_filter.js' %}"></script>
 <script>
     initTableFilter({
@@ -93,6 +96,14 @@
         search: document.getElementById("parts-search"),
         empty: document.getElementById("parts-empty"),
         param: "type",
+    });
+</script>
+<script src="{% static 'bulk_select.js' %}"></script>
+<script>
+    initBulkSelect({
+        table: document.getElementById("table-parts"),
+        bar: document.getElementById("parts-bulk"),
+        url: "{% url 'part_delete' %}",
     });
 </script>
 {% endblock page_js %}

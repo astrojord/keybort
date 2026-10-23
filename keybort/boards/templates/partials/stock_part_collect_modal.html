@@ -1,0 +1,23 @@
+<form id="stock-part-collect-form" hx-post="{{ action_url }}" hx-target="#page-dialog">
+    {% csrf_token %}
+    <header>
+        <h2 id="page-dialog-title">Add {{ name }} to my parts</h2>
+        <p id="page-dialog-description">Stock {{ type_label|lower }} from the catalog. Adds onto the quantity if it's already in your parts.</p>
+    </header>
+
+    <section>
+        <div class="field"{% if quantity_error %} data-invalid="true"{% endif %}>
+            <label for="id_quantity">Quantity</label>
+            <input type="number" id="id_quantity" name="quantity" value="{{ quantity }}" min="1" step="1" required autofocus{% if quantity_error %} aria-invalid="true" aria-describedby="id_quantity-error"{% endif %}>
+            {% if part_type == "switch" %}<div class="text-muted-foreground text-sm">Count individual switches.</div>{% endif %}
+            {% if quantity_error %}<div role="alert" id="id_quantity-error" class="text-sm">{{ quantity_error }}</div>{% endif %}
+        </div>
+    </section>
+
+    <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" class="btn" data-variant="outline" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn">Add to parts</button>
+    </footer>
+
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+</form>

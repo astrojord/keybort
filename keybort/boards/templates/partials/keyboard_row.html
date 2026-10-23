@@ -1,4 +1,5 @@
 <tr id="{{kb.row_id}}" data-type="{% if kb.stock %}prebuilt{% else %}custom{% endif %}">
+    <td><input type="checkbox" class="input" data-bulk value="{% if kb.stock %}stock{% else %}custom{% endif %}-{{kb.id}}" aria-label="Select {{kb.kit_str|default:"keyboard"}}"></td>
     <td>
         <div class="flex items-center gap-1">
             <button
@@ -12,18 +13,6 @@
                 hx-target="#page-dialog"
             >
                 <i class="fas fa-edit"></i>
-            </button>
-            <button
-                type="button"
-                class="btn text-red-400"
-                data-variant="ghost"
-                data-size="icon-sm"
-                aria-label="Delete {{kb.kit_str}}"
-                data-tooltip="Delete"
-                hx-get="{% url 'keyboard_delete' %}?{{kb.url_params}}"
-                hx-target="#page-dialog"
-            >
-                <i class="fas fa-trash"></i>
             </button>
         </div>
     </td>

@@ -1,0 +1,42 @@
+<tr id="{{part.row_id}}"{% for key, values in part.facets.items %} data-facet-{{key}}="{{values|join:'|'}}"{% endfor %}>
+    {% if perms.boards.can_delete_stock_data %}<td><input type="checkbox" class="input" data-bulk value="{{part.id}}" aria-label="Select {{part.name}}"></td>{% endif %}
+    {% if user.is_authenticated %}
+    <td>
+        <div class="flex items-center gap-1">
+        {% if perms.boards.can_edit_stock_data %}
+        <button
+            type="button"
+            class="btn"
+            data-variant="ghost"
+            data-size="icon-sm"
+            aria-label="Edit {{part.name}}"
+            data-tooltip="Edit"
+            hx-get="{% url 'stock_part_edit' %}?{{part.url_params}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-edit"></i>
+        </button>
+        {% endif %}
+        <button
+            type="button"
+            class="btn"
+            data-variant="outline"
+            data-size="sm"
+            aria-label="Add {{part.name}} to my parts"
+            hx-get="{% url 'stock_part_collect' %}?{{part.url_params}}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-plus"></i>Add
+        </button>
+        {% if part.quantity %}
+        <a href="{% url 'inventory_parts' %}?type={{part.type}}" class="badge text-nowrap tabular-nums" data-variant="secondary"><i class="fas fa-check"></i>{{part.quantity}} in parts</a>
+        {% endif %}
+        </div>
+    </td>
+    {% endif %}
+    <td class="font-medium" data-sort-value="{{part.name}}">{% include "partials/part_link.html" with label=part.name params=part.detail_params %}</td>
+    {% for value in part.columns %}
+    <td>{{value}}</td>
+    {% endfor %}
+    <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{part.notes|default:''}}">{{part.notes|default:''}}</p></td>
+</tr>
