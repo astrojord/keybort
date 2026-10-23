@@ -1,76 +1,37 @@
 <tr id="{{kb.row_id}}" data-type="{% if kb.stock %}prebuilt{% else %}custom{% endif %}">
-    <td class="text-center flex items-center">
-        <button
-            type="button"
-            class="btn p-0"
-            data-variant="ghost"
-            aria-label="Edit"
-            hx-get="{% url 'keyboard_edit' %}?{{kb.url_params}}"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-edit"></i>
-        </button>
-        <button
-            class="btn text-red-400 p-0 ms-1"
-            data-variant="ghost"
-            type="button"
-            aria-label="Delete"
-            hx-get="{% url 'keyboard_delete' %}?{{kb.url_params}}"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-trash"></i>
-        </button>
+    <td>
+        <div class="flex items-center gap-1">
+            <button
+                type="button"
+                class="btn"
+                data-variant="ghost"
+                data-size="icon-sm"
+                aria-label="Edit {{kb.kit_str}}"
+                data-tooltip="Edit"
+                hx-get="{% url 'keyboard_edit' %}?{{kb.url_params}}"
+                hx-target="#page-dialog"
+            >
+                <i class="fas fa-edit"></i>
+            </button>
+            <button
+                type="button"
+                class="btn text-red-400"
+                data-variant="ghost"
+                data-size="icon-sm"
+                aria-label="Delete {{kb.kit_str}}"
+                data-tooltip="Delete"
+                hx-get="{% url 'keyboard_delete' %}?{{kb.url_params}}"
+                hx-target="#page-dialog"
+            >
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
     </td>
-    <td
-        {% if kb.kit_str %}
-        hx-get="{% url 'part_detail' %}?{{kb.kit_url_params}}"
-        hx-target="#page-dialog"
-        hx-trigger="click"
-        class="hoverable"
-        {% endif %}
-    >
-        {{kb.kit_str}}
-    </td>
+    <td class="font-medium">{% if kb.kit_str %}{% include "partials/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}{% endif %}</td>
     <td>{{kb.pcb}}</td>
-    <td
-        {% if kb.switches_str %}
-        hx-get="{% url 'part_detail' %}?{{kb.switches_url_params}}"
-        hx-target="#page-dialog"
-        hx-trigger="click"
-        class="hoverable"
-        {% endif %}
-    >
-        {{kb.switches_str}}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}
-    </td>
-    <td
-        {% if kb.keycaps_str %}
-        hx-get="{% url 'part_detail' %}?{{kb.keycaps_url_params}}"
-        hx-target="#page-dialog"
-        hx-trigger="click"
-        class="hoverable"
-        {% endif %}
-    >
-        {{kb.keycaps_str}}
-    </td>
-    <td
-        {% if kb.plate_str %}
-        hx-get="{% url 'part_detail' %}?{{kb.plate_url_params}}"
-        hx-target="#page-dialog"
-        hx-trigger="click"
-        class="hoverable"
-        {% endif %}
-    >
-        {{kb.plate_str}}
-    </td>
-    <td
-        {% if kb.stabilizer_str %}
-        hx-get="{% url 'part_detail' %}?{{kb.stabilizer_url_params}}"
-        hx-target="#page-dialog"
-        hx-trigger="click"
-        class="hoverable"
-        {% endif %}
-    >
-        {{kb.stabilizer_str}}
-    </td>
-    <td>{{kb.notes}}</td>
+    <td>{% if kb.switches_str %}{% include "partials/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}{% endif %}</td>
+    <td>{% if kb.keycaps_str %}{% include "partials/part_link.html" with label=kb.keycaps_str params=kb.keycaps_url_params %}{% endif %}</td>
+    <td>{% if kb.plate_str %}{% include "partials/part_link.html" with label=kb.plate_str params=kb.plate_url_params %}{% endif %}</td>
+    <td>{% if kb.stabilizer_str %}{% include "partials/part_link.html" with label=kb.stabilizer_str params=kb.stabilizer_url_params %}{% endif %}</td>
+    <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{kb.notes|default:''}}">{{kb.notes|default:''}}</p></td>
 </tr>

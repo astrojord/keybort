@@ -1,0 +1,7 @@
+<button
+    type="button"
+    class="inline-block max-w-64 truncate rounded-sm align-bottom text-left underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 outline-none hover:decoration-solid focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    title="{{ label }}"
+    hx-get="{% url 'part_detail' %}?{{ params }}"
+    hx-target="#page-dialog"
+>{{ label }}</button>

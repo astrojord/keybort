@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load static %}
 {% block page_title%}{{page_title}}{% endblock page_title %}
 {% block content %}
 <div class="w-full flex justify-between items-center">
@@ -16,11 +17,14 @@
         <i class="fas fa-plus me-1"></i>Add
     </button>
 </div>
-<div id="parts-filter" data-active="" class="mt-4 flex flex-wrap gap-1" role="group" aria-label="Filter by type">
-    <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="">All <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
-    {% for part_type, label in filters %}
-    <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="{{ part_type }}">{{ label }} <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
-    {% endfor %}
+<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+    <div id="parts-filter" data-active="" class="flex flex-wrap gap-1" role="group" aria-label="Filter by type">
+        <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="" data-label="parts">All <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
+        {% for part_type, label in filters %}
+        <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="{{ part_type }}" data-label="{{ label|lower }}">{{ label }} <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
+        {% endfor %}
+    </div>
+    <input type="search" id="parts-search" class="input w-full sm:w-64" placeholder="Search parts" aria-label="Search parts">
 </div>
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
@@ -32,9 +36,9 @@
                 <thead>
                     <tr>
                         <th class="w-px text-nowrap"></th>
-                        <th class="w-1/12">Type</th>
-                        <th class="w-3/12">Name</th>
-                        <th class="w-px text-center text-nowrap">Quantity</th>
+                        {% include "partials/sort_header.html" with key="type" label="Type" class="w-1/12" %}
+                        {% include "partials/sort_header.html" with key="name" label="Name" class="w-3/12" %}
+                        {% include "partials/sort_header.html" with key="quantity" label="Quantity" class="w-px text-center text-nowrap" %}
                         <th>Information</th>
                     </tr>
                 </thead>
@@ -49,10 +53,10 @@
     <div id="parts-empty" class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
         <header>
             <figure><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-icon lucide-package"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg></figure>
-            <h3>No <span data-empty-label>parts</span> yet</h3>
-            <p>Anything you own that isn't currently on a built board goes here.</p>
+            <h3 data-empty-title>No parts yet</h3>
+            <p data-empty-action>Anything you own that isn't currently on a built board goes here.</p>
         </header>
-        <section>
+        <section data-empty-action>
             <button type="button" class="btn" hx-get="{% url 'part_add' %}" hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}' hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add part</button>
         </section>
     </div>
@@ -83,48 +87,14 @@
 {% endblock content %}
 
 {% block page_js %}
+<script src="{% static 'table_filter.js' %}"></script>
 <script>
-    (() => {
-        const filter = document.getElementById("parts-filter");
-        const tbody = document.querySelector("#table-parts tbody");
-        let active = new URLSearchParams(location.search).get("type") ?? "";
-        if (!filter.querySelector(`[data-filter="${CSS.escape(active)}"]`)) active = "";
-        filter.dataset.active = active;
-
-        // counts and visibility come from the rows, so they stay right after htmx adds/removes one
-        function apply() {
-            const rows = [...tbody.querySelectorAll("tr[data-type]")];
-            for (const button of filter.querySelectorAll("[data-filter]")) {
-                const type = button.dataset.filter;
-                const count = rows.filter((row) => !type || row.dataset.type === type).length;
-                button.querySelector("[data-count]").textContent = count;
-                button.dataset.variant = type === active ? "secondary" : "ghost";
-                button.setAttribute("aria-pressed", type === active);
-                // dim types with nothing in them, unless it's the one being looked at
-                button.toggleAttribute("data-empty", count === 0 && type !== active);
-            }
-            // the empty state shows itself (css) once no rows are visible
-            for (const row of rows) {
-                row.hidden = active && row.dataset.type !== active;
-            }
-            const label = filter.querySelector(`[data-filter="${active}"]`);
-            document.querySelector("[data-empty-label]").textContent = active ? label.firstChild.textContent.trim().toLowerCase() : "parts";
-        }
-
-        filter.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-filter]");
-            if (!button) return;
-            active = button.dataset.filter;
-            // the add buttons send this so the modal opens on the filtered type
-            filter.dataset.active = active;
-            const url = new URL(location);
-            if (active) url.searchParams.set("type", active);
-            else url.searchParams.delete("type");
-            history.replaceState(null, "", url);
-            apply();
-        });
-        document.body.addEventListener("htmx:afterSettle", apply);
-        apply();
-    })();
+    initTableFilter({
+        filter: document.getElementById("parts-filter"),
+        table: document.getElementById("table-parts"),
+        search: document.getElementById("parts-search"),
+        empty: document.getElementById("parts-empty"),
+        param: "type",
+    });
 </script>
 {% endblock page_js %}

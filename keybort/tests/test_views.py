@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from boards import const
-from boards.models import CustomKit, Inventory, StockKeyboard, Switch
+from boards.models import CustomKit, Inventory, Profile, StockKeyboard, Switch
 
 from .base import (
     ClientTestCase,
@@ -28,6 +28,8 @@ class LoginRequiredTests(TestCase):
             'part_add',
             'part_edit',
             'part_delete',
+            'part_quantity',
+            'account',
         ):
             with self.subTest(name=name):
                 response = self.client.get(reverse(name))
@@ -165,6 +167,22 @@ class DeleteKeyboardViewTests(ClientTestCase):
         self.assertEqual(response['HX-Reswap'], 'delete')
         self.assertTrue(Inventory.objects.filter(user=self.user, kit=kit).exists())
 
+    def test_parts_start_checked_by_default(self):
+        stock_kb = prebuilt_in_inventory(self.user)
+        response = self.client.get(
+            reverse('keyboard_delete'), {'id': stock_kb.pk, 'stock': 1}
+        )
+        self.assertContains(response, 'value="kit" checked')
+
+    def test_parts_start_unchecked_when_preferred(self):
+        Profile.objects.create(user=self.user, keep_parts_on_delete=False)
+        stock_kb = prebuilt_in_inventory(self.user)
+        response = self.client.get(
+            reverse('keyboard_delete'), {'id': stock_kb.pk, 'stock': 1}
+        )
+        self.assertContains(response, 'value="kit">')
+        self.assertNotContains(response, 'value="kit" checked')
+
     def test_someone_elses_keyboard(self):
         stock_kb = prebuilt_in_inventory(self.other)
         url = f'{reverse("keyboard_delete")}?id={stock_kb.pk}&stock=1'
@@ -276,6 +294,61 @@ class EditDeletePartViewTests(ClientTestCase):
         self.assertEqual(trigger['messages'][0]['level'], 'error')
 
 
+class PartQuantityViewTests(ClientTestCase):
+    def setUp(self):
+        super().setUp()
+        self.inv = Inventory.objects.create(
+            user=self.user,
+            switch=Switch.objects.create(stock=stock_switch()),
+            quantity=70,
+        )
+        self.url = f'{reverse("part_quantity")}?id={self.inv.pk}'
+
+    def post(self, quantity):
+        return self.client.post(
+            self.url, {'quantity': quantity}, headers={'HX-Request': 'true'}
+        )
+
+    def test_saves_and_returns_row(self):
+        response = self.post('90')
+        self.inv.refresh_from_db()
+        self.assertEqual(self.inv.quantity, 90)
+        self.assertContains(response, f'id="part-{self.inv.pk}"')
+        self.assertContains(response, 'value="90"')
+        trigger = json.loads(response['HX-Trigger'])
+        self.assertEqual(trigger['messages'][0]['level'], 'success')
+
+    def test_invalid_keeps_quantity(self):
+        for quantity in ('0', '-3', 'lots', ''):
+            with self.subTest(quantity=quantity):
+                response = self.post(quantity)
+                self.inv.refresh_from_db()
+                self.assertEqual(self.inv.quantity, 70)
+                self.assertContains(response, 'value="70"')
+                trigger = json.loads(response['HX-Trigger'])
+                self.assertEqual(
+                    trigger['messages'][0]['message'], const.QUANTITY_ERROR
+                )
+
+    def test_unchanged_sends_no_toast(self):
+        response = self.post('70')
+        self.assertNotIn('HX-Trigger', response)
+
+    def test_get_and_bad_id(self):
+        self.assertEqual(self.client.get(self.url).status_code, 400)
+        response = self.client.post(reverse('part_quantity'), {'id': 'x'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_someone_elses_part(self):
+        inv = Inventory.objects.create(user=self.other, kit=custom_kit_wrapper())
+        response = self.client.post(
+            f'{reverse("part_quantity")}?id={inv.pk}', {'quantity': '5'}
+        )
+        self.assertEqual(response.status_code, 404)
+        inv.refresh_from_db()
+        self.assertEqual(inv.quantity, 1)
+
+
 class PartDetailViewTests(TestCase):
     def test_stock_part_is_public(self):
         switch = stock_switch()
@@ -329,6 +402,38 @@ class DashboardTests(ClientTestCase):
         self.assertEqual(response.context['keyboard_count'], 0)
         self.assertEqual(response.context['recent_keyboards'], [])
         self.assertContains(response, 'No keyboards yet')
+
+
+class AccountViewTests(ClientTestCase):
+    def test_get_shows_defaults(self):
+        custom_keyboard(self.user)
+        response = self.client.get(reverse('account'))
+        self.assertEqual(response.context['keyboard_count'], 1)
+        self.assertContains(response, 'value="smart" required checked')
+        self.assertContains(response, 'name="keep_parts_on_delete" checked')
+
+    def test_htmx_post_saves_and_toasts(self):
+        response = self.client.post(
+            reverse('account'),
+            {'default_part_source': 'stock'},
+            headers={'HX-Request': 'true'},
+        )
+        profile = Profile.objects.get(user=self.user)
+        self.assertEqual(profile.default_part_source, 'stock')
+        self.assertFalse(profile.keep_parts_on_delete)
+        self.assertTemplateUsed(response, 'partials/account_preferences.html')
+        self.assertIn('Saved preferences.', response['HX-Trigger'])
+
+    def test_invalid_post_keeps_saved_values(self):
+        response = self.client.post(
+            reverse('account'),
+            {'default_part_source': 'bogus'},
+            headers={'HX-Request': 'true'},
+        )
+        self.assertContains(response, "couldn't be saved")
+        self.assertEqual(
+            Profile.objects.get(user=self.user).default_part_source, 'smart'
+        )
 
 
 class AnonymousDashboardTests(TestCase):

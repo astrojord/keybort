@@ -127,6 +127,32 @@ def edit_part(request):
     return htmx_swap(response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT)
 
 
+@login_required(login_url='/accounts/login')
+def part_quantity(request):
+    part_id = request.GET.get('id', '')
+    if request.method != 'POST' or not part_id.isdigit():
+        return HttpResponse(status=400)
+
+    manager = KeyboardManager(request.user)
+    inv = manager.standalone_part(part_id)
+    if inv is None:
+        messages.error(request, 'That part no longer exists.')
+        raise Http404
+
+    quantity = manager.parse_quantity(request.POST.get('quantity'))
+    if quantity is None:
+        messages.error(request, const.QUANTITY_ERROR)
+    elif quantity != inv.quantity:
+        inv.quantity = quantity
+        inv.save(update_fields=['quantity'])
+        messages.success(
+            request,
+            f'Updated quantity of {manager.part_row(inv)["name"]} to {quantity}.',
+        )
+
+    return render(request, 'partials/part_row.html', {'part': manager.part_row(inv)})
+
+
 # GET: confirmation modal
 # POST: drop it from inventory
 @login_required(login_url='/accounts/login')

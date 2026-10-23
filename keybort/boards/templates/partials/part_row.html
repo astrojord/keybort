@@ -1,35 +1,51 @@
 <tr id="{{part.row_id}}" data-type="{{part.type}}">
-    <td class="text-center flex items-center">
-        <button
-            type="button"
-            class="btn p-0"
-            data-variant="ghost"
-            aria-label="Edit"
-            hx-get="{% url 'part_edit' %}?id={{part.id}}"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-edit"></i>
-        </button>
-        <button
-            type="button"
-            class="btn text-red-400 p-0 ms-1"
-            data-variant="ghost"
-            aria-label="Delete"
-            hx-get="{% url 'part_delete' %}?id={{part.id}}"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-trash"></i>
-        </button>
+    <td>
+        <div class="flex items-center gap-1">
+            <button
+                type="button"
+                class="btn"
+                data-variant="ghost"
+                data-size="icon-sm"
+                aria-label="Edit {{part.name}}"
+                data-tooltip="Edit"
+                hx-get="{% url 'part_edit' %}?id={{part.id}}"
+                hx-target="#page-dialog"
+            >
+                <i class="fas fa-edit"></i>
+            </button>
+            <button
+                type="button"
+                class="btn text-red-400"
+                data-variant="ghost"
+                data-size="icon-sm"
+                aria-label="Delete {{part.name}}"
+                data-tooltip="Delete"
+                hx-get="{% url 'part_delete' %}?id={{part.id}}"
+                hx-target="#page-dialog"
+            >
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
     </td>
     <td>{{part.type_label}}</td>
-    <td
-        hx-get="{% url 'part_detail' %}?{{part.detail_params}}"
-        hx-target="#page-dialog"
-        hx-trigger="click"
-        class="hoverable"
-    >
-        {{part.name}}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
+    <td data-sort-value="{{part.name}}">
+        {% include "partials/part_link.html" with label=part.name params=part.detail_params %}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
     </td>
-    <td class="text-center">{{part.quantity}}</td>
-    <td class="text-wrap">{{part.info}}</td>
+    <td class="text-center" data-sort-value="{{part.quantity}}">
+        <input
+            type="number"
+            class="input w-20 text-center tabular-nums"
+            name="quantity"
+            value="{{part.quantity}}"
+            min="1"
+            step="1"
+            required
+            aria-label="Quantity of {{part.name}}"
+            hx-post="{% url 'part_quantity' %}?id={{part.id}}"
+            hx-trigger="change"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+        >
+    </td>
+    <td><p class="line-clamp-2 whitespace-normal" title="{{part.info}}">{{part.info}}</p></td>
 </tr>

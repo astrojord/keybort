@@ -9,6 +9,7 @@ from boards.models import (
     Keyboard,
     Kit,
     Plate,
+    Profile,
     StockKeyboard,
     Switch,
 )
@@ -378,6 +379,37 @@ class KeyboardFormContextTests(UserTestCase):
         self.assertTrue(context['from_prebuilt'])
         self.assertEqual(kit['source'], 'stock')
         self.assertEqual(kit['stock_id'], str(stock_kb.kit.pk))
+
+    def kit_source(self, preferred):
+        Profile.objects.update_or_create(
+            user=self.user, defaults={'default_part_source': preferred}
+        )
+        context = KeyboardManager(self.user).keyboard_form_context('/add')
+        return next(p for p in context['parts'] if p['type'] == 'kit')['source']
+
+    def test_kit_source_follows_preference(self):
+        stock_kit()
+        self.manager.add_to_parts('kit', custom_kit_wrapper())
+        self.assertEqual(self.kit_source('smart'), 'owned')
+        self.assertEqual(self.kit_source('stock'), 'stock')
+        self.assertEqual(self.kit_source('custom'), 'custom')
+
+    def test_stock_preference_without_catalog_falls_back_to_custom(self):
+        self.assertEqual(self.kit_source('stock'), 'custom')
+
+    def test_optional_parts_still_skip(self):
+        Profile.objects.create(user=self.user, default_part_source='stock')
+        stock_switch()
+        context = self.manager.keyboard_form_context('/add')
+        switch = next(p for p in context['parts'] if p['type'] == 'switch')
+        self.assertEqual(switch['source'], 'none')
+
+    def test_add_part_follows_preference(self):
+        Profile.objects.create(user=self.user, default_part_source='custom')
+        stock_switch()
+        context = self.manager.add_part_context()
+        switch = next(p for p in context['parts'] if p['type'] == 'switch')
+        self.assertEqual(switch['source'], 'custom')
 
     def test_switch_count_defaults_from_board(self):
         kb = custom_keyboard(self.user, switch=custom_switch_wrapper(), switch_count=60)
