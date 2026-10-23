@@ -132,6 +132,14 @@ class EditKeyboardViewTests(ClientTestCase):
         response = self.client.get(reverse('keyboard_edit'), {'id': kb.pk, 'stock': 0})
         self.assertTrue(response.context['editing'])
 
+    def test_get_starts_on_requested_step(self):
+        kb = custom_keyboard(self.user)
+        url = reverse('keyboard_edit')
+        response = self.client.get(url, {'id': kb.pk, 'stock': 0, 'step': 'keycaps'})
+        self.assertEqual(response.context['step'], 'keycaps')
+        response = self.client.get(url, {'id': kb.pk, 'stock': 0, 'step': 'bogus'})
+        self.assertIsNone(response.context['step'])
+
     def test_post_prebuilt_swaps_row(self):
         stock_kb = prebuilt_in_inventory(self.user)
         url = f'{reverse("keyboard_edit")}?id={stock_kb.pk}&stock=1'
@@ -355,8 +363,30 @@ class PartDetailViewTests(TestCase):
         response = self.client.get(
             reverse('part_detail'), {'type': 'switch', 'id': switch.pk, 'stock': 1}
         )
-        self.assertEqual(response.context['part_title'], str(switch))
+        self.assertEqual(response.context['name'], f'{switch.brand} {switch.name}')
+        self.assertEqual(response.context['type_label'], 'Switch')
         self.assertEqual(response.context['fields']['Category'], 'Linear')
+        self.assertIsNone(response.context['edit_url'])
+
+    def test_edit_url_only_points_at_edit_views(self):
+        switch = stock_switch()
+        base = {'type': 'switch', 'id': switch.pk, 'stock': 1}
+        for edit, expected in (
+            (f'{reverse("part_edit")}?id=3', f'{reverse("part_edit")}?id=3'),
+            (
+                f'{reverse("keyboard_edit")}?id=1&stock=0&step=kit',
+                f'{reverse("keyboard_edit")}?id=1&stock=0&step=kit',
+            ),
+            (reverse('part_delete'), None),
+            ('https://example.com/', None),
+            (f'//example.com{reverse("part_edit")}', None),
+            ('/nowhere', None),
+        ):
+            with self.subTest(edit=edit):
+                response = self.client.get(
+                    reverse('part_detail'), {**base, 'edit': edit}
+                )
+                self.assertEqual(response.context['edit_url'], expected)
 
     def test_custom_part_is_private(self):
         kb = custom_keyboard(make_user('owner'))

@@ -9,6 +9,8 @@ window.initStepForm = (form) => {
     const freeNav = form.hasAttribute("data-free-nav");
     const steps = [...form.querySelectorAll("[data-step]")];
     const labels = [...form.querySelectorAll("[data-step-label]")];
+    const counter = form.querySelector("[data-step-counter]");
+    const review = form.querySelector("[data-review]");
     const button = (action) => form.querySelector(`[data-action="${action}"]`);
     let current = form.dataset.initialStep;
 
@@ -47,9 +49,60 @@ window.initStepForm = (form) => {
             else label.removeAttribute("aria-current");
         }
 
+        if (counter) counter.textContent = `Step ${index + 1} of ${active.length}`;
+        if (review && review.closest("[data-step]").dataset.step === current) fillReview(active);
+
         button("back").hidden = index === 0;
         button("next").hidden = index === active.length - 1;
         button("save").hidden = !freeNav && index !== active.length - 1;
+    }
+
+    const filled = (container) =>
+        [...container.querySelectorAll("input, select, textarea")]
+            .filter((el) => !el.closest("fieldset:disabled") && el.type !== "radio" && el.type !== "hidden")
+            .map((el) => {
+                const label = el.labels[0]?.textContent.trim() ?? el.name;
+                if (el.type === "checkbox") return el.checked ? label : null;
+                const value = el.tagName === "SELECT" ? el.value && el.selectedOptions[0].text : el.value.trim();
+                return value ? `${label}: ${value}` : null;
+            })
+            .filter(Boolean)
+            .join(", ");
+
+    function describe(step) {
+        const source = step.querySelector('input[name$="-source"]:checked')?.value;
+        if (!source) return filled(step) || "Nothing filled in";
+        if (source === "none") return "Skipped";
+
+        const block = step.querySelector(`[data-source="${source}"]`);
+        let text;
+        if (source === "custom") {
+            const name = ["brand", "name"].map((field) => block.querySelector(`[name$="-${field}"]`)?.value.trim()).filter(Boolean);
+            text = name.length ? name.join(" ") : filled(block);
+        } else {
+            text = block.querySelector("select").selectedOptions[0]?.text;
+        }
+        const count = step.querySelector('[name="switch-count"]');
+        if (count && !count.closest("fieldset:disabled") && count.value) text += ` ×${count.value}`;
+        return text || "Not chosen";
+    }
+
+    function fillReview(active) {
+        review.replaceChildren();
+        for (const step of active) {
+            const label = labels.find((label) => label.dataset.stepLabel === step.dataset.step);
+            if (step.contains(review) || step.dataset.step === "kind" || !label) continue;
+            const term = document.createElement("dt");
+            const jump = document.createElement("button");
+            jump.type = "button";
+            jump.className = "underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 hover:decoration-solid";
+            jump.textContent = label.textContent.trim();
+            jump.addEventListener("click", () => show(step.dataset.step));
+            term.append(jump);
+            const detail = document.createElement("dd");
+            detail.textContent = describe(step);
+            review.append(term, detail);
+        }
     }
 
     function go(delta) {

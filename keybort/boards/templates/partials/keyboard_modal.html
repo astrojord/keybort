@@ -31,7 +31,9 @@
             <li data-step-label="{{ part.type }}" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">{% if editing %}<button type="button" class="hover:underline" data-goto="{{ part.type }}">{{ part.label }}</button>{% else %}{{ part.label }}{% endif %}</li>
             {% endfor %}
             <li data-step-label="details" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">{% if editing %}<button type="button" class="hover:underline" data-goto="details">Details</button>{% else %}Details{% endif %}</li>
+            <li data-step-label="review" class="text-muted-foreground aria-[current=step]:font-medium aria-[current=step]:text-foreground">{% if editing %}<button type="button" class="hover:underline" data-goto="review">Review</button>{% else %}Review{% endif %}</li>
         </ol>
+        <p class="text-muted-foreground text-xs" data-step-counter aria-live="polite"></p>
     </header>
 
     <section class="-mx-6 min-h-0 overflow-y-auto px-6">
@@ -88,6 +90,11 @@
         <fieldset data-step="details" data-path="custom" class="grid min-w-0 gap-4" hidden>
             {% element fields form=details_form %}
             {% endelement %}
+        </fieldset>
+
+        <fieldset data-step="review" data-path="custom" class="grid min-w-0 gap-3" hidden>
+            <p class="text-sm">Check the build before saving. Pick a step to change it.</p>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm [&_dd]:min-w-0 [&_dd]:break-words" data-review></dl>
         </fieldset>
     </section>
 

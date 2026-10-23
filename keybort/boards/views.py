@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import Http404, HttpResponse
 from django.shortcuts import render
-from django.urls import reverse
+from django.urls import Resolver404, resolve, reverse
 
 from . import const
 from .forms import (
@@ -180,6 +180,16 @@ def delete_part(request):
     return htmx_swap(HttpResponse(), f'#{row_id}', 'delete', const.CLOSE_DIALOG_EVENT)
 
 
+def edit_url(url):
+    if not url.startswith('/') or url.startswith('//'):
+        return None
+    try:
+        match = resolve(url.split('?')[0])
+    except Resolver404:
+        return None
+    return url if match.url_name in ('part_edit', 'keyboard_edit') else None
+
+
 # view-only modal body
 def part_detail(request):
     part_type = request.GET.get('type')
@@ -199,7 +209,10 @@ def part_detail(request):
         raise Http404
 
     context = {
-        'part_title': str(obj),
+        'name': KeyboardManager.part_name(obj),
+        'type_label': const.PART_SINGULARS[part_type],
+        'stock': stock == '1',
+        'edit_url': edit_url(request.GET.get('edit', '')),
         'fields': model_to_dict_verbose(
             obj,
             exclude=[
@@ -263,6 +276,8 @@ def edit_keyboard(request):
     action_url = f'{reverse("keyboard_edit")}?id={params[0]}&stock={int(params[1])}'
     if request.method != 'POST':
         context = manager.keyboard_form_context(action_url, current=current)
+        if request.GET.get('step') in manager.PART_MODELS:
+            context['step'] = request.GET['step']
         return render(request, 'partials/keyboard_modal.html', context)
 
     context = manager.keyboard_form_context(action_url, request.POST, current=current)

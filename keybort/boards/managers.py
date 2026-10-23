@@ -1,9 +1,11 @@
 from functools import cached_property
 from typing import ClassVar
+from urllib.parse import urlencode
 
 from django.db import transaction
 from django.db.models import Q
 from django.forms.models import model_to_dict
+from django.urls import reverse
 
 from . import const
 from .forms import (
@@ -127,12 +129,20 @@ class KeyboardManager:
     def row_id(kb):
         return f'keyboard-{"stock" if kb.stock else "custom"}-{kb.pk}'
 
+    @staticmethod
+    def detail_params(part_type, obj, edit_url):
+        return urlencode(
+            {'type': part_type, 'id': obj.pk, 'stock': int(obj.stock), 'edit': edit_url}
+        )
+
     @classmethod
     def keyboard_row(cls, kb):
+        url_params = f'id={kb.pk}&stock={int(kb.stock)}'
+        edit_url = f'{reverse("keyboard_edit")}?{url_params}&step='
         data = {
             'id': kb.pk,
             'row_id': cls.row_id(kb),
-            'url_params': f'id={kb.pk}&stock={int(kb.stock)}',
+            'url_params': url_params,
             'stock': kb.stock,
             'notes': kb.notes,
         }
@@ -141,7 +151,7 @@ class KeyboardManager:
             kit = cls.part_obj(kb.kit)
             data.update(
                 {
-                    'kit_url_params': f'type=kit&id={kit.pk}&stock={int(kit.stock)}',
+                    'kit_url_params': cls.detail_params('kit', kit, f'{edit_url}kit'),
                     'kit_str': f'{kit.brand} {kit.name}',
                     'pcb': kit.pcb,
                 }
@@ -151,7 +161,9 @@ class KeyboardManager:
             switch = cls.part_obj(kb.switch)
             data.update(
                 {
-                    'switches_url_params': f'type=switch&id={switch.pk}&stock={int(switch.stock)}',
+                    'switches_url_params': cls.detail_params(
+                        'switch', switch, f'{edit_url}switch'
+                    ),
                     'switches_str': f'{switch.brand} {switch.name}',
                     'switch_count': getattr(kb, 'switch_count', None),
                 }
@@ -161,8 +173,8 @@ class KeyboardManager:
             part = getattr(kb, part_type)
             if part:
                 obj = cls.part_obj(part)
-                data[f'{part_type}_url_params'] = (
-                    f'type={part_type}&id={obj.pk}&stock={int(obj.stock)}'
+                data[f'{part_type}_url_params'] = cls.detail_params(
+                    part_type, obj, f'{edit_url}{part_type}'
                 )
                 data[f'{part_type}_str'] = str(obj)
 
@@ -231,7 +243,9 @@ class KeyboardManager:
             'stock': obj.stock,
             'quantity': inv.quantity,
             'info': cls.part_info(part_type, obj),
-            'detail_params': f'type={part_type}&id={obj.pk}&stock={int(obj.stock)}',
+            'detail_params': cls.detail_params(
+                part_type, obj, f'{reverse("part_edit")}?id={inv.pk}'
+            ),
         }
 
     # dashboard
