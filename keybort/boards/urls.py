@@ -26,7 +26,7 @@ urlpatterns = [
         name='stock_prebuilt_delete',
     ),
     path(
-        'stock/prebuilts/collect',
+        'stock/prebuilts/to-inventory',
         views.collect_stock_prebuilt,
         name='stock_prebuilt_collect',
     ),
@@ -38,6 +38,10 @@ urlpatterns = [
     path('stock/parts/add', views.add_stock_part, name='stock_part_add'),
     path('stock/parts/edit', views.edit_stock_part, name='stock_part_edit'),
     path('stock/parts/delete', views.delete_stock_parts, name='stock_part_delete'),
-    path('stock/parts/collect', views.collect_stock_part, name='stock_part_collect'),
+    path(
+        'stock/parts/to-inventory',
+        views.collect_stock_part,
+        name='stock_part_collect',
+    ),
     path('get_part_detail', views.part_detail, name='part_detail'),
 ]
