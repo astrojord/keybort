@@ -16,3 +16,7 @@ migrate *APPS:
     docker compose exec app python manage.py migrate {{APPS}}
 psql:
     docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
+build-css:
+    npm --prefix keybort run build:css
+build-js:
+    npm --prefix keybort run build:js
