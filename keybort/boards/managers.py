@@ -266,6 +266,7 @@ class KeyboardManager:
             'prebuilt_count': prebuilts,
             'custom_count': len(keyboards) - prebuilts,
             'part_entries': len(parts),
+            'part_units': sum(row['quantity'] for row in parts),
             'switches_loose': sum(
                 row['quantity'] for row in parts if row['type'] == 'switch'
             ),

@@ -421,6 +421,7 @@ class DashboardTests(ClientTestCase):
         self.assertEqual(response.context['prebuilt_count'], 1)
         self.assertEqual(response.context['custom_count'], 1)
         self.assertEqual(response.context['part_entries'], 1)
+        self.assertEqual(response.context['part_units'], 70)
         self.assertEqual(response.context['switches_loose'], 70)
         self.assertEqual(response.context['switches_on_boards'], 82)
         self.assertEqual(len(response.context['recent_keyboards']), 2)

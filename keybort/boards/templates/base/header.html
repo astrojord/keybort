@@ -38,10 +38,12 @@
                     aria-haspopup="menu"
                     aria-controls="dropdown-menu-menu"
                     aria-expanded="false"
+                    aria-label="User menu{% if request.user.is_authenticated %} for {{ request.user }}{% endif %}"
                     class="btn"
                     data-variant="ghost"
                 >
-                    <i class="fa fa-user"></i>
+                    <i class="fa fa-user" aria-hidden="true"></i>
+                    {% if request.user.is_authenticated %}<span class="hidden max-w-40 truncate sm:inline">{{ request.user }}</span>{% endif %}
                 </button>
                 <div
                     id="dropdown-menu-popover"

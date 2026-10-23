@@ -11,3 +11,14 @@
     word-break: normal;
     overflow-wrap: anywhere;
 }
+
+tr:target {
+    animation: row-highlight 2s ease-out;
+    scroll-margin-top: 4rem;
+}
+
+@keyframes row-highlight {
+    from {
+        background-color: color-mix(in oklab, var(--color-brand) 20%, transparent);
+    }
+}
