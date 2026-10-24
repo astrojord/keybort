@@ -36,6 +36,12 @@ urlpatterns = [
     path('stock/plates', views.stock_plates, name='stock_plates'),
     path('stock/stabilizers', views.stock_stabilizers, name='stock_stabilizers'),
     path('stock/parts/add', views.add_stock_part, name='stock_part_add'),
+    path('stock/parts/upload', views.upload_stock_parts, name='stock_part_upload'),
+    path(
+        'stock/parts/upload/template',
+        views.stock_upload_template,
+        name='stock_upload_template',
+    ),
     path('stock/parts/edit', views.edit_stock_part, name='stock_part_edit'),
     path('stock/parts/delete', views.delete_stock_parts, name='stock_part_delete'),
     path(

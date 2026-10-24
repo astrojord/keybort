@@ -18,7 +18,11 @@ from .forms import (
     StabilizerForm,
     SwitchForm,
 )
-from .handlers import handle_canned_parts_upload
+from .handlers import (
+    handle_canned_parts_upload,
+    stock_csv_columns,
+    stock_csv_template,
+)
 from .managers import KeyboardManager
 from .models import Inventory, StockKeyboard
 from .utils import (
@@ -659,6 +663,58 @@ def add_stock_part(request):
         'partials/stock_part_modal.html',
         stock_part_modal_context(part_type, form, action_url),
     )
+
+
+def upload_summary(result):
+    added = [
+        f'{count} {(const.PART_SINGULARS if count == 1 else const.PART_PLURALS)[part_type].lower()}'
+        for part_type, count in result['created'].items()
+        if count
+    ]
+    skipped = result['skipped']
+    skipped_note = f'{skipped} already in the catalog' if skipped else ''
+    if not added:
+        return (
+            messages.INFO,
+            f'Nothing new to add, {skipped_note or "the file was empty"}.',
+        )
+    summary = f'Added {", ".join(added)} to the catalog.'
+    if skipped_note:
+        summary += f' Skipped {skipped_note}.'
+    return messages.SUCCESS, summary
+
+
+@permission_required('boards.can_upload_stock_data', raise_exception=True)
+def upload_stock_parts(request):
+    context = {
+        'action_url': reverse('stock_part_upload'),
+        'columns': stock_csv_columns(),
+    }
+    if request.method != 'POST':
+        return render(request, 'partials/stock_upload_modal.html', context)
+
+    file = request.FILES.get('file')
+    if file is None:
+        context['errors'] = [(0, 'Choose a CSV file to upload.')]
+    elif file.size > const.STOCK_UPLOAD_MAX_BYTES:
+        context['errors'] = [(0, 'That file is too big, split it up and try again.')]
+    else:
+        result = handle_canned_parts_upload(file)
+        context['errors'] = result['errors']
+    if context['errors']:
+        return render(request, 'partials/stock_upload_modal.html', context)
+
+    messages.add_message(request, *upload_summary(result))
+    response = HttpResponse()
+    response['HX-Refresh'] = 'true'
+    return response
+
+
+@permission_required('boards.can_upload_stock_data', raise_exception=True)
+def stock_upload_template(request):
+    response = HttpResponse(stock_csv_template(), content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="stock-parts.csv"'
+    return response
 
 
 @permission_required('boards.can_edit_stock_data', raise_exception=True)

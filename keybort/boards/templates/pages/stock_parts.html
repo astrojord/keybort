@@ -5,14 +5,25 @@
 <div class="w-full flex justify-between items-center">
     <h1 class="text-2xl text-brand font-semibold">{{page_title}}</h1>
     {% if perms.boards.can_upload_stock_data %}
-    <button
-        type="button"
-        class="btn"
-        hx-get="{% url 'stock_part_add' %}?type={{ part_type }}"
-        hx-target="#page-dialog"
-    >
-        <i class="fas fa-plus me-1"></i>Add to catalog
-    </button>
+    <div class="flex gap-2">
+        <button
+            type="button"
+            class="btn"
+            data-variant="outline"
+            hx-get="{% url 'stock_part_upload' %}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-file-csv me-1"></i>Upload CSV
+        </button>
+        <button
+            type="button"
+            class="btn"
+            hx-get="{% url 'stock_part_add' %}?type={{ part_type }}"
+            hx-target="#page-dialog"
+        >
+            <i class="fas fa-plus me-1"></i>Add to catalog
+        </button>
+    </div>
     {% endif %}
 </div>
 {% include "partials/filter_card.html" with id_prefix="stock" placeholder="Name, notes…" %}

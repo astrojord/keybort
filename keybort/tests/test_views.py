@@ -1,6 +1,9 @@
 import json
+from unittest.mock import patch
 
 from django.contrib.auth.models import Permission
+from django.contrib.messages import get_messages
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
@@ -14,6 +17,7 @@ from boards.models import (
     StockKeyboard,
     StockKeycaps,
     StockKit,
+    StockPlate,
     StockSwitch,
     Switch,
 )
@@ -1266,3 +1270,83 @@ class PromotePartViewTests(ClientTestCase):
         theirs = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
         self.assertEqual(self.client.post(f'{url}?id={theirs.pk}').status_code, 404)
         self.assertIsNotNone(Kit.objects.get(pk=theirs.kit_id).custom_id)
+
+
+class StockUploadViewTests(ClientTestCase):
+    def setUp(self):
+        super().setUp()
+        uploader = make_user('uploader')
+        grant(uploader, 'can_upload_stock_data')
+        self.client.force_login(uploader)
+
+    def post_csv(self, content, name='parts.csv'):
+        return self.client.post(
+            reverse('stock_part_upload'),
+            {'file': SimpleUploadedFile(name, content.encode())},
+            headers={'HX-Request': 'true'},
+        )
+
+    def test_without_permission_forbidden(self):
+        self.client.force_login(self.user)
+        for url_name in ('stock_part_upload', 'stock_upload_template'):
+            with self.subTest(url_name=url_name):
+                self.assertEqual(self.client.get(reverse(url_name)).status_code, 403)
+        self.assertEqual(self.post_csv('type,material\nplate,Brass').status_code, 403)
+        self.assertFalse(StockPlate.objects.exists())
+
+    def test_get_modal(self):
+        response = self.client.get(reverse('stock_part_upload'))
+        self.assertTemplateUsed(response, 'partials/stock_upload_modal.html')
+        self.assertContains(response, 'multipart/form-data')
+
+    def test_upload_refreshes_with_summary(self):
+        stock_plate(material='Brass')
+        response = self.post_csv(
+            'type,brand,name,material\n'
+            'switch,Gateron,Yellow,\n'
+            'switch,Akko,Lavender,\n'
+            'keycaps,GMK,Olivia,ABS\n'
+            'plate,,,Brass\n'
+        )
+        self.assertEqual(response['HX-Refresh'], 'true')
+        self.assertNotIn('HX-Trigger', response)
+        self.assertEqual(StockSwitch.objects.count(), 2)
+        message = str(next(iter(get_messages(response.wsgi_request))))
+        self.assertEqual(
+            message,
+            'Added 2 switches, 1 keycaps to the catalog. Skipped 1 already in the catalog.',
+        )
+
+    def test_nothing_new(self):
+        stock_plate(material='Brass')
+        response = self.post_csv('type,material\nplate,Brass\n')
+        message = next(iter(get_messages(response.wsgi_request)))
+        self.assertEqual(message.level_tag, 'info')
+        self.assertIn('1 already in the catalog', str(message))
+
+    def test_errors_rerender_modal(self):
+        response = self.post_csv('type,brand\nkit,Keychron\n')
+        self.assertTemplateUsed(response, 'partials/stock_upload_modal.html')
+        self.assertContains(response, 'Line 2: name')
+        self.assertFalse(StockKit.objects.exists())
+
+    def test_missing_or_oversized_file(self):
+        response = self.client.post(reverse('stock_part_upload'))
+        self.assertContains(response, 'Choose a CSV file')
+
+        with patch.object(const, 'STOCK_UPLOAD_MAX_BYTES', 10):
+            response = self.post_csv('type,material\nplate,Brass\n')
+        self.assertContains(response, 'too big')
+        self.assertFalse(StockPlate.objects.exists())
+
+    def test_template_download(self):
+        response = self.client.get(reverse('stock_upload_template'))
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertTrue(response.content.decode().startswith('type,brand,name'))
+
+    def test_button_follows_permission(self):
+        url = reverse('stock_switches')
+        self.assertContains(self.client.get(url), reverse('stock_part_upload'))
+        self.client.force_login(self.user)
+        self.assertNotContains(self.client.get(url), reverse('stock_part_upload'))

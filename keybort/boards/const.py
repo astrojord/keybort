@@ -157,6 +157,8 @@ FIELD_LABELS = {'pcb': 'PCB', 'category': 'Type', 'half': 'Half plate'}
 # htmx event the page dialogs listen for to close themselves after a save
 CLOSE_DIALOG_EVENT = 'close-dialog'
 
+STOCK_UPLOAD_MAX_BYTES = 2 * 1024 * 1024
+
 QUANTITY_ERROR = 'Enter a whole number, 1 or more.'
 
 QUICK_ACTIONS = [

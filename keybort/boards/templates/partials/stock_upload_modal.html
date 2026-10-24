@@ -1,0 +1,49 @@
+<form id="stock-upload-form" class="sm:max-w-2xl" hx-post="{{ action_url }}" hx-target="#page-dialog" hx-encoding="multipart/form-data">
+    {% csrf_token %}
+    <header>
+        <h2 id="page-dialog-title">Upload parts to catalog</h2>
+        <p id="page-dialog-description">Use the same CSV for every type of part. If any row in the uploaded file has a problem, the upload is rolled back and nothing is saved. Parts already in the stock catalog are skipped.</p>
+    </header>
+
+    <section class="-mx-6 min-h-0 overflow-y-auto px-6 grid gap-4">
+        {% if errors %}
+        <div class="alert" role="alert" data-variant="destructive">
+            <i class="fas fa-circle-exclamation"></i>
+            <h2>Nothing was added</h2>
+            <section>
+                <ul class="list-disc ps-5">
+                    {% for line, message in errors %}
+                    <li>{% if line %}Line {{ line }}: {% endif %}{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+        {% endif %}
+
+        <div class="grid gap-2">
+            <label for="id_upload-file" class="label">CSV file</label>
+            <input type="file" id="id_upload-file" class="input" name="file" accept=".csv,text/csv" required>
+        </div>
+
+        <div class="grid gap-2 text-sm text-muted-foreground">
+            <p>Every row needs a <code>type</code> (kit, switch, keycaps, plate or stabilizer). Fill in whichever other columns apply to that type and leave the rest blank. Headers can be in any order, and missing columns are fine.</p>
+            <p>Choice columns take the key or the label (<code>l</code> or <code>Linear</code>). Yes/no columns take yes/no, true/false, 1/0 or x.</p>
+            <section class="accordion">
+                <details>
+                    <summary class="text-foreground">All columns<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6" /></svg></summary>
+                    <section class="pb-4">
+                        <p class="font-mono text-xs">{{ columns|join:", " }}</p>
+                    </section>
+                </details>
+            </section>
+        </div>
+    </section>
+
+    <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <a href="{% url 'stock_upload_template' %}" class="btn sm:me-auto" data-variant="ghost" download><i class="fas fa-download"></i>Template</a>
+        <button type="button" class="btn" data-variant="outline" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn">Upload</button>
+    </footer>
+
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" aria-label="Close dialog" onclick="this.closest('dialog').close()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+</form>
