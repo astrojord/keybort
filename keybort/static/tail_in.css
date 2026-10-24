@@ -13,6 +13,10 @@
     overflow-wrap: anywhere;
 }
 
+.combobox[data-freeform] [data-popover]:not(:has([role="option"]:not([aria-hidden="true"]))) {
+    display: none;
+}
+
 tr:target {
     animation: row-highlight 2s ease-out;
     scroll-margin-top: 4rem;

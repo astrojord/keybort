@@ -1,0 +1,11 @@
+<div class="combobox" data-freeform>
+    <input type="text" name="{{ widget.name }}" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ widget.attrs.id }}-listbox"{% if widget.value != None %} value="{{ widget.value|stringformat:'s' }}"{% endif %}{% include "django/forms/widgets/attrs.html" %}>
+    <div data-popover aria-hidden="true">
+        <div role="listbox" id="{{ widget.attrs.id }}-listbox" aria-orientation="vertical">
+            {% for option in widget.options %}
+            <div role="option" data-value="{{ option }}">{{ option }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    <input type="hidden">
+</div>

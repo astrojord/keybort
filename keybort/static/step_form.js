@@ -140,7 +140,7 @@ window.initStepForm = (form) => {
     });
     // enter in a text field moves forward instead of submitting the whole form early
     form.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" || event.target.tagName === "TEXTAREA" || event.target.type === "submit") return;
+        if (event.key !== "Enter" || event.defaultPrevented || event.target.tagName === "TEXTAREA" || event.target.type === "submit") return;
         if (!button("next").hidden) {
             event.preventDefault();
             go(1);
