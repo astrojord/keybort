@@ -305,7 +305,16 @@ class VisiblePartTests(UserTestCase):
 class AddPartTests(UserTestCase):
     def add(self, data):
         context = self.modal_forms.add_part_context(data)
-        return context, self.part_manager.add_part(context, data)
+        part_type = context['part_type']
+        part = next(p for p in context['parts'] if p.type == part_type)
+        choice = part.validate(data)
+        quantity = parse_quantity(data.get('quantity'))
+        if quantity is None:
+            context['quantity_error'] = const.QUANTITY_ERROR
+        if choice is None or quantity is None:
+            context['step'] = part_type
+            return context, None
+        return context, self.part_manager.add_part(part_type, choice, quantity)
 
     def test_add_stock_part(self):
         switch = stock_switch()
@@ -368,8 +377,8 @@ class AddPartTests(UserTestCase):
             {'type': 'switch', 'switch-source': 'stock', 'quantity': '1'}
         )
         self.assertIsNone(result)
-        switch = next(p for p in context['parts'] if p['type'] == 'switch')
-        self.assertIsNotNone(switch['error'])
+        switch = next(p for p in context['parts'] if p.type == 'switch')
+        self.assertIsNotNone(switch.error)
 
     def test_invalid_custom_form(self):
         _context, result = self.add(
@@ -394,7 +403,8 @@ class EditDeletePartTests(UserTestCase):
         inv = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
         data = {'quantity': '3', 'kit-brand': 'KBDfans', 'kit-name': 'Tofu60'}
         context = self.modal_forms.edit_part_context(inv, '/edit', data)
-        inv = self.part_manager.edit_part(context, data)
+        self.assertTrue(context['form'].is_valid())
+        inv = self.part_manager.edit_part(inv, context['form'], 3)
         self.assertEqual(inv.quantity, 3)
         self.assertEqual(inv.kit.custom.name, 'Tofu60')
 
@@ -404,18 +414,7 @@ class EditDeletePartTests(UserTestCase):
         )
         context = self.modal_forms.edit_part_context(inv, '/edit', {'quantity': '45'})
         self.assertIsNone(context['form'])
-        self.assertEqual(
-            self.part_manager.edit_part(context, {'quantity': '45'}).quantity, 45
-        )
-
-    def test_edit_bad_quantity(self):
-        inv = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
-        data = {'quantity': '', 'kit-brand': 'KBDfans', 'kit-name': 'Tofu60'}
-        context = self.modal_forms.edit_part_context(inv, '/edit', data)
-        self.assertIsNone(self.part_manager.edit_part(context, data))
-        self.assertEqual(context['quantity_error'], const.QUANTITY_ERROR)
-        inv.kit.custom.refresh_from_db()
-        self.assertEqual(inv.kit.custom.name, 'Tofu65')
+        self.assertEqual(self.part_manager.edit_part(inv, None, 45).quantity, 45)
 
     def test_delete_custom_part_removes_it(self):
         wrapper = custom_kit_wrapper()
@@ -464,17 +463,17 @@ class KeyboardFormContextTests(UserTestCase):
     def test_editing_prebuilt_preselects_its_stock_parts(self):
         stock_kb = stock_keyboard()
         context = self.modal_forms.keyboard_form_context('/edit', current=stock_kb)
-        kit = next(p for p in context['parts'] if p['type'] == 'kit')
+        kit = next(p for p in context['parts'] if p.type == 'kit')
         self.assertTrue(context['from_prebuilt'])
-        self.assertEqual(kit['source'], 'stock')
-        self.assertEqual(kit['stock_id'], str(stock_kb.kit.pk))
+        self.assertEqual(kit.source, 'stock')
+        self.assertEqual(kit.stock_id, str(stock_kb.kit.pk))
 
     def kit_source(self, preferred):
         Profile.objects.update_or_create(
             user=self.user, defaults={'default_part_source': preferred}
         )
         context = ModalForms(self.user).keyboard_form_context('/add')
-        return next(p for p in context['parts'] if p['type'] == 'kit')['source']
+        return next(p for p in context['parts'] if p.type == 'kit').source
 
     def test_kit_source_follows_preference(self):
         stock_kit()
@@ -490,21 +489,21 @@ class KeyboardFormContextTests(UserTestCase):
         Profile.objects.create(user=self.user, default_part_source='stock')
         stock_switch()
         context = self.modal_forms.keyboard_form_context('/add')
-        switch = next(p for p in context['parts'] if p['type'] == 'switch')
-        self.assertEqual(switch['source'], 'none')
+        switch = next(p for p in context['parts'] if p.type == 'switch')
+        self.assertEqual(switch.source, 'none')
 
     def test_add_part_follows_preference(self):
         Profile.objects.create(user=self.user, default_part_source='custom')
         stock_switch()
         context = self.modal_forms.add_part_context()
-        switch = next(p for p in context['parts'] if p['type'] == 'switch')
-        self.assertEqual(switch['source'], 'custom')
+        switch = next(p for p in context['parts'] if p.type == 'switch')
+        self.assertEqual(switch.source, 'custom')
 
     def test_switch_count_defaults_from_board(self):
         kb = custom_keyboard(self.user, switch=custom_switch_wrapper(), switch_count=60)
         context = self.modal_forms.keyboard_form_context('/edit', current=kb)
-        switch = next(p for p in context['parts'] if p['type'] == 'switch')
-        self.assertEqual(switch['count'], 60)
+        switch = next(p for p in context['parts'] if p.type == 'switch')
+        self.assertEqual(switch.count, 60)
 
 
 class AddPrebuiltTests(UserTestCase):
@@ -512,7 +511,13 @@ class AddPrebuiltTests(UserTestCase):
         user = user or self.user
         data = {'kind': 'prebuilt', 'prebuilt': str(prebuilt_id)}
         context = ModalForms(user).keyboard_form_context('/add', data)
-        return context, KeyboardManager(user).add_prebuilt(context, data)
+        stock_kb, error = ModalForms(user).validate_prebuilt(data)
+        if error is not None:
+            context['step'] = 'prebuilt'
+            context['prebuilt_error'] = error
+            return context, None
+        KeyboardManager(user).collect_prebuilt(stock_kb)
+        return context, stock_kb
 
     def test_adds_to_inventory(self):
         stock_kb = stock_keyboard()
@@ -556,7 +561,11 @@ class AddCustomTests(UserTestCase):
     def add(self, **extra):
         data = {**self.kit_data, **extra}
         context = self.modal_forms.keyboard_form_context('/add', data)
-        return context, self.kb_manager.add_custom(context, data)
+        submission = ModalForms.validate_parts(data, context, count_switches=True)
+        if submission.step is not None:
+            context['step'] = submission.step
+            return context, None
+        return context, self.kb_manager.add_custom(submission)
 
     def test_custom_kit_only(self):
         _, kb = self.add(**{'details-notes': 'first build'})
@@ -679,7 +688,11 @@ class EditKeyboardTests(UserTestCase):
         context = self.modal_forms.keyboard_form_context(
             '/edit', data, current=inventory.keyboard.obj
         )
-        return context, self.kb_manager.edit_keyboard(inventory, context, data)
+        submission = ModalForms.validate_parts(data, context, count_switches=True)
+        if submission.step is not None:
+            context['step'] = submission.step
+            return context, None
+        return context, self.kb_manager.edit_keyboard(inventory, submission)
 
     def test_editing_prebuilt_makes_a_custom_build(self):
         stock_kb = prebuilt_in_inventory(self.user)

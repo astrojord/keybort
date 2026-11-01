@@ -107,11 +107,17 @@ def add_part(request):
     if context['part_type'] not in PART_MODELS:
         return HttpResponse(status=400)
 
-    result = part_manager.add_part(context, request.POST)
-    if result is None:
+    part_type = context['part_type']
+    part = next(p for p in context['parts'] if p.type == part_type)
+    choice = part.validate(request.POST)
+    quantity = parse_quantity(request.POST.get('quantity'))
+    if quantity is None:
+        context['quantity_error'] = const.QUANTITY_ERROR
+    if choice is None or quantity is None:
+        context['step'] = part_type
         return render(request, 'partials/modals/part_add_modal.html', context)
 
-    inv, stacked = result
+    inv, stacked = part_manager.add_part(part_type, choice, quantity)
     row = RowBuilder.part_row(inv)
     if stacked:
         messages.success(
@@ -143,9 +149,15 @@ def edit_part(request):
     if post is None:
         return render(request, 'partials/modals/part_edit_modal.html', context)
 
-    inv = part_manager.edit_part(context, post)
-    if inv is None:
+    form = context['form']
+    quantity = parse_quantity(post.get('quantity'))
+    if quantity is None:
+        context['quantity_error'] = const.QUANTITY_ERROR
+    form_valid = form is None or form.is_valid()
+    if quantity is None or not form_valid:
         return render(request, 'partials/modals/part_edit_modal.html', context)
+
+    inv = part_manager.edit_part(inv, form, quantity)
 
     row = RowBuilder.part_row(inv)
     messages.success(request, f'Saved {row["name"]}.')
@@ -357,14 +369,22 @@ def add_keyboard(request):
     context = modal_forms.keyboard_form_context(action_url, request.POST)
     match context['kind']:
         case 'prebuilt':
-            kb = kb_manager.add_prebuilt(context, request.POST)
+            kb, error = modal_forms.validate_prebuilt(request.POST)
+            if error is not None:
+                context['step'] = 'prebuilt'
+                context['prebuilt_error'] = error
+                return render(request, 'partials/modals/keyboard_modal.html', context)
+            kb_manager.collect_prebuilt(kb)
         case 'custom':
-            kb = kb_manager.add_custom(context, request.POST)
+            submission = ModalForms.validate_parts(
+                request.POST, context, count_switches=True
+            )
+            if submission.step is not None:
+                context['step'] = submission.step
+                return render(request, 'partials/modals/keyboard_modal.html', context)
+            kb = kb_manager.add_custom(submission)
         case _:
             return HttpResponse(status=400)
-
-    if kb is None:
-        return render(request, 'partials/modals/keyboard_modal.html', context)
 
     row = RowBuilder.keyboard_row(kb)
     messages.success(request, f'Added {keyboard_name(row)} to keyboards.')
@@ -401,10 +421,12 @@ def edit_keyboard(request):
             context['step'] = request.GET['step']
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
-    kb = kb_manager.edit_keyboard(inventory, context, post)
-    if kb is None:
+    submission = ModalForms.validate_parts(post, context, count_switches=True)
+    if submission.step is not None:
+        context['step'] = submission.step
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
+    kb = kb_manager.edit_keyboard(inventory, submission)
     row = RowBuilder.keyboard_row(kb)
     messages.success(request, f'Saved {keyboard_name(row)}.')
     return swap_row(
@@ -462,10 +484,12 @@ def add_stock_prebuilt(request):
         )
 
     context = modal_forms.stock_keyboard_form_context(action_url, request.POST)
-    stock_kb = CatalogManager.save_stock_keyboard(context, request.POST)
-    if stock_kb is None:
+    submission = ModalForms.validate_parts(request.POST, context)
+    if submission.step is not None:
+        context['step'] = submission.step
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
+    stock_kb = CatalogManager.save_stock_keyboard(submission)
     row = RowBuilder.stock_prebuilt_row(stock_kb)
     messages.success(request, f'Added {row["name"]} to the catalog.')
     return swap_row(
@@ -500,10 +524,12 @@ def edit_stock_prebuilt(request):
     if post is None:
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
-    stock_kb = CatalogManager.save_stock_keyboard(context, post)
-    if stock_kb is None:
+    submission = ModalForms.validate_parts(post, context)
+    if submission.step is not None:
+        context['step'] = submission.step
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
+    stock_kb = CatalogManager.save_stock_keyboard(submission)
     row = RowBuilder.stock_prebuilt_row(
         stock_kb, stock_kb.pk in catalog_manager.owned_prebuilt_ids()
     )

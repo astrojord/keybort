@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from functools import cached_property
-from typing import NamedTuple
+from typing import Any, NamedTuple
 from urllib.parse import urlencode
 
 from django.db import transaction
@@ -133,6 +134,78 @@ def parse_quantity(value):
         return None
     quantity = int(value)
     return quantity if 0 < quantity <= const.MAX_QUANTITY else None
+
+
+@dataclass
+class PartChoice:
+    type: str
+    label: str
+    required: bool
+    catalog: bool
+    source: str
+    stock_options: Any
+    stock_id: str
+    owned_rows: Any
+    owned_options: list[dict] | None
+    owned_id: str
+    # stock + custom, plus "from my parts" and skip when they apply
+    source_cards: int
+    form: Any
+    current: dict | None
+    removal: str
+    # switch count, filled in by keyboard_form_context for the switch step
+    count: Any = None
+    error: str | None = None
+
+    def validate(self, data):
+        match self.source:
+            case 'stock':
+                stock_id = data.get(f'{self.type}-stock', '')
+                obj = (
+                    self.stock_options.filter(pk=stock_id).first()
+                    if is_id(stock_id)
+                    else None
+                )
+                if obj is not None:
+                    return ('stock', obj)
+                self.error = f'Choose a stock option for {self.label.lower()}.'
+            case 'custom':
+                if self.form.is_valid():
+                    return ('custom', self.form)
+                self.error = 'Found some errors while checking the form.'
+            case 'owned' if self.owned_rows is not None:
+                row_id = data.get(f'{self.type}-owned', '')
+                row = (
+                    self.owned_rows.filter(pk=row_id).first() if is_id(row_id) else None
+                )
+                if row is not None:
+                    return ('owned', row)
+                self.error = f'Choose {self.label.lower()} from your parts.'
+            case 'none' if not self.required:
+                pass
+            case _:
+                self.error = (
+                    f'Choose a stock {self.label.lower()} or enter a custom one.'
+                )
+        return None
+
+    def validate_switch_count(self, data, choice):
+        count = parse_quantity(data.get('switch-count'))
+        source, value = choice
+        if count is None:
+            self.error = 'Enter how many switches are on the board.'
+        elif source == 'owned' and count > value.quantity:
+            self.error = f'You only have {value.quantity} of those switches.'
+        return count
+
+
+@dataclass
+class KeyboardSubmission:
+    details_form: Any
+    chosen: dict[str, tuple]
+    removal: dict[str, str]
+    switch_count: int | None = None
+    step: str | None = None
 
 
 class UserScoped:
@@ -413,7 +486,7 @@ class ModalForms(UserScoped):
             if current and current.switch
             else ''
         )
-        parts[list(PART_MODELS).index('switch')]['count'] = data.get(
+        parts[list(PART_MODELS).index('switch')].count = data.get(
             'switch-count', switch_default
         )
 
@@ -434,7 +507,7 @@ class ModalForms(UserScoped):
         stock_keyboards = StockKeyboard.objects.select_related('kit')
         if kind == 'prebuilt' and not stock_keyboards:
             kind = None
-        step = {'prebuilt': 'prebuilt', 'custom': parts[0]['type']}.get(kind)
+        step = {'prebuilt': 'prebuilt', 'custom': parts[0].type}.get(kind)
 
         return {
             'action_url': action_url,
@@ -555,100 +628,72 @@ class ModalForms(UserScoped):
             default_source, instance = 'custom', current.custom
 
         source = data.get(f'{part_type}-source', default_source)
-        return {
-            'type': part_type,
-            'label': label,
-            'required': required,
-            'catalog': catalog,
-            'source': source,
-            'stock_options': stock_options,
-            'stock_id': data.get(f'{part_type}-stock', stock_id),
-            'owned_rows': owned,
-            'owned_options': owned_options,
-            'owned_id': data.get(f'{part_type}-owned', ''),
-            # stock + custom, plus "from my parts" and skip when they apply
-            'source_cards': 2 + (owned is not None) + (not required),
-            # switch count, filled in by keyboard_form_context for the switch step
-            'count': None,
-            'form': form_class(
+        return PartChoice(
+            type=part_type,
+            label=label,
+            required=required,
+            catalog=catalog,
+            source=source,
+            stock_options=stock_options,
+            stock_id=data.get(f'{part_type}-stock', stock_id),
+            owned_rows=owned,
+            owned_options=owned_options,
+            owned_id=data.get(f'{part_type}-owned', ''),
+            source_cards=2 + (owned is not None) + (not required),
+            form=form_class(
                 (data or None) if source == 'custom' else None,
                 prefix=part_type,
                 instance=instance,
             ),
-            'error': None,
-            'current': {
+            current={
                 'name': str(part_obj(current)),
                 'source': default_source,
                 'stock_id': stock_id,
             }
             if current is not None
             else None,
-            'removal': data.get(f'{part_type}-removed', 'keep'),
-        }
+            removal=data.get(f'{part_type}-removed', 'keep'),
+        )
 
     @staticmethod
-    def validate_part_choice(data, part):
-        match part['source']:
-            case 'stock':
-                stock_id = data.get(f'{part["type"]}-stock', '')
-                obj = (
-                    part['stock_options'].filter(pk=stock_id).first()
-                    if is_id(stock_id)
-                    else None
-                )
-                if obj is not None:
-                    return ('stock', obj)
-                part['error'] = f'Choose a stock option for {part["label"].lower()}.'
-            case 'custom':
-                if part['form'].is_valid():
-                    return ('custom', part['form'])
-                part['error'] = 'Some of these details need fixing.'
-            case 'owned' if part['owned_rows'] is not None:
-                row_id = data.get(f'{part["type"]}-owned', '')
-                row = (
-                    part['owned_rows'].filter(pk=row_id).first()
-                    if is_id(row_id)
-                    else None
-                )
-                if row is not None:
-                    return ('owned', row)
-                part['error'] = f'Choose {part["label"].lower()} from your parts.'
-            case 'none' if not part['required']:
-                pass
-            case _:
-                part['error'] = (
-                    f'Choose a stock {part["label"].lower()} or enter a custom one.'
-                )
-        return None
-
-    @classmethod
-    def validate_parts(cls, data, context, count_switches=False):
+    def validate_parts(data, context, count_switches=False):
         chosen = {}
+        switch_count = None
+        step = None
         for part in context['parts']:
-            choice = cls.validate_part_choice(data, part)
+            choice = part.validate(data)
             if choice is not None:
-                chosen[part['type']] = choice
-                if count_switches and part['type'] == 'switch':
-                    context['switch_count'] = cls._validate_switch_count(
-                        data, part, choice
-                    )
-            if part['error'] and context['step'] is None:
-                context['step'] = part['type']
+                chosen[part.type] = choice
+                if count_switches and part.type == 'switch':
+                    switch_count = part.validate_switch_count(data, choice)
+            if part.error and step is None:
+                step = part.type
 
-        if not context['details_form'].is_valid() and context['step'] is None:
-            context['step'] = 'details'
+        if not context['details_form'].is_valid() and step is None:
+            step = 'details'
 
-        return None if context['step'] is not None else chosen
+        return KeyboardSubmission(
+            details_form=context['details_form'],
+            chosen=chosen,
+            removal={part.type: part.removal for part in context['parts']},
+            switch_count=switch_count,
+            step=step,
+        )
 
-    @staticmethod
-    def _validate_switch_count(data, part, choice):
-        count = parse_quantity(data.get('switch-count'))
-        source, value = choice
-        if count is None:
-            part['error'] = 'Enter how many switches are on the board.'
-        elif source == 'owned' and count > value.quantity:
-            part['error'] = f'You only have {value.quantity} of those switches.'
-        return count
+    def validate_prebuilt(self, data):
+        stock_id = data.get('prebuilt', '')
+        stock_kb = (
+            StockKeyboard.objects.filter(pk=stock_id).first()
+            if is_id(stock_id)
+            else None
+        )
+
+        if stock_kb is None:
+            return None, 'Choose a prebuilt keyboard.'
+        if Inventory.objects.filter(user=self.user, keyboard__stock=stock_kb).exists():
+            # keyboard_inventory looks these up by stock board, so one per user
+            return None, 'That prebuilt is already in your inventory.'
+        return stock_kb, None
 
 
 class PartManager(UserScoped):
@@ -694,17 +739,7 @@ class PartManager(UserScoped):
         wrapper, _ = PART_MODELS[part_type].wrapper.objects.get_or_create(stock=obj)
         return self.add_to_parts(part_type, wrapper, quantity)
 
-    def add_part(self, context, data):
-        part_type = context['part_type']
-        part = next(p for p in context['parts'] if p['type'] == part_type)
-        choice = ModalForms.validate_part_choice(data, part)
-        quantity = parse_quantity(data.get('quantity'))
-        if quantity is None:
-            context['quantity_error'] = const.QUANTITY_ERROR
-        if choice is None or quantity is None:
-            context['step'] = part_type
-            return None
-
+    def add_part(self, part_type, choice, quantity):
         source, value = choice
         wrapper_model = PART_MODELS[part_type].wrapper
         with transaction.atomic():
@@ -714,16 +749,7 @@ class PartManager(UserScoped):
                 wrapper = wrapper_model.objects.create(custom=value.save())
             return self.add_to_parts(part_type, wrapper, quantity)
 
-    def edit_part(self, context, data):
-        """the saved inventory row, or None with errors on context"""
-        inv, form = context['inv'], context['form']
-        quantity = parse_quantity(data.get('quantity'))
-        if quantity is None:
-            context['quantity_error'] = const.QUANTITY_ERROR
-        form_valid = form is None or form.is_valid()
-        if quantity is None or not form_valid:
-            return None
-
+    def edit_part(self, inv, form, quantity):
         with transaction.atomic():
             if form is not None:
                 form.save()
@@ -849,69 +875,39 @@ class KeyboardManager(UserScoped):
                 )
         return parts
 
-    def add_prebuilt(self, context, data):
-        stock_id = data.get('prebuilt', '')
-        stock_kb = (
-            StockKeyboard.objects.filter(pk=stock_id).first()
-            if is_id(stock_id)
-            else None
-        )
-
-        if stock_kb is None:
-            context['prebuilt_error'] = 'Choose a prebuilt keyboard.'
-        elif Inventory.objects.filter(
-            user=self.user, keyboard__stock=stock_kb
-        ).exists():
-            # keyboard_inventory looks these up by stock board, so one per user
-            context['prebuilt_error'] = 'That prebuilt is already in your inventory.'
-        else:
-            self.collect_prebuilt(stock_kb)
-            return stock_kb
-
-        context['step'] = 'prebuilt'
-        return None
-
     def collect_prebuilt(self, stock_kb):
         # Keyboard.stock is one-to-one, every user shares the same wrapper for a stock board
         keyboard, _ = Keyboard.objects.get_or_create(stock=stock_kb)
         return Inventory.objects.create(user=self.user, keyboard=keyboard)
 
-    def add_custom(self, context, data):
-        chosen = ModalForms.validate_parts(data, context, count_switches=True)
-        if chosen is None:
-            return None
-
+    def add_custom(self, submission):
         with transaction.atomic():
-            custom_kb = context['details_form'].save(commit=False)
-            self._save_keyboard_parts(custom_kb, chosen, context.get('switch_count'))
+            custom_kb = submission.details_form.save(commit=False)
+            self._save_keyboard_parts(custom_kb, submission)
             keyboard = Keyboard.objects.create(custom=custom_kb)
             Inventory.objects.create(user=self.user, keyboard=keyboard)
 
         return custom_kb
 
-    def edit_keyboard(self, inventory, context, data):
-        chosen = ModalForms.validate_parts(data, context, count_switches=True)
-        if chosen is None:
-            return None
-
+    def edit_keyboard(self, inventory, submission):
         current = inventory.keyboard.obj
         with transaction.atomic():
-            custom_kb = context['details_form'].save(commit=False)
-            removal = {part['type']: part['removal'] for part in context['parts']}
-            self._save_keyboard_parts(
-                custom_kb, chosen, context.get('switch_count'), removal
-            )
+            custom_kb = submission.details_form.save(commit=False)
+            self._save_keyboard_parts(custom_kb, submission)
             if current.stock:
                 inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
                 inventory.save()
                 # the new build starts empty, so compare against the prebuilt's own parts
                 for part_type in PART_MODELS:
                     old = getattr(current, part_type)
-                    if old is not None and chosen.get(part_type) != ('stock', old):
+                    if old is not None and submission.chosen.get(part_type) != (
+                        'stock',
+                        old,
+                    ):
                         self.parts.release_part(
                             part_type,
                             old,
-                            keep=removal[part_type] != 'delete',
+                            keep=submission.removal[part_type] != 'delete',
                             quantity=board_quantity(current, part_type),
                         )
 
@@ -933,10 +929,10 @@ class KeyboardManager(UserScoped):
                     quantity=board_quantity(kb, part['type']),
                 )
 
-    def _save_keyboard_parts(self, custom_kb, chosen, switch_count=None, removal=None):
-        removal = removal or {}
+    def _save_keyboard_parts(self, custom_kb, submission):
+        chosen = submission.chosen
         old_switch_count = board_switch_count(custom_kb) if custom_kb.switch else 1
-        custom_kb.switch_count = switch_count if 'switch' in chosen else None
+        custom_kb.switch_count = submission.switch_count if 'switch' in chosen else None
         dropped = []
         taken = []
         for part_type, spec in PART_MODELS.items():
@@ -980,7 +976,7 @@ class KeyboardManager(UserScoped):
             self.parts.release_part(
                 part_type,
                 old,
-                keep=removal.get(part_type) != 'delete',
+                keep=submission.removal[part_type] != 'delete',
                 quantity=quantity,
             )
 
@@ -1080,15 +1076,11 @@ class CatalogManager(UserScoped):
             obj.delete()
 
     @staticmethod
-    def save_stock_keyboard(context, data):
-        chosen = ModalForms.validate_parts(data, context)
-        if chosen is None:
-            return None
-
+    def save_stock_keyboard(submission):
         with transaction.atomic():
-            stock_kb = context['details_form'].save(commit=False)
+            stock_kb = submission.details_form.save(commit=False)
             for part_type in PART_MODELS:
-                source, value = chosen.get(part_type, ('none', None))
+                source, value = submission.chosen.get(part_type, ('none', None))
                 if source == 'custom':
                     value = value.save()
                 setattr(stock_kb, part_type, value)

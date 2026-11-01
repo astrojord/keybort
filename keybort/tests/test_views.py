@@ -124,6 +124,7 @@ class AddKeyboardViewTests(ClientTestCase):
         self.assertTemplateUsed(response, 'partials/modals/keyboard_modal.html')
         self.assertNotIn('HX-Retarget', response)
         self.assertEqual(response.context['step'], 'kit')
+        self.assertContains(response, 'Some of these details need fixing.')
 
     def test_post_unknown_kind(self):
         self.assertEqual(
@@ -381,6 +382,17 @@ class EditDeletePartViewTests(ClientTestCase):
         self.assertEqual(response['HX-Retarget'], f'#part-{inv.pk}')
         inv.refresh_from_db()
         self.assertEqual(inv.quantity, 12)
+
+    def test_edit_bad_quantity_changes_nothing(self):
+        inv = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
+        response = self.client.post(
+            f'{reverse("part_edit")}?id={inv.pk}',
+            {'quantity': '', 'kit-brand': 'KBDfans', 'kit-name': 'Tofu60'},
+        )
+        self.assertTemplateUsed(response, 'partials/modals/part_edit_modal.html')
+        self.assertEqual(response.context['quantity_error'], const.QUANTITY_ERROR)
+        inv.kit.custom.refresh_from_db()
+        self.assertEqual(inv.kit.custom.name, 'Tofu65')
 
     def test_delete_removes_row(self):
         inv = Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
@@ -808,10 +820,10 @@ class EditStockPrebuiltViewTests(ClientTestCase):
     def test_get_prefills_current(self):
         response = self.client.get(self.url)
         self.assertTrue(response.context['editing'])
-        parts = {part['type']: part for part in response.context['parts']}
-        self.assertEqual(parts['kit']['source'], 'stock')
-        self.assertEqual(parts['switch']['stock_id'], str(self.stock_kb.switch.pk))
-        self.assertEqual(parts['keycaps']['source'], 'none')
+        parts = {part.type: part for part in response.context['parts']}
+        self.assertEqual(parts['kit'].source, 'stock')
+        self.assertEqual(parts['switch'].stock_id, str(self.stock_kb.switch.pk))
+        self.assertEqual(parts['keycaps'].source, 'none')
         self.assertNotContains(response, 'data-removal')
 
     def test_post_saves_and_swaps_row(self):
