@@ -1,0 +1,57 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.total }}
+    services:
+      db:
+        image: postgres:18-bookworm
+        env:
+          POSTGRES_DB: keybort
+          POSTGRES_USER: keybort
+          POSTGRES_PASSWORD: keybort
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U keybort -d keybort"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: dummy-secret
+      POSTGRES_DB: keybort
+      POSTGRES_USER: keybort
+      POSTGRES_PASSWORD: keybort
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+    defaults:
+      run:
+        working-directory: keybort
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: keybort/requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: coverage run manage.py test
+      - name: Report coverage
+        id: coverage
+        run: |
+          coverage report
+          total="$(coverage report --format=total)"
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+          echo "### Total coverage: $total%" >> "$GITHUB_STEP_SUMMARY"

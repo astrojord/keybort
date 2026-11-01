@@ -1,0 +1,9 @@
+[run]
+source =
+    boards
+    config
+omit =
+    */migrations/*
+    boards/tests.py
+    config/asgi.py
+    config/wsgi.py

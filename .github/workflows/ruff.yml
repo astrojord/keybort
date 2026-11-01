@@ -1,0 +1,28 @@
+name: Ruff
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: keybort
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Install ruff
+        run: pip install "$(grep '^ruff==' requirements.txt)"
+      - name: Lint
+        run: ruff check --output-format=github
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: ruff format --check
