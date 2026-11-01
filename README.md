@@ -13,7 +13,6 @@ Track personal mechanical keyboard collection and parts inventory. Users can wri
 - [ ] UI/UX improvements - brainstorm
   - [ ] Mobile tables are way too long - switch to some sort of stacked card/collapsible approach perhaps
   - [ ] Overall, just needs more juice/visual interest
-- [ ] Break out part-specific table headers for specific part inventory - eg the switches table should have the stem type and actuation force etc etc
 - [ ] Typing minigame on dashboard?
 - [ ] Collection stats type stuff on dashboard - layout breakdown, most used switch, most used keycap brand, etc
 - [ ] allauth social account stuff, or at the very least, email verification
