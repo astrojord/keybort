@@ -14,15 +14,7 @@
         <i class="fas fa-plus me-1"></i>Add
     </button>
 </div>
-<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
-    <div id="parts-filter" data-active="" class="flex flex-wrap gap-1" role="group" aria-label="Filter by type">
-        <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="" data-label="parts">All <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
-        {% for part_type, label in filters %}
-        <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="{{ part_type }}" data-label="{{ label|lower }}">{{ label }} <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
-        {% endfor %}
-    </div>
-    <input type="search" id="parts-search" class="input w-full sm:w-64" placeholder="Search parts" aria-label="Search parts">
-</div>
+{% include "partials/components/filter_chips.html" with id_prefix="parts" noun="parts" param="type" %}
 {% include "partials/components/bulk_bar.html" with id_prefix="parts" %}
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
@@ -52,28 +44,11 @@
             </table>
         </section>
     </div>
-    <div id="parts-empty" class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
-        <header>
-            <figure><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-icon lucide-package"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg></figure>
-            <h3 data-empty-title>No parts yet</h3>
-            <p data-empty-action>Anything you own that isn't currently on a built board goes here.</p>
-        </header>
-        <section data-empty-action>
-            <button type="button" class="btn" hx-get="{% url 'part_add' %}" hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}' hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add part</button>
-        </section>
-    </div>
+    {% url 'part_add' as add_url %}
+    {% include "partials/components/empty_state.html" with id_prefix="parts" icon="package" noun="parts" description="Anything you own that isn't currently on a built board goes here." show_action=True action_url=add_url action_label="Add part" param="type" %}
 </div>
 
-{% if open_add is not None %}
-<div
-    hidden
-    hx-get="{% url 'part_add' %}"
-    hx-vals='{"type": "{{ open_add }}"}'
-    hx-trigger="load"
-    hx-target="#page-dialog"
-    hx-on::after-request="const url = new URL(location); url.searchParams.delete('add'); history.replaceState(null, '', url)"
-></div>
-{% endif %}
+{% include "partials/components/open_add_loader.html" with param="type" %}
 
 {% include "partials/components/page_dialog.html" %}
 

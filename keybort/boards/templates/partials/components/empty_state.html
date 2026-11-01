@@ -1,0 +1,12 @@
+<div id="{{ id_prefix }}-empty" class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
+    <header>
+        <figure>{% if icon == "keyboard" %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-keyboard-icon lucide-keyboard"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></svg>{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-icon lucide-package"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg>{% endif %}</figure>
+        <h3 data-empty-title>No {{ noun }} yet</h3>
+        <p data-empty-action>{{ description }}</p>
+    </header>
+    {% if show_action %}
+    <section data-empty-action>
+        <button type="button" class="btn" hx-get="{{ action_url }}"{% if param %} hx-vals='js:{ {{ param }}: document.getElementById("{{ id_prefix }}-filter").dataset.active}'{% endif %} hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>{{ action_label }}</button>
+    </section>
+    {% endif %}
+</div>

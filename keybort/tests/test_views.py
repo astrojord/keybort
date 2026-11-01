@@ -625,6 +625,72 @@ class OpenAddModalTests(ClientTestCase):
         self.assertNotIn('open_add', response.context)
         self.assertNotContains(response, 'hx-trigger="load"')
 
+    def test_loader_sends_the_page_param(self):
+        response = self.client.get(reverse('inventory_keyboards') + '?add=custom')
+        self.assertContains(response, """hx-vals='{"kind": "custom"}'""")
+        response = self.client.get(reverse('inventory_parts') + '?add=switch')
+        self.assertContains(response, """hx-vals='{"type": "switch"}'""")
+
+
+class ListPageComponentTests(ClientTestCase):
+    def test_inventory_filter_chips(self):
+        for url_name, prefix, noun, param in (
+            ('inventory_keyboards', 'keyboards', 'keyboards', 'kind'),
+            ('inventory_parts', 'parts', 'parts', 'type'),
+        ):
+            with self.subTest(url_name=url_name):
+                response = self.client.get(reverse(url_name))
+                self.assertContains(response, f'id="{prefix}-filter"')
+                self.assertContains(response, f'aria-label="Filter by {param}"')
+                self.assertContains(response, f'data-label="{noun}"')
+                self.assertContains(response, f'placeholder="Search {noun}"')
+                for _, label in response.context['filters']:
+                    self.assertContains(response, f'data-label="{label.lower()}"')
+
+    def test_inventory_empty_state_adds_for_active_filter(self):
+        for url_name, url, title, label, active in (
+            (
+                'inventory_keyboards',
+                reverse('keyboard_add'),
+                'No keyboards yet',
+                'Add keyboard',
+                'kind: document.getElementById("keyboards-filter")',
+            ),
+            (
+                'inventory_parts',
+                reverse('part_add'),
+                'No parts yet',
+                'Add part',
+                'type: document.getElementById("parts-filter")',
+            ),
+        ):
+            with self.subTest(url_name=url_name):
+                response = self.client.get(reverse(url_name))
+                self.assertContains(response, title)
+                self.assertContains(response, label)
+                self.assertContains(response, f'hx-get="{url}"')
+                self.assertContains(response, active, count=2)
+
+    def test_catalog_empty_state_action_needs_permission(self):
+        plates_add = f'hx-get="{reverse("stock_part_add")}?type=plate"'
+        prebuilt_add = f'hx-get="{reverse("stock_prebuilt_add")}"'
+        for url_name, title, action in (
+            ('stock_plates', 'No plates yet', plates_add),
+            ('stock_prebuilts', 'No prebuilts yet', prebuilt_add),
+        ):
+            with self.subTest(url_name=url_name):
+                self.client.force_login(self.user)
+                response = self.client.get(reverse(url_name))
+                self.assertContains(response, title)
+                self.assertNotContains(response, 'Add to catalog')
+
+                uploader = make_user(f'uploader-{url_name}')
+                grant(uploader, 'can_upload_stock_data')
+                self.client.force_login(uploader)
+                response = self.client.get(reverse(url_name))
+                self.assertContains(response, 'Add to catalog', count=2)
+                self.assertContains(response, action, count=2)
+
 
 class StockPrebuiltsPageTests(ClientTestCase):
     def test_lists_catalog_with_owned_flag(self):

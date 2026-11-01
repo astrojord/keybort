@@ -14,15 +14,7 @@
         <i class="fas fa-plus me-1"></i>Add
     </button>
 </div>
-<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
-    <div id="keyboards-filter" data-active="" class="flex flex-wrap gap-1" role="group" aria-label="Filter by kind">
-        <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="" data-label="keyboards">All <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
-        {% for kind, label in filters %}
-        <button type="button" class="btn data-[empty]:text-muted-foreground [&[data-empty]_.badge]:text-muted-foreground" data-size="sm" data-filter="{{ kind }}" data-label="{{ label|lower }}">{{ label }} <span class="badge tabular-nums" data-variant="outline" data-count></span></button>
-        {% endfor %}
-    </div>
-    <input type="search" id="keyboards-search" class="input w-full sm:w-64" placeholder="Search keyboards" aria-label="Search keyboards">
-</div>
+{% include "partials/components/filter_chips.html" with id_prefix="keyboards" noun="keyboards" param="kind" %}
 {% include "partials/components/bulk_bar.html" with id_prefix="keyboards" %}
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
@@ -52,28 +44,11 @@
             </table>
         </section>
     </div>
-    <div id="keyboards-empty" class="empty border [.card:has(tbody>tr:not([hidden]))+&]:hidden">
-        <header>
-            <figure><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-keyboard-icon lucide-keyboard"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></svg></figure>
-            <h3 data-empty-title>No keyboards yet</h3>
-            <p data-empty-action>Add a prebuilt from the catalog or put together a custom build.</p>
-        </header>
-        <section data-empty-action>
-            <button type="button" class="btn" hx-get="{% url 'keyboard_add' %}" hx-vals='js:{kind: document.getElementById("keyboards-filter").dataset.active}' hx-target="#page-dialog"><i class="fas fa-plus me-1"></i>Add keyboard</button>
-        </section>
-    </div>
+    {% url 'keyboard_add' as add_url %}
+    {% include "partials/components/empty_state.html" with id_prefix="keyboards" icon="keyboard" noun="keyboards" description="Add a prebuilt from the catalog or put together a custom build." show_action=True action_url=add_url action_label="Add keyboard" param="kind" %}
 </div>
 
-{% if open_add %}
-<div
-    hidden
-    hx-get="{% url 'keyboard_add' %}"
-    hx-vals='{"kind": "{{ open_add }}"}'
-    hx-trigger="load"
-    hx-target="#page-dialog"
-    hx-on::after-request="const url = new URL(location); url.searchParams.delete('add'); history.replaceState(null, '', url)"
-></div>
-{% endif %}
+{% include "partials/components/open_add_loader.html" with param="kind" %}
 
 {% include "partials/components/page_dialog.html" %}
 

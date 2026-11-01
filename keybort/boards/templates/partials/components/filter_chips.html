@@ -1,0 +1,9 @@
+<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+    <div id="{{ id_prefix }}-filter" data-active="" class="flex flex-wrap gap-1" role="group" aria-label="Filter by {{ param }}">
+        {% include "partials/components/filter_chip.html" with value="" label="All" filter_label=noun %}
+        {% for value, label in filters %}
+        {% include "partials/components/filter_chip.html" with filter_label=label|lower %}
+        {% endfor %}
+    </div>
+    <input type="search" id="{{ id_prefix }}-search" class="input w-full sm:w-64" placeholder="Search {{ noun }}" aria-label="Search {{ noun }}">
+</div>

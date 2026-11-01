@@ -1,0 +1,10 @@
+{% if open_add is not None %}
+<div
+    hidden
+    hx-get="{{ add_url }}"
+    hx-vals='{"{{ param }}": "{{ open_add }}"}'
+    hx-trigger="load"
+    hx-target="#page-dialog"
+    hx-on::after-request="const url = new URL(location); url.searchParams.delete('add'); history.replaceState(null, '', url)"
+></div>
+{% endif %}
