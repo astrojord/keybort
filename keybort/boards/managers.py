@@ -4,7 +4,7 @@ from typing import Any, NamedTuple
 from urllib.parse import urlencode
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
 from django.forms.models import model_to_dict
 from django.urls import reverse
 
@@ -817,35 +817,40 @@ class KeyboardManager(UserScoped):
             .first()
         )
 
-    def keyboard_rows(self):
-        keyboards = [
-            inv.obj
-            for inv in Inventory.objects.filter(
-                user=self.user, keyboard__isnull=False
-            ).select_related('keyboard__custom', 'keyboard__stock')
+    def owned_keyboards(self):
+        related = [
+            path
+            for part_type in PART_MODELS
+            for path in (
+                f'keyboard__custom__{part_type}__custom',
+                f'keyboard__custom__{part_type}__stock',
+                f'keyboard__stock__{part_type}',
+            )
         ]
-        return [RowBuilder.keyboard_row(kb) for kb in keyboards]
+        return Inventory.objects.filter(
+            user=self.user, keyboard__isnull=False
+        ).select_related(*related)
+
+    def keyboard_rows(self):
+        return [RowBuilder.keyboard_row(inv.obj) for inv in self.owned_keyboards()]
+
+    def inventory_counts(self):
+        standalone = Q(keyboard__isnull=True)
+        return Inventory.objects.filter(user=self.user).aggregate(
+            keyboard_count=Count('pk', filter=Q(keyboard__isnull=False)),
+            prebuilt_count=Count('pk', filter=Q(keyboard__stock__isnull=False)),
+            part_entries=Count('pk', filter=standalone),
+            part_units=Sum('quantity', filter=standalone, default=0),
+            switches_loose=Sum('quantity', filter=Q(switch__isnull=False), default=0),
+        )
 
     def dashboard(self):
-        keyboards = [
-            inv.obj
-            for inv in Inventory.objects.filter(user=self.user, keyboard__isnull=False)
-            .select_related('keyboard__custom', 'keyboard__stock')
-            .order_by('-pk')
-        ]
-        prebuilts = sum(kb.stock for kb in keyboards)
-
-        parts = self.parts.part_rows()
+        counts = self.inventory_counts()
+        keyboards = [inv.obj for inv in self.owned_keyboards().order_by('-pk')]
 
         return {
-            'keyboard_count': len(keyboards),
-            'prebuilt_count': prebuilts,
-            'custom_count': len(keyboards) - prebuilts,
-            'part_entries': len(parts),
-            'part_units': sum(row['quantity'] for row in parts),
-            'switches_loose': sum(
-                row['quantity'] for row in parts if row['type'] == 'switch'
-            ),
+            **counts,
+            'custom_count': counts['keyboard_count'] - counts['prebuilt_count'],
             'switches_on_boards': sum(
                 board_switch_count(kb) for kb in keyboards if kb.switch
             ),

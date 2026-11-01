@@ -550,6 +550,8 @@ class DashboardTests(ClientTestCase):
     def test_empty_inventory(self):
         response = self.client.get(reverse('index'))
         self.assertEqual(response.context['keyboard_count'], 0)
+        self.assertEqual(response.context['part_units'], 0)
+        self.assertEqual(response.context['switches_loose'], 0)
         self.assertEqual(response.context['recent_keyboards'], [])
         self.assertContains(response, 'No keyboards yet')
 
@@ -557,8 +559,12 @@ class DashboardTests(ClientTestCase):
 class AccountViewTests(ClientTestCase):
     def test_get_shows_defaults(self):
         custom_keyboard(self.user)
+        self.part_manager.add_to_parts(
+            'switch', Switch.objects.create(stock=stock_switch()), quantity=70
+        )
         response = self.client.get(reverse('account'))
         self.assertEqual(response.context['keyboard_count'], 1)
+        self.assertEqual(response.context['part_entries'], 1)
         self.assertContains(response, 'value="smart" required checked')
         self.assertContains(response, 'name="keep_parts_on_delete" checked')
 

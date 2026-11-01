@@ -16,9 +16,11 @@ from boards.models import (
     CustomSwitch,
     Inventory,
     Keyboard,
+    Keycaps,
     Kit,
     Plate,
     Profile,
+    Stabilizer,
     StockKeyboard,
     Switch,
 )
@@ -30,8 +32,10 @@ from .base import (
     custom_switch_wrapper,
     prebuilt_in_inventory,
     stock_keyboard,
+    stock_keycaps,
     stock_kit,
     stock_plate,
+    stock_stabilizer,
     stock_switch,
 )
 
@@ -178,6 +182,80 @@ class KeyboardRowTests(UserTestCase):
     def test_only_own_keyboards(self):
         custom_keyboard(self.other)
         self.assertEqual(self.kb_manager.keyboard_rows(), [])
+
+
+class KeyboardQueryTests(UserTestCase):
+    def setUp(self):
+        super().setUp()
+        prebuilt_in_inventory(
+            self.user,
+            stock_keyboard(
+                keycaps=stock_keycaps(),
+                plate=stock_plate(),
+                stabilizer=stock_stabilizer(),
+            ),
+        )
+        custom_keyboard(
+            self.user,
+            switch=custom_switch_wrapper(),
+            keycaps=Keycaps.objects.create(stock=stock_keycaps()),
+            plate=Plate.objects.create(
+                custom=CustomPlate.objects.create(material='Brass')
+            ),
+            stabilizer=Stabilizer.objects.create(stock=stock_stabilizer()),
+        )
+        custom_keyboard(
+            self.user,
+            kit=Kit.objects.create(stock=stock_kit(name='Q2')),
+            switch=Switch.objects.create(stock=stock_switch()),
+        )
+        self.part_manager.add_to_parts(
+            'switch', Switch.objects.create(stock=stock_switch()), quantity=70
+        )
+        self.part_manager.add_to_parts('kit', custom_kit_wrapper(), quantity=2)
+
+    def test_keyboard_rows_use_one_query(self):
+        with self.assertNumQueries(1):
+            rows = self.kb_manager.keyboard_rows()
+        self.assertEqual(
+            sorted(row['kit_str'] for row in rows),
+            ['KBDfans Tofu65', 'Keychron Q1', 'Keychron Q2'],
+        )
+
+    def test_dashboard_uses_two_queries(self):
+        with self.assertNumQueries(2):
+            stats = self.kb_manager.dashboard()
+        self.assertEqual(stats['keyboard_count'], 3)
+        self.assertEqual(stats['prebuilt_count'], 1)
+        self.assertEqual(stats['custom_count'], 2)
+        self.assertEqual(stats['switches_on_boards'], 82 + 1 + 82)
+        self.assertEqual(len(stats['recent_keyboards']), 3)
+
+    def test_inventory_counts_use_one_query(self):
+        with self.assertNumQueries(1):
+            counts = self.kb_manager.inventory_counts()
+        self.assertEqual(
+            counts,
+            {
+                'keyboard_count': 3,
+                'prebuilt_count': 1,
+                'part_entries': 2,
+                'part_units': 72,
+                'switches_loose': 70,
+            },
+        )
+
+    def test_inventory_counts_skip_other_users(self):
+        self.assertEqual(
+            KeyboardManager(self.other).inventory_counts(),
+            {
+                'keyboard_count': 0,
+                'prebuilt_count': 0,
+                'part_entries': 0,
+                'part_units': 0,
+                'switches_loose': 0,
+            },
+        )
 
 
 class SwitchCountTests(UserTestCase):

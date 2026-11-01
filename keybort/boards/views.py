@@ -449,12 +449,7 @@ def account(request):
     if 'HX-Request' in request.headers:
         return render(request, 'partials/sections/account_preferences.html', context)
 
-    stats = kb_manager.dashboard()
-    context.update(
-        page_title='Account',
-        keyboard_count=stats['keyboard_count'],
-        part_entries=stats['part_entries'],
-    )
+    context.update(page_title='Account', **kb_manager.inventory_counts())
     return render(request, 'pages/account.html', context)
 
 
