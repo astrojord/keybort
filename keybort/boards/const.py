@@ -130,7 +130,9 @@ CLOSE_DIALOG_EVENT = 'close-dialog'
 
 STOCK_UPLOAD_MAX_BYTES = 2 * 1024 * 1024
 
-QUANTITY_ERROR = 'Enter a whole number, 1 or more.'
+MAX_ID_DIGITS = 18
+MAX_QUANTITY = 2_147_483_647
+QUANTITY_ERROR = f'Enter a whole number from 1 to {MAX_QUANTITY:,}.'
 
 QUICK_ACTIONS = [
     {

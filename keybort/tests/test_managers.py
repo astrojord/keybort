@@ -200,9 +200,11 @@ class ParseQuantityTests(UserTestCase):
     def test_accepts_positive_ints(self):
         self.assertEqual(parse_quantity('3'), 3)
         self.assertEqual(parse_quantity(' 90 '), 90)
+        self.assertEqual(parse_quantity(str(const.MAX_QUANTITY)), const.MAX_QUANTITY)
 
     def test_rejects_everything_else(self):
-        for value in ('0', '-1', '1.5', 'abc', '', None):
+        too_big = str(const.MAX_QUANTITY + 1)
+        for value in ('0', '-1', '1.5', 'abc', '', None, '²', too_big, '1' * 5000):
             with self.subTest(value=value):
                 self.assertIsNone(parse_quantity(value))
 
@@ -216,6 +218,13 @@ class PartsInventoryTests(UserTestCase):
         self.assertTrue(stacked)
         self.assertEqual(same.pk, row.pk)
         self.assertEqual(same.quantity, 90)
+
+    def test_add_to_parts_caps_stacked_quantity(self):
+        wrapper = Switch.objects.create(stock=stock_switch())
+        self.part_manager.add_to_parts('switch', wrapper, const.MAX_QUANTITY)
+        row, _ = self.part_manager.add_to_parts('switch', wrapper, 5)
+        row.refresh_from_db()
+        self.assertEqual(row.quantity, const.MAX_QUANTITY)
 
     def test_add_to_parts_keeps_users_apart(self):
         wrapper = Switch.objects.create(stock=stock_switch())

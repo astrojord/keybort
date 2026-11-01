@@ -28,6 +28,7 @@ from .utils import (
     bulk_deleted,
     bulk_ids,
     htmx_swap,
+    is_id,
     keyboard_params,
     model_to_dict_verbose,
 )
@@ -44,7 +45,7 @@ def swap_row(request, template, context, target, swap='outerHTML'):
 
 def standalone_part_or_404(request, part_manager):
     part_id = request.GET.get('id', '')
-    if not part_id.isdigit():
+    if not is_id(part_id):
         raise BadRequest
     inv = part_manager.standalone_part(part_id)
     if inv is None:
@@ -221,7 +222,7 @@ def deleted_label(names, plural):
 
 @login_required
 def delete_parts(request):
-    ids = [value for value in bulk_ids(request) if value.isdigit()]
+    ids = [value for value in bulk_ids(request) if is_id(value)]
     part_manager = PartManager(request.user)
     invs = list(part_manager.standalone_parts().filter(pk__in=ids).order_by('pk'))
     if not invs:
@@ -253,7 +254,7 @@ def delete_keyboards(request):
     inventories = []
     for value in bulk_ids(request):
         kind, _, kb_id = value.partition('-')
-        if kind in ('stock', 'custom') and kb_id.isdigit():
+        if kind in ('stock', 'custom') and is_id(kb_id):
             inventory = kb_manager.keyboard_inventory(kb_id, kind == 'stock')
             if inventory is not None:
                 inventories.append((value, inventory))
@@ -312,7 +313,7 @@ def part_detail(request):
     part_id = request.GET.get('id', '')
     stock = request.GET.get('stock')
 
-    if part_type not in PART_MODELS or not part_id.isdigit() or stock not in ('0', '1'):
+    if part_type not in PART_MODELS or not is_id(part_id) or stock not in ('0', '1'):
         return HttpResponse(status=400)
 
     # 404 for someone else's custom part too, so ids aren't confirmed
@@ -479,7 +480,7 @@ def add_stock_prebuilt(request):
 @permission_required('boards.can_edit_stock_data', raise_exception=True)
 def edit_stock_prebuilt(request):
     kb_id = request.GET.get('id', '')
-    if not kb_id.isdigit():
+    if not is_id(kb_id):
         return HttpResponse(status=400)
 
     current = StockKeyboard.objects.filter(pk=kb_id).first()
@@ -517,7 +518,7 @@ def edit_stock_prebuilt(request):
 
 @permission_required('boards.can_delete_stock_data', raise_exception=True)
 def delete_stock_prebuilts(request):
-    ids = [value for value in bulk_ids(request) if value.isdigit()]
+    ids = [value for value in bulk_ids(request) if is_id(value)]
     stock_kbs = list(
         StockKeyboard.objects.filter(pk__in=ids).select_related('kit').order_by('pk')
     )
@@ -558,7 +559,7 @@ def delete_stock_prebuilts(request):
 @login_required
 def collect_stock_prebuilt(request):
     kb_id = request.GET.get('id', '')
-    if request.method != 'POST' or not kb_id.isdigit():
+    if request.method != 'POST' or not is_id(kb_id):
         return HttpResponse(status=400)
 
     stock_kb = StockKeyboard.objects.filter(pk=kb_id).select_related('kit').first()
@@ -597,7 +598,7 @@ def stock_parts(request, part_type):
 def stock_part_from_request(request):
     part_type = request.GET.get('type')
     part_id = request.GET.get('id', '')
-    if part_type not in PART_MODELS or not part_id.isdigit():
+    if part_type not in PART_MODELS or not is_id(part_id):
         raise BadRequest
     obj = CatalogManager.stock_part(part_type, part_id)
     if obj is None:
@@ -732,7 +733,7 @@ def delete_stock_parts(request):
     if part_type not in PART_MODELS:
         return HttpResponse(status=400)
 
-    ids = [value for value in bulk_ids(request) if value.isdigit()]
+    ids = [value for value in bulk_ids(request) if is_id(value)]
     objs = list(PART_MODELS[part_type].stock.objects.filter(pk__in=ids).order_by('pk'))
     if not objs:
         return HttpResponse(status=400)

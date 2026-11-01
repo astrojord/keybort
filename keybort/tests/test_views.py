@@ -352,6 +352,9 @@ class EditDeletePartViewTests(ClientTestCase):
         self.assertEqual(
             self.client.get(reverse('part_delete'), {'ids': 'x'}).status_code, 400
         )
+        self.assertEqual(
+            self.client.get(reverse('part_delete'), {'ids': '²'}).status_code, 400
+        )
 
     def test_someone_elses_part(self):
         inv = Inventory.objects.create(user=self.other, kit=custom_kit_wrapper())
@@ -431,7 +434,7 @@ class PartQuantityViewTests(ClientTestCase):
         self.assertEqual(trigger['messages'][0]['level'], 'success')
 
     def test_invalid_keeps_quantity(self):
-        for quantity in ('0', '-3', 'lots', ''):
+        for quantity in ('0', '-3', 'lots', '', '²', '1' * 5000):
             with self.subTest(quantity=quantity):
                 response = self.post(quantity)
                 self.inv.refresh_from_db()

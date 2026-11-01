@@ -5,6 +5,10 @@ from django.http import HttpResponse
 from . import const
 
 
+def is_id(value):
+    return value.isdecimal() and len(value) <= const.MAX_ID_DIGITS
+
+
 def model_to_dict_verbose(instance, fields=None, exclude=None):
     data = {}
     for f in instance._meta.concrete_fields:
@@ -30,7 +34,7 @@ def keyboard_params(request):
     """(keyboard id, stock) from ?id=&stock= on keyboard urls, or None when they're missing/malformed"""
     kb_id = request.GET.get('id', '')
     stock = request.GET.get('stock')
-    if not kb_id.isdigit() or stock not in ('0', '1'):
+    if not is_id(kb_id) or stock not in ('0', '1'):
         return None
     return kb_id, stock == '1'
 

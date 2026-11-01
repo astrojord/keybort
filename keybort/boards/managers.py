@@ -44,6 +44,7 @@ from .models import (
     StockSwitch,
     Switch,
 )
+from .utils import is_id
 
 
 class PartModels(NamedTuple):
@@ -128,7 +129,10 @@ def board_quantity(kb, part_type):
 
 def parse_quantity(value):
     value = (value or '').strip()
-    return int(value) if value.isdigit() and int(value) > 0 else None
+    if not is_id(value):
+        return None
+    quantity = int(value)
+    return quantity if 0 < quantity <= const.MAX_QUANTITY else None
 
 
 class UserScoped:
@@ -589,7 +593,7 @@ class ModalForms(UserScoped):
                 stock_id = data.get(f'{part["type"]}-stock', '')
                 obj = (
                     part['stock_options'].filter(pk=stock_id).first()
-                    if stock_id.isdigit()
+                    if is_id(stock_id)
                     else None
                 )
                 if obj is not None:
@@ -603,7 +607,7 @@ class ModalForms(UserScoped):
                 row_id = data.get(f'{part["type"]}-owned', '')
                 row = (
                     part['owned_rows'].filter(pk=row_id).first()
-                    if row_id.isdigit()
+                    if is_id(row_id)
                     else None
                 )
                 if row is not None:
@@ -760,7 +764,7 @@ class PartManager(UserScoped):
             return Inventory.objects.create(
                 user=self.user, quantity=quantity, **{part_type: wrapper}
             ), False
-        row.quantity += quantity
+        row.quantity = min(row.quantity + quantity, const.MAX_QUANTITY)
         row.save(update_fields=['quantity'])
         return row, True
 
@@ -849,7 +853,7 @@ class KeyboardManager(UserScoped):
         stock_id = data.get('prebuilt', '')
         stock_kb = (
             StockKeyboard.objects.filter(pk=stock_id).first()
-            if stock_id.isdigit()
+            if is_id(stock_id)
             else None
         )
 
