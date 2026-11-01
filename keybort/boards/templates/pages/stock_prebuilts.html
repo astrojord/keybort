@@ -15,8 +15,8 @@
     </button>
     {% endif %}
 </div>
-{% include "partials/filter_card.html" with id_prefix="prebuilts" noun="prebuilts" placeholder="Name, switches, notes…" %}
-{% if perms.boards.can_delete_stock_data %}{% include "partials/bulk_bar.html" with id_prefix="prebuilts" %}{% endif %}
+{% include "partials/components/filter_card.html" with id_prefix="prebuilts" noun="prebuilts" placeholder="Name, switches, notes…" %}
+{% if perms.boards.can_delete_stock_data %}{% include "partials/components/bulk_bar.html" with id_prefix="prebuilts" %}{% endif %}
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
@@ -25,18 +25,18 @@
                     <tr>
                         {% if perms.boards.can_delete_stock_data %}<th class="w-px"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"></th>{% endif %}
                         {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
-                        {% include "partials/sort_header.html" with key="name" label="Keyboard" %}
-                        {% include "partials/sort_header.html" with key="size" label="Size" %}
-                        {% include "partials/sort_header.html" with key="layout" label="Layout" %}
-                        {% include "partials/sort_header.html" with key="switches" label="Switches" %}
-                        {% include "partials/sort_header.html" with key="keycaps" label="Keycaps" %}
-                        {% include "partials/sort_header.html" with key="connectivity" label="Connectivity" %}
+                        {% include "partials/components/sort_header.html" with key="name" label="Keyboard" %}
+                        {% include "partials/components/sort_header.html" with key="size" label="Size" %}
+                        {% include "partials/components/sort_header.html" with key="layout" label="Layout" %}
+                        {% include "partials/components/sort_header.html" with key="switches" label="Switches" %}
+                        {% include "partials/components/sort_header.html" with key="keycaps" label="Keycaps" %}
+                        {% include "partials/components/sort_header.html" with key="connectivity" label="Connectivity" %}
                         <th>Notes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for kb in prebuilts %}
-                    {% include "partials/stock_prebuilt_row.html" %}
+                    {% include "partials/rows/stock_prebuilt_row.html" %}
                     {% endfor %}
                 </tbody>
             </table>

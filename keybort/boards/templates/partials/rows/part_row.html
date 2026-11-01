@@ -16,9 +16,9 @@
             </button>
         </div>
     </td>
-    <td>{{part.type_label}}</td>
+    <td data-filter-column="">{{part.type_label}}</td>
     <td data-sort-value="{{part.name}}">
-        {% include "partials/part_link.html" with label=part.name params=part.detail_params %}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
+        {% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
     </td>
     <td class="text-center" data-sort-value="{{part.quantity}}">
         <input
@@ -36,5 +36,8 @@
             hx-swap="outerHTML"
         >
     </td>
-    <td><p class="line-clamp-2 whitespace-normal" title="{{part.info}}">{{part.info}}</p></td>
+    <td data-filter-column=""><p class="line-clamp-2 whitespace-normal" title="{{part.info}}">{{part.info}}</p></td>
+    {% for cell in part.cells %}
+    <td data-filter-column="{{cell.type}}" hidden>{% include "partials/components/field_cell.html" %}</td>
+    {% endfor %}
 </tr>

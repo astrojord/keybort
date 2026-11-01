@@ -131,10 +131,9 @@ STOCK_PART_FIELDS = {
         'columns': [
             'category',
             'stem',
-            'bottom_out_force',
+            'force',
             'travel_distance',
-            'top_housing',
-            'bottom_housing',
+            'housing',
         ],
         'facets': ['brand', 'category', 'stem', 'top_housing', 'bottom_housing'],
     },
@@ -152,7 +151,38 @@ STOCK_PART_FIELDS = {
     },
 }
 
-FIELD_LABELS = {'pcb': 'PCB', 'category': 'Type', 'half': 'Half plate'}
+INVENTORY_PART_COLUMNS = {
+    'kit': ['size', 'layout', 'pcb', 'case_material', 'mount_type', 'notes'],
+    'switch': [
+        'category',
+        'stem',
+        'force',
+        'travel_distance',
+        'housing',
+        'lubed',
+        'filmed',
+        'notes',
+    ],
+    'keycaps': ['material', 'notes'],
+    'plate': ['material', 'flex_cuts', 'half', 'notes'],
+    'stabilizer': ['notes'],
+}
+
+ICON_FIELDS = ['lubed', 'filmed', 'flex_cuts', 'half']
+
+COMBINED_FIELDS = {
+    'force': ('peak_force', 'bottom_out_force'),
+    'housing': ('top_housing', 'bottom_housing'),
+}
+
+FIELD_LABELS = {
+    'pcb': 'PCB',
+    'category': 'Type',
+    'half': 'Half plate',
+    'force': 'Peak / bottom out force',
+    'travel_distance': 'Travel',
+    'housing': 'Housing',
+}
 
 # htmx event the page dialogs listen for to close themselves after a save
 CLOSE_DIALOG_EVENT = 'close-dialog'

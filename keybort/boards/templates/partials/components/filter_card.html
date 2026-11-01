@@ -12,7 +12,7 @@
             <input type="search" id="{{ id_prefix }}-search" class="input" placeholder="{{ placeholder }}" value="{{ query }}" data-filter-search>
         </div>
         {% for facet in facets %}
-        {% include "partials/filter_combobox.html" %}
+        {% include "partials/components/filter_combobox.html" %}
         {% endfor %}
     </section>
 </div>

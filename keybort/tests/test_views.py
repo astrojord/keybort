@@ -11,8 +11,10 @@ from boards import const
 from boards.managers import KeyboardManager
 from boards.models import (
     CustomKit,
+    CustomPlate,
     Inventory,
     Kit,
+    Plate,
     Profile,
     StockKeyboard,
     StockKeycaps,
@@ -26,6 +28,7 @@ from .base import (
     ClientTestCase,
     custom_keyboard,
     custom_kit_wrapper,
+    custom_switch_wrapper,
     make_user,
     prebuilt_in_inventory,
     stock_keyboard,
@@ -88,7 +91,7 @@ class AddKeyboardViewTests(ClientTestCase):
         for kind, step in cases.items():
             with self.subTest(kind=kind):
                 response = self.client.get(reverse('keyboard_add'), {'kind': kind})
-                self.assertTemplateUsed(response, 'partials/keyboard_modal.html')
+                self.assertTemplateUsed(response, 'partials/modals/keyboard_modal.html')
                 self.assertEqual(response.context['step'], step)
 
     def test_post_prebuilt_appends_row(self):
@@ -118,7 +121,7 @@ class AddKeyboardViewTests(ClientTestCase):
         response = self.client.post(
             reverse('keyboard_add'), {'kind': 'custom', 'kit-source': 'custom'}
         )
-        self.assertTemplateUsed(response, 'partials/keyboard_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/keyboard_modal.html')
         self.assertNotIn('HX-Retarget', response)
         self.assertEqual(response.context['step'], 'kit')
 
@@ -256,6 +259,48 @@ class PartsPageTests(ClientTestCase):
         self.assertEqual(response.context['filters'], list(const.PART_PLURALS.items()))
         self.assertContains(response, 'data-type="kit"', count=1)
 
+    def test_renders_part_specific_columns(self):
+        Inventory.objects.create(
+            user=self.user, switch=custom_switch_wrapper(stem='topre')
+        )
+        response = self.client.get(reverse('inventory_parts'))
+        self.assertContains(response, 'data-sort="switch-stem"', count=1)
+        self.assertContains(response, 'data-sort="kit-mount_type"', count=1)
+        self.assertContains(response, '>Topre</p>', count=1)
+
+    def test_lube_and_film_render_as_icons(self):
+        Inventory.objects.create(
+            user=self.user, switch=custom_switch_wrapper(lubed=True)
+        )
+        response = self.client.get(reverse('inventory_parts'))
+        self.assertContains(response, 'fa-check text-green-400', count=1)
+        self.assertContains(response, 'fa-x text-red-400', count=1)
+
+    def test_plate_booleans_render_as_icons(self):
+        Inventory.objects.create(
+            user=self.user,
+            plate=Plate.objects.create(custom=CustomPlate.objects.create(half=True)),
+        )
+        response = self.client.get(reverse('inventory_parts'))
+        self.assertContains(response, 'fa-check text-green-400', count=1)
+        self.assertContains(response, 'fa-x text-red-400', count=1)
+
+    def test_every_row_has_a_cell_for_every_column(self):
+        Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
+        response = self.client.get(reverse('inventory_parts'))
+        column_count = len(response.context['part_columns'])
+        self.assertEqual(len(response.context['inventory'][0]['cells']), column_count)
+        self.assertContains(response, '<td data-filter-column="kit" hidden>', count=6)
+
+    def test_quantity_response_keeps_part_columns(self):
+        inv = Inventory.objects.create(
+            user=self.user, switch=custom_switch_wrapper(stem='topre')
+        )
+        response = self.client.post(
+            f'{reverse("part_quantity")}?id={inv.pk}', {'quantity': '5'}
+        )
+        self.assertContains(response, '>Topre</p>', count=1)
+
 
 class AddPartViewTests(ClientTestCase):
     def test_get_opens_on_type(self):
@@ -290,7 +335,7 @@ class AddPartViewTests(ClientTestCase):
             reverse('part_add'),
             {'type': 'kit', 'kit-source': 'custom', 'quantity': '1'},
         )
-        self.assertTemplateUsed(response, 'partials/part_add_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/part_add_modal.html')
         self.assertNotIn('HX-Retarget', response)
 
     def test_post_unknown_type(self):
@@ -511,7 +556,7 @@ class AccountViewTests(ClientTestCase):
         profile = Profile.objects.get(user=self.user)
         self.assertEqual(profile.default_part_source, 'stock')
         self.assertFalse(profile.keep_parts_on_delete)
-        self.assertTemplateUsed(response, 'partials/account_preferences.html')
+        self.assertTemplateUsed(response, 'partials/sections/account_preferences.html')
         self.assertIn('Saved preferences.', response['HX-Trigger'])
 
     def test_invalid_post_keeps_saved_values(self):
@@ -635,7 +680,7 @@ class CollectStockPrebuiltViewTests(ClientTestCase):
         url = f'{reverse("stock_prebuilt_collect")}?id={stock_kb.pk}'
         for _ in range(2):
             response = self.client.post(url)
-            self.assertTemplateUsed(response, 'partials/stock_prebuilt_row.html')
+            self.assertTemplateUsed(response, 'partials/rows/stock_prebuilt_row.html')
             self.assertTrue(response.context['kb']['owned'])
         self.assertEqual(
             Inventory.objects.filter(user=self.user, keyboard__stock=stock_kb).count(),
@@ -720,7 +765,7 @@ class AddStockPrebuiltViewTests(ClientTestCase):
         response = self.client.post(
             reverse('stock_prebuilt_add'), {'kit-source': 'stock'}
         )
-        self.assertTemplateUsed(response, 'partials/stock_prebuilt_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/stock_prebuilt_modal.html')
         self.assertEqual(response.context['step'], 'kit')
         self.assertFalse(StockKeyboard.objects.exists())
 
@@ -788,7 +833,7 @@ class EditStockPrebuiltViewTests(ClientTestCase):
 
     def test_post_invalid_rerenders(self):
         response = self.post(**{'kit-stock': ''})
-        self.assertTemplateUsed(response, 'partials/stock_prebuilt_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/stock_prebuilt_modal.html')
         self.assertEqual(response.context['step'], 'kit')
 
 
@@ -814,7 +859,7 @@ class DeleteStockPrebuiltViewTests(ClientTestCase):
     def test_get_counts_owners(self):
         prebuilt_in_inventory(self.user, self.stock_kb)
         response = self.client.get(self.url)
-        self.assertTemplateUsed(response, 'partials/delete_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/delete_modal.html')
         self.assertIn('1 user has it', response.context['description'])
 
     def test_post_removes_row(self):
@@ -878,10 +923,9 @@ class StockPartsPageTests(ClientTestCase):
             [
                 'Type',
                 'Stem',
-                'Bottom out force',
-                'Travel distance',
-                'Top housing',
-                'Bottom housing',
+                'Peak / bottom out force',
+                'Travel',
+                'Housing',
             ],
         )
         facets = {
@@ -894,8 +938,15 @@ class StockPartsPageTests(ClientTestCase):
             row for row in response.context['parts'] if row['name'] == 'Gateron Yellow'
         )
         self.assertEqual(
-            gateron['columns'], ['Linear', 'MX', '50gf', '4mm', 'Polycarbonate', '']
+            [cell['value'] for cell in gateron['columns']],
+            ['Linear', 'MX', '— / 50gf', '4mm', 'Polycarbonate / —'],
         )
+
+    def test_plate_booleans_render_as_icons(self):
+        stock_plate(flex_cuts=True)
+        response = self.client.get(reverse('stock_plates'))
+        self.assertContains(response, 'fa-check text-green-400', count=1)
+        self.assertContains(response, 'fa-x text-red-400', count=1)
 
     def test_plate_boolean_facets(self):
         stock_plate(flex_cuts=True)
@@ -947,7 +998,9 @@ class CollectStockPartViewTests(ClientTestCase):
 
     def test_get_modal(self):
         response = self.client.get(self.url)
-        self.assertTemplateUsed(response, 'partials/stock_part_collect_modal.html')
+        self.assertTemplateUsed(
+            response, 'partials/modals/stock_part_collect_modal.html'
+        )
 
     def test_post_adds_then_stacks(self):
         response = self.client.post(self.url, {'quantity': '70'})
@@ -962,7 +1015,9 @@ class CollectStockPartViewTests(ClientTestCase):
 
     def test_invalid_quantity_rerenders(self):
         response = self.client.post(self.url, {'quantity': '0'})
-        self.assertTemplateUsed(response, 'partials/stock_part_collect_modal.html')
+        self.assertTemplateUsed(
+            response, 'partials/modals/stock_part_collect_modal.html'
+        )
         self.assertEqual(response.context['quantity_error'], const.QUANTITY_ERROR)
         self.assertFalse(Inventory.objects.exists())
 
@@ -1001,7 +1056,9 @@ class StockPartCatalogViewTests(ClientTestCase):
     def test_add(self):
         self.login_with('can_upload_stock_data')
         url = f'{reverse("stock_part_add")}?type=keycaps'
-        self.assertTemplateUsed(self.client.get(url), 'partials/stock_part_modal.html')
+        self.assertTemplateUsed(
+            self.client.get(url), 'partials/modals/stock_part_modal.html'
+        )
         response = self.client.post(
             url, {'keycaps-brand': 'GMK', 'keycaps-name': 'Botanical'}
         )
@@ -1011,7 +1068,7 @@ class StockPartCatalogViewTests(ClientTestCase):
     def test_add_invalid_and_bad_type(self):
         self.login_with('can_upload_stock_data')
         response = self.client.post(f'{reverse("stock_part_add")}?type=keycaps', {})
-        self.assertTemplateUsed(response, 'partials/stock_part_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/stock_part_modal.html')
         self.assertFalse(StockKeycaps.objects.exists())
         self.assertEqual(
             self.client.get(f'{reverse("stock_part_add")}?type=bogus').status_code, 400
@@ -1116,7 +1173,7 @@ class MultiDeleteViewTests(ClientTestCase):
         ids = [first.pk, second.pk, theirs.pk, 'junk']
 
         response = self.client.get(url, {'ids': ids})
-        self.assertTemplateUsed(response, 'partials/delete_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/delete_modal.html')
         self.assertEqual(response.context['ids'], [first.pk, second.pk])
 
         response = self.client.post(url, {'ids': ids})
@@ -1235,7 +1292,7 @@ class PromotePartViewTests(ClientTestCase):
 
     def test_get_confirms(self):
         response = self.client.get(self.url)
-        self.assertTemplateUsed(response, 'partials/part_promote_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/part_promote_modal.html')
         self.assertContains(response, reverse('stock_kits'))
 
     def test_post_turns_custom_into_stock(self):
@@ -1296,7 +1353,7 @@ class StockUploadViewTests(ClientTestCase):
 
     def test_get_modal(self):
         response = self.client.get(reverse('stock_part_upload'))
-        self.assertTemplateUsed(response, 'partials/stock_upload_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/stock_upload_modal.html')
         self.assertContains(response, 'multipart/form-data')
 
     def test_upload_refreshes_with_summary(self):
@@ -1326,7 +1383,7 @@ class StockUploadViewTests(ClientTestCase):
 
     def test_errors_rerender_modal(self):
         response = self.post_csv('type,brand\nkit,Keychron\n')
-        self.assertTemplateUsed(response, 'partials/stock_upload_modal.html')
+        self.assertTemplateUsed(response, 'partials/modals/stock_upload_modal.html')
         self.assertContains(response, 'Line 2: name')
         self.assertFalse(StockKit.objects.exists())
 

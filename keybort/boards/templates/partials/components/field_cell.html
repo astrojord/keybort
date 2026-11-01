@@ -1,0 +1,5 @@
+{% if cell.flag is not None %}
+{% include "partials/components/bool_icon.html" with value=cell.flag %}
+{% else %}
+<p class="max-w-xs line-clamp-2 whitespace-normal" title="{{cell.value}}">{{cell.value}}</p>
+{% endif %}

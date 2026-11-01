@@ -232,12 +232,17 @@ class KeyboardManager:
 
     @staticmethod
     def field_label(model, name):
-        return const.FIELD_LABELS.get(
-            name, model._meta.get_field(name).verbose_name.capitalize()
-        )
+        if name in const.FIELD_LABELS:
+            return const.FIELD_LABELS[name]
+        return model._meta.get_field(name).verbose_name.capitalize()
 
-    @staticmethod
-    def field_display(obj, name):
+    @classmethod
+    def field_display(cls, obj, name):
+        if name in const.COMBINED_FIELDS:
+            values = [
+                cls.field_display(obj, part) for part in const.COMBINED_FIELDS[name]
+            ]
+            return ' / '.join(value or '—' for value in values) if any(values) else ''
         field = obj._meta.get_field(name)
         value = getattr(obj, name)
         if value is None or value == '':
@@ -249,6 +254,13 @@ class KeyboardManager:
         if isinstance(value, float):
             return f'{value:g}{field.help_text}'
         return str(value)
+
+    @classmethod
+    def field_cell(cls, obj, name):
+        return {
+            'value': cls.field_display(obj, name),
+            'flag': getattr(obj, name) if name in const.ICON_FIELDS else None,
+        }
 
     @classmethod
     def stock_part_specs(cls, part_type):
@@ -298,7 +310,7 @@ class KeyboardManager:
             'url_params': f'type={part_type}&id={obj.pk}',
             'name': cls.part_name(obj),
             'detail_params': cls.detail_params(part_type, obj, ''),
-            'columns': [cls.field_display(obj, name) for name in fields['columns']],
+            'columns': [cls.field_cell(obj, name) for name in fields['columns']],
             'facets': facets,
             'notes': obj.notes,
             'quantity': quantity,
@@ -456,6 +468,30 @@ class KeyboardManager:
         return ', '.join(str(item) for item in [*info, obj.notes] if item)
 
     @classmethod
+    def part_columns(cls):
+        return [
+            {
+                'type': part_type,
+                'key': f'{part_type}-{name}',
+                'label': cls.field_label(cls.PART_MODELS[part_type][1], name),
+            }
+            for part_type, names in const.INVENTORY_PART_COLUMNS.items()
+            for name in names
+        ]
+
+    @classmethod
+    def part_cells(cls, part_type, obj):
+        blank = {'value': '', 'flag': None}
+        return [
+            {
+                'type': column_type,
+                **(cls.field_cell(obj, name) if column_type == part_type else blank),
+            }
+            for column_type, names in const.INVENTORY_PART_COLUMNS.items()
+            for name in names
+        ]
+
+    @classmethod
     def part_row(cls, inv):
         part_type = cls.part_type_of(inv)
         obj = getattr(inv, part_type).obj
@@ -468,6 +504,7 @@ class KeyboardManager:
             'stock': obj.stock,
             'quantity': inv.quantity,
             'info': cls.part_info(part_type, obj),
+            'cells': cls.part_cells(part_type, obj),
             'detail_params': cls.detail_params(
                 part_type, obj, f'{reverse("part_edit")}?id={inv.pk}'
             ),

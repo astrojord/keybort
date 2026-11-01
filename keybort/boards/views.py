@@ -63,6 +63,7 @@ def inventory_keyboards(request):
 def inventory_parts(request):
     context = {'page_title': 'Parts Inventory'}
     context['inventory'] = KeyboardManager(request.user).part_rows()
+    context['part_columns'] = KeyboardManager.part_columns()
     context['filters'] = list(const.PART_PLURALS.items())
     add = request.GET.get('add')
     if add is not None:
@@ -81,7 +82,7 @@ def add_part(request):
             part_type = None
         return render(
             request,
-            'partials/part_add_modal.html',
+            'partials/modals/part_add_modal.html',
             manager.add_part_context(part_type=part_type),
         )
 
@@ -91,7 +92,7 @@ def add_part(request):
 
     result = manager.add_part(context, request.POST)
     if result is None:
-        return render(request, 'partials/part_add_modal.html', context)
+        return render(request, 'partials/modals/part_add_modal.html', context)
 
     inv, stacked = result
     row = manager.part_row(inv)
@@ -101,7 +102,7 @@ def add_part(request):
         )
     else:
         messages.success(request, f'Added {row["name"]} to parts.')
-    response = render(request, 'partials/part_row.html', {'part': row})
+    response = render(request, 'partials/rows/part_row.html', {'part': row})
     if stacked:
         return htmx_swap(
             response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT
@@ -130,17 +131,17 @@ def edit_part(request):
     if request.method != 'POST':
         context = manager.edit_part_context(inv, action_url)
         context.update(urls)
-        return render(request, 'partials/part_edit_modal.html', context)
+        return render(request, 'partials/modals/part_edit_modal.html', context)
 
     context = manager.edit_part_context(inv, action_url, request.POST)
     context.update(urls)
     inv = manager.edit_part(context, request.POST)
     if inv is None:
-        return render(request, 'partials/part_edit_modal.html', context)
+        return render(request, 'partials/modals/part_edit_modal.html', context)
 
     row = manager.part_row(inv)
     messages.success(request, f'Saved {row["name"]}.')
-    response = render(request, 'partials/part_row.html', {'part': row})
+    response = render(request, 'partials/rows/part_row.html', {'part': row})
     return htmx_swap(response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT)
 
 
@@ -169,12 +170,12 @@ def promote_part(request):
             'catalog_url': reverse(f'stock_{const.PART_PLURALS[part_type].lower()}'),
             'action_url': f'{reverse("part_promote")}?id={inv.pk}',
         }
-        return render(request, 'partials/part_promote_modal.html', context)
+        return render(request, 'partials/modals/part_promote_modal.html', context)
 
     manager.promote_part(inv)
     messages.success(request, f'Added {name} to the catalog.')
     row = manager.part_row(manager.standalone_part(inv.pk))
-    response = render(request, 'partials/part_row.html', {'part': row})
+    response = render(request, 'partials/rows/part_row.html', {'part': row})
     return htmx_swap(
         response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
     )
@@ -203,11 +204,13 @@ def part_quantity(request):
             f'Updated quantity of {manager.part_row(inv)["name"]} to {quantity}.',
         )
 
-    return render(request, 'partials/part_row.html', {'part': manager.part_row(inv)})
+    return render(
+        request, 'partials/rows/part_row.html', {'part': manager.part_row(inv)}
+    )
 
 
 def delete_modal(request, context):
-    return render(request, 'partials/delete_modal.html', context)
+    return render(request, 'partials/modals/delete_modal.html', context)
 
 
 def delete_title(names, plural, suffix=''):
@@ -340,7 +343,7 @@ def part_detail(request):
             ],
         ),
     }
-    return render(request, 'partials/detail_modal.html', context)
+    return render(request, 'partials/modals/detail_modal.html', context)
 
 
 # GET: modal body
@@ -355,7 +358,7 @@ def add_keyboard(request):
         if kind not in const.KEYBOARD_KINDS:
             kind = None
         context = manager.keyboard_form_context(action_url, kind=kind)
-        return render(request, 'partials/keyboard_modal.html', context)
+        return render(request, 'partials/modals/keyboard_modal.html', context)
 
     context = manager.keyboard_form_context(action_url, request.POST)
     match context['kind']:
@@ -367,11 +370,11 @@ def add_keyboard(request):
             return HttpResponse(status=400)
 
     if kb is None:
-        return render(request, 'partials/keyboard_modal.html', context)
+        return render(request, 'partials/modals/keyboard_modal.html', context)
 
     row = manager.keyboard_row(kb)
     messages.success(request, f'Added {keyboard_name(row)} to keyboards.')
-    response = render(request, 'partials/keyboard_row.html', {'kb': row})
+    response = render(request, 'partials/rows/keyboard_row.html', {'kb': row})
     return htmx_swap(
         response, '#table-keyboards tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
     )
@@ -397,17 +400,17 @@ def edit_keyboard(request):
         context['delete_url'] = delete_url
         if request.GET.get('step') in manager.PART_MODELS:
             context['step'] = request.GET['step']
-        return render(request, 'partials/keyboard_modal.html', context)
+        return render(request, 'partials/modals/keyboard_modal.html', context)
 
     context = manager.keyboard_form_context(action_url, request.POST, current=current)
     context['delete_url'] = delete_url
     kb = manager.edit_keyboard(inventory, context, request.POST)
     if kb is None:
-        return render(request, 'partials/keyboard_modal.html', context)
+        return render(request, 'partials/modals/keyboard_modal.html', context)
 
     row = manager.keyboard_row(kb)
     messages.success(request, f'Saved {keyboard_name(row)}.')
-    response = render(request, 'partials/keyboard_row.html', {'kb': row})
+    response = render(request, 'partials/rows/keyboard_row.html', {'kb': row})
     return htmx_swap(
         response, f'#{manager.row_id(current)}', 'outerHTML', const.CLOSE_DIALOG_EVENT
     )
@@ -423,7 +426,7 @@ def account(request):
 
     context = {'form': form, 'source_options': const.PART_SOURCE_DEFAULTS}
     if 'HX-Request' in request.headers:
-        return render(request, 'partials/account_preferences.html', context)
+        return render(request, 'partials/sections/account_preferences.html', context)
 
     stats = manager.dashboard()
     context.update(
@@ -464,18 +467,18 @@ def add_stock_prebuilt(request):
     if request.method != 'POST':
         return render(
             request,
-            'partials/stock_prebuilt_modal.html',
+            'partials/modals/stock_prebuilt_modal.html',
             manager.stock_keyboard_form_context(action_url),
         )
 
     context = manager.stock_keyboard_form_context(action_url, request.POST)
     stock_kb = manager.save_stock_keyboard(context, request.POST)
     if stock_kb is None:
-        return render(request, 'partials/stock_prebuilt_modal.html', context)
+        return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
     row = manager.stock_prebuilt_row(stock_kb)
     messages.success(request, f'Added {row["name"]} to the catalog.')
-    response = render(request, 'partials/stock_prebuilt_row.html', {'kb': row})
+    response = render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
     return htmx_swap(
         response, '#table-prebuilts tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
     )
@@ -500,7 +503,7 @@ def edit_stock_prebuilt(request):
     if request.method != 'POST':
         context = manager.stock_keyboard_form_context(action_url, current=current)
         context['delete_url'] = delete_url
-        return render(request, 'partials/stock_prebuilt_modal.html', context)
+        return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
     context = manager.stock_keyboard_form_context(
         action_url, request.POST, current=current
@@ -508,13 +511,13 @@ def edit_stock_prebuilt(request):
     context['delete_url'] = delete_url
     stock_kb = manager.save_stock_keyboard(context, request.POST)
     if stock_kb is None:
-        return render(request, 'partials/stock_prebuilt_modal.html', context)
+        return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
     row = manager.stock_prebuilt_row(
         stock_kb, stock_kb.pk in manager.owned_prebuilt_ids()
     )
     messages.success(request, f'Saved {row["name"]}.')
-    response = render(request, 'partials/stock_prebuilt_row.html', {'kb': row})
+    response = render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
     return htmx_swap(
         response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
     )
@@ -579,7 +582,7 @@ def collect_stock_prebuilt(request):
     else:
         manager.collect_prebuilt(stock_kb)
         messages.success(request, f'Added {row["name"]} to keyboards.')
-    return render(request, 'partials/stock_prebuilt_row.html', {'kb': row})
+    return render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
 
 
 def stock_parts(request, part_type):
@@ -653,14 +656,14 @@ def add_stock_part(request):
     if request.method == 'POST' and form.is_valid():
         row = KeyboardManager.stock_part_row(part_type, form.save())
         messages.success(request, f'Added {row["name"]} to the catalog.')
-        response = render(request, 'partials/stock_part_row.html', {'part': row})
+        response = render(request, 'partials/rows/stock_part_row.html', {'part': row})
         return htmx_swap(
             response, '#table-stock tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
         )
 
     return render(
         request,
-        'partials/stock_part_modal.html',
+        'partials/modals/stock_part_modal.html',
         stock_part_modal_context(part_type, form, action_url),
     )
 
@@ -691,7 +694,7 @@ def upload_stock_parts(request):
         'columns': stock_csv_columns(),
     }
     if request.method != 'POST':
-        return render(request, 'partials/stock_upload_modal.html', context)
+        return render(request, 'partials/modals/stock_upload_modal.html', context)
 
     file = request.FILES.get('file')
     if file is None:
@@ -702,7 +705,7 @@ def upload_stock_parts(request):
         result = handle_canned_parts_upload(file)
         context['errors'] = result['errors']
     if context['errors']:
-        return render(request, 'partials/stock_upload_modal.html', context)
+        return render(request, 'partials/modals/stock_upload_modal.html', context)
 
     messages.add_message(request, *upload_summary(result))
     response = HttpResponse()
@@ -736,14 +739,14 @@ def edit_stock_part(request):
         quantity = manager.stock_part_quantities(part_type).get(obj.pk, 0)
         row = manager.stock_part_row(part_type, obj, quantity)
         messages.success(request, f'Saved {row["name"]}.')
-        response = render(request, 'partials/stock_part_row.html', {'part': row})
+        response = render(request, 'partials/rows/stock_part_row.html', {'part': row})
         return htmx_swap(
             response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
         )
 
     return render(
         request,
-        'partials/stock_part_modal.html',
+        'partials/modals/stock_part_modal.html',
         stock_part_modal_context(part_type, form, action_url, delete_url),
     )
 
@@ -819,12 +822,12 @@ def collect_stock_part(request):
         'quantity_error': None,
     }
     if request.method != 'POST':
-        return render(request, 'partials/stock_part_collect_modal.html', context)
+        return render(request, 'partials/modals/stock_part_collect_modal.html', context)
 
     quantity = manager.parse_quantity(request.POST.get('quantity'))
     if quantity is None:
         context['quantity_error'] = const.QUANTITY_ERROR
-        return render(request, 'partials/stock_part_collect_modal.html', context)
+        return render(request, 'partials/modals/stock_part_collect_modal.html', context)
 
     inv, stacked = manager.collect_stock_part(part_type, obj, quantity)
     if stacked:
@@ -832,7 +835,7 @@ def collect_stock_part(request):
     else:
         messages.success(request, f'Added {name} to parts.')
     row = manager.stock_part_row(part_type, obj, inv.quantity)
-    response = render(request, 'partials/stock_part_row.html', {'part': row})
+    response = render(request, 'partials/rows/stock_part_row.html', {'part': row})
     return htmx_swap(
         response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
     )

@@ -20,6 +20,7 @@ window.initTableFilter = ({ filter, table, search, empty, param }) => {
             button.toggleAttribute("data-empty", count === 0 && type !== active);
         }
         for (const row of rows) row.hidden = !visible(row, active);
+        for (const cell of table.querySelectorAll("[data-filter-column]")) cell.hidden = cell.dataset.filterColumn !== active;
 
         const label = chip(active).dataset.label;
         updateEmpty(empty, query ? `No ${label} match “${query}”` : `No ${label} yet`, Boolean(query));

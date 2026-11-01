@@ -34,7 +34,7 @@
 
         {% for part in parts %}
         <fieldset data-step="{{ part.type }}" data-path="{{ part.type }}" class="grid min-w-0 gap-4" hidden>
-            {% include "partials/part_source_fields.html" %}
+            {% include "partials/components/part_source_fields.html" %}
 
             <div class="field"{% if quantity_error %} data-invalid="true"{% endif %}>
                 <label for="id_{{ part.type }}-quantity">Quantity</label>

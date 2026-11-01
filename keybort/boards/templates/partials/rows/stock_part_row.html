@@ -34,9 +34,9 @@
         </div>
     </td>
     {% endif %}
-    <td class="font-medium" data-sort-value="{{part.name}}">{% include "partials/part_link.html" with label=part.name params=part.detail_params %}</td>
-    {% for value in part.columns %}
-    <td>{{value}}</td>
+    <td class="font-medium" data-sort-value="{{part.name}}">{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}</td>
+    {% for cell in part.columns %}
+    <td>{% include "partials/components/field_cell.html" %}</td>
     {% endfor %}
     <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{part.notes|default:''}}">{{part.notes|default:''}}</p></td>
 </tr>

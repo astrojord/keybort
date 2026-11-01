@@ -16,11 +16,11 @@
             </button>
         </div>
     </td>
-    <td class="font-medium">{% if kb.kit_str %}{% include "partials/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}{% endif %}</td>
+    <td class="font-medium">{% if kb.kit_str %}{% include "partials/components/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}{% endif %}</td>
     <td>{{kb.pcb}}</td>
-    <td>{% if kb.switches_str %}{% include "partials/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}{% endif %}</td>
-    <td>{% if kb.keycaps_str %}{% include "partials/part_link.html" with label=kb.keycaps_str params=kb.keycaps_url_params %}{% endif %}</td>
-    <td>{% if kb.plate_str %}{% include "partials/part_link.html" with label=kb.plate_str params=kb.plate_url_params %}{% endif %}</td>
-    <td>{% if kb.stabilizer_str %}{% include "partials/part_link.html" with label=kb.stabilizer_str params=kb.stabilizer_url_params %}{% endif %}</td>
+    <td>{% if kb.switches_str %}{% include "partials/components/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}{% endif %}</td>
+    <td>{% if kb.keycaps_str %}{% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_url_params %}{% endif %}</td>
+    <td>{% if kb.plate_str %}{% include "partials/components/part_link.html" with label=kb.plate_str params=kb.plate_url_params %}{% endif %}</td>
+    <td>{% if kb.stabilizer_str %}{% include "partials/components/part_link.html" with label=kb.stabilizer_str params=kb.stabilizer_url_params %}{% endif %}</td>
     <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{kb.notes|default:''}}">{{kb.notes|default:''}}</p></td>
 </tr>

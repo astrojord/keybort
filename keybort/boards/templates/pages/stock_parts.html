@@ -26,8 +26,8 @@
     </div>
     {% endif %}
 </div>
-{% include "partials/filter_card.html" with id_prefix="stock" placeholder="Name, notes…" %}
-{% if perms.boards.can_delete_stock_data %}{% include "partials/bulk_bar.html" with id_prefix="stock" %}{% endif %}
+{% include "partials/components/filter_card.html" with id_prefix="stock" placeholder="Name, notes…" %}
+{% if perms.boards.can_delete_stock_data %}{% include "partials/components/bulk_bar.html" with id_prefix="stock" %}{% endif %}
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
@@ -36,16 +36,16 @@
                     <tr>
                         {% if perms.boards.can_delete_stock_data %}<th class="w-px"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"></th>{% endif %}
                         {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
-                        {% include "partials/sort_header.html" with key="name" label="Name" %}
+                        {% include "partials/components/sort_header.html" with key="name" label="Name" %}
                         {% for key, label in columns %}
-                        {% include "partials/sort_header.html" %}
+                        {% include "partials/components/sort_header.html" %}
                         {% endfor %}
                         <th>Notes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for part in parts %}
-                    {% include "partials/stock_part_row.html" %}
+                    {% include "partials/rows/stock_part_row.html" %}
                     {% endfor %}
                 </tbody>
             </table>
