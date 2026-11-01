@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from boards import const
-from boards.managers import KeyboardManager
+from boards.managers import PartManager, RowBuilder
 from boards.models import (
     CustomKit,
     CustomPlate,
@@ -516,7 +516,7 @@ class DashboardTests(ClientTestCase):
         prebuilt_in_inventory(self.user)
         custom_keyboard(self.user)
         custom_keyboard(self.other)
-        self.manager.add_to_parts(
+        self.part_manager.add_to_parts(
             'switch', Switch.objects.create(stock=stock_switch()), quantity=70
         )
         response = self.client.get(reverse('index'))
@@ -641,7 +641,7 @@ class StockPrebuiltsPageTests(ClientTestCase):
         self.assertContains(response, 'data-facet-connectivity="Wired"')
 
     def test_connectivity_facet_lists_each_mode(self):
-        row = KeyboardManager.stock_prebuilt_row(
+        row = RowBuilder.stock_prebuilt_row(
             stock_keyboard(wireless=True, bluetooth=True)
         )
         self.assertEqual(row['facets']['connectivity'], ['Wireless', 'Bluetooth'])
@@ -958,7 +958,7 @@ class StockPartsPageTests(ClientTestCase):
 
     def test_shows_quantity_in_parts(self):
         switch = stock_switch()
-        self.manager.collect_stock_part('switch', switch, 70)
+        self.part_manager.collect_stock_part('switch', switch, 70)
         response = self.client.get(reverse('stock_switches'))
         self.assertEqual(response.context['parts'][0]['quantity'], 70)
         self.assertContains(response, '70 in parts')
@@ -1107,8 +1107,8 @@ class StockPartCatalogViewTests(ClientTestCase):
     def test_delete_keeps_private_copies_for_users(self):
         self.login_with('can_delete_stock_data')
         switch = stock_switch(name='Doomed')
-        self.manager.collect_stock_part('switch', switch, 10)
-        KeyboardManager(self.other).collect_stock_part('switch', switch, 5)
+        self.part_manager.collect_stock_part('switch', switch, 10)
+        PartManager(self.other).collect_stock_part('switch', switch, 5)
         build = custom_keyboard(self.user)
         build.switch = Switch.objects.get(stock=switch)
         build.save()
@@ -1164,9 +1164,9 @@ class MultiDeleteViewTests(ClientTestCase):
         self.assertEqual(response['HX-Reswap'], 'none')
 
     def test_parts(self):
-        first, _ = self.manager.collect_stock_part('switch', stock_switch(), 10)
-        second, _ = self.manager.collect_stock_part('keycaps', stock_keycaps(), 1)
-        theirs, _ = KeyboardManager(self.other).collect_stock_part(
+        first, _ = self.part_manager.collect_stock_part('switch', stock_switch(), 10)
+        second, _ = self.part_manager.collect_stock_part('keycaps', stock_keycaps(), 1)
+        theirs, _ = PartManager(self.other).collect_stock_part(
             'switch', stock_switch(name='Red'), 5
         )
         url = reverse('part_delete')
@@ -1318,7 +1318,7 @@ class PromotePartViewTests(ClientTestCase):
         )
 
     def test_stock_part_and_bad_params(self):
-        inv, _ = KeyboardManager(self.uploader).collect_stock_part(
+        inv, _ = PartManager(self.uploader).collect_stock_part(
             'switch', stock_switch(), 1
         )
         url = reverse('part_promote')

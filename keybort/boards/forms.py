@@ -7,59 +7,17 @@ from .models import (
     CustomPlate,
     CustomStabilizer,
     CustomSwitch,
-    Keycaps,
-    Kit,
-    Mod,
-    Plate,
     Profile,
-    Stabilizer,
     StockKeyboard,
     StockKeycaps,
     StockKit,
     StockPlate,
     StockStabilizer,
     StockSwitch,
-    Switch,
 )
 
 # ruff: noqa: RUF012
 # following Django Meta subclass conventions
-
-
-class KitForm(forms.ModelForm):
-    class Meta:
-        model = Kit
-        fields = '__all__'
-
-
-class KeycapsForm(forms.ModelForm):
-    class Meta:
-        model = Keycaps
-        fields = '__all__'
-
-
-class SwitchForm(forms.ModelForm):
-    class Meta:
-        model = Switch
-        fields = '__all__'
-
-
-class StabilizerForm(forms.ModelForm):
-    class Meta:
-        model = Stabilizer
-        fields = '__all__'
-
-
-class PlateForm(forms.ModelForm):
-    class Meta:
-        model = Plate
-        fields = '__all__'
-
-
-class ModForm(forms.ModelForm):
-    class Meta:
-        model = Mod
-        fields = '__all__'
 
 
 class ComboboxInput(forms.TextInput):

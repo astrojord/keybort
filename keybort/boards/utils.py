@@ -2,12 +2,13 @@ import json
 
 from django.http import HttpResponse
 
+from . import const
+
 
 def model_to_dict_verbose(instance, fields=None, exclude=None):
-    opts = instance._meta
     data = {}
-    for f in opts.concrete_fields:
-        if not getattr(f, 'editable', False):
+    for f in instance._meta.concrete_fields:
+        if not f.editable:
             continue
         if fields is not None and f.name not in fields:
             continue
@@ -16,10 +17,10 @@ def model_to_dict_verbose(instance, fields=None, exclude=None):
 
         value = f.value_from_object(instance)
         if f.choices:
-            try:
-                value = next(display for db, display in f.choices if value == db)
-            except StopIteration:
+            labels = dict(f.choices)
+            if value not in labels:
                 continue
+            value = labels[value]
 
         data[f.verbose_name.capitalize()] = value
     return data
@@ -48,6 +49,6 @@ def htmx_swap(response, target, swap, trigger=None):
     return response
 
 
-def bulk_deleted(row_ids, close_event):
-    triggers = {close_event: '', 'rows-deleted': {'ids': row_ids}}
+def bulk_deleted(row_ids):
+    triggers = {const.CLOSE_DIALOG_EVENT: '', 'rows-deleted': {'ids': row_ids}}
     return htmx_swap(HttpResponse(), '#page-dialog', 'none', json.dumps(triggers))

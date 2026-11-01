@@ -65,17 +65,7 @@
     </div>
 </div>
 
-<dialog
-    id="page-dialog"
-    class="dialog"
-    hx-on::after-swap="if (!this.open) this.showModal(); if (event.detail.requestConfig.verb === 'get') delete this.dataset.dirty"
-    hx-on:close-dialog="this.close()"
-    aria-labelledby="page-dialog-title"
-    aria-describedby="page-dialog-description"
-    oninput="this.dataset.dirty = ''"
-    onclick="if (event.target === this && !('dirty' in this.dataset)) this.close()"
->
-</dialog>
+{% include "partials/components/page_dialog.html" %}
 {% endblock content %}
 
 {% block page_js %}

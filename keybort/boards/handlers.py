@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from . import const
-from .managers import KeyboardManager
+from .managers import PART_MODELS, part_fields
 
 TRUE_VALUES = {'1', 'true', 't', 'yes', 'y', 'x'}
 FALSE_VALUES = {'', '0', 'false', 'f', 'no', 'n'}
@@ -14,7 +14,7 @@ FALSE_VALUES = {'', '0', 'false', 'f', 'no', 'n'}
 
 def part_type_aliases():
     aliases = {}
-    for part_type in KeyboardManager.STOCK_FORMS:
+    for part_type in PART_MODELS:
         for alias in (
             part_type,
             const.PART_SINGULARS[part_type],
@@ -26,8 +26,8 @@ def part_type_aliases():
 
 def stock_csv_columns():
     columns = ['type']
-    for form_class in KeyboardManager.STOCK_FORMS.values():
-        for name in form_class.base_fields:
+    for spec in PART_MODELS.values():
+        for name in spec.stock_form.base_fields:
             if name not in columns:
                 columns.append(name)
     return columns
@@ -72,7 +72,7 @@ def validate_row(line, row, aliases):
     if part_type is None:
         return None, None, [(line, f'unknown type "{row.get("type") or ""}"')]
 
-    form_class = KeyboardManager.STOCK_FORMS[part_type]
+    form_class = PART_MODELS[part_type].stock_form
     data = {}
     for name, raw in row.items():
         if name in ('', 'type') or raw is None:
@@ -108,7 +108,7 @@ def matching_fields(model, fields):
 
 def handle_canned_parts_upload(file):
     result = {
-        'created': dict.fromkeys(KeyboardManager.STOCK_FORMS, 0),
+        'created': dict.fromkeys(PART_MODELS, 0),
         'skipped': 0,
         'errors': [],
     }
@@ -148,16 +148,16 @@ def handle_canned_parts_upload(file):
     seen = set()
     with transaction.atomic():
         for part_type, form in valid:
-            _, custom_model, stock_model, _ = KeyboardManager.PART_MODELS[part_type]
-            fields = KeyboardManager.part_fields(form.instance, custom_model)
+            spec = PART_MODELS[part_type]
+            fields = part_fields(form.instance, spec.custom)
             key = (
                 part_type,
                 tuple(sorted((k, None if v == '' else v) for k, v in fields.items())),
             )
             if (
                 key in seen
-                or stock_model.objects.filter(
-                    matching_fields(stock_model, fields)
+                or spec.stock.objects.filter(
+                    matching_fields(spec.stock, fields)
                 ).exists()
             ):
                 result['skipped'] += 1

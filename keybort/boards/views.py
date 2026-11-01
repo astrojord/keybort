@@ -1,29 +1,28 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import (
-    login_required,
-    permission_required,
-    user_passes_test,
-)
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
 from django.shortcuts import render
 from django.urls import Resolver404, resolve, reverse
 
 from . import const
-from .forms import (
-    KeycapsForm,
-    KitForm,
-    ModForm,
-    PlateForm,
-    ProfileForm,
-    StabilizerForm,
-    SwitchForm,
-)
+from .forms import ProfileForm
 from .handlers import (
     handle_canned_parts_upload,
     stock_csv_columns,
     stock_csv_template,
 )
-from .managers import KeyboardManager
+from .managers import (
+    PART_MODELS,
+    CatalogManager,
+    KeyboardManager,
+    ModalForms,
+    PartManager,
+    RowBuilder,
+    parse_quantity,
+    part_name,
+    part_type_of,
+)
 from .models import Inventory, StockKeyboard
 from .utils import (
     bulk_deleted,
@@ -38,6 +37,22 @@ def keyboard_name(row):
     return row.get('kit_str', 'keyboard')
 
 
+def swap_row(request, template, context, target, swap='outerHTML'):
+    response = render(request, template, context)
+    return htmx_swap(response, target, swap, const.CLOSE_DIALOG_EVENT)
+
+
+def standalone_part_or_404(request, part_manager):
+    part_id = request.GET.get('id', '')
+    if not part_id.isdigit():
+        raise BadRequest
+    inv = part_manager.standalone_part(part_id)
+    if inv is None:
+        messages.error(request, 'That part no longer exists.')
+        raise Http404
+    return inv
+
+
 # home/dashboard
 def index(request):
     context = {'page_title': 'Home'}
@@ -47,7 +62,7 @@ def index(request):
     return render(request, 'pages/index.html', context)
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def inventory_keyboards(request):
     context = {'page_title': 'Keyboard Inventory'}
     context['inventory'] = KeyboardManager(request.user).keyboard_rows()
@@ -59,110 +74,96 @@ def inventory_keyboards(request):
     return render(request, 'pages/inventory_keyboards.html', context)
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def inventory_parts(request):
     context = {'page_title': 'Parts Inventory'}
-    context['inventory'] = KeyboardManager(request.user).part_rows()
-    context['part_columns'] = KeyboardManager.part_columns()
+    context['inventory'] = PartManager(request.user).part_rows()
+    context['part_columns'] = RowBuilder.part_columns()
     context['filters'] = list(const.PART_PLURALS.items())
     add = request.GET.get('add')
     if add is not None:
-        context['open_add'] = add if add in KeyboardManager.PART_MODELS else ''
+        context['open_add'] = add if add in PART_MODELS else ''
     return render(request, 'pages/inventory_parts.html', context)
 
 
 # GET: modal body, pick a part type then stock or custom
 # POST: add it to the parts inventory, or bump quantity if exists
-@login_required(login_url='/accounts/login')
+@login_required
 def add_part(request):
-    manager = KeyboardManager(request.user)
+    modal_forms = ModalForms(request.user)
+    part_manager = PartManager(request.user)
     if request.method != 'POST':
         part_type = request.GET.get('type')
-        if part_type not in manager.PART_MODELS:
+        if part_type not in PART_MODELS:
             part_type = None
         return render(
             request,
             'partials/modals/part_add_modal.html',
-            manager.add_part_context(part_type=part_type),
+            modal_forms.add_part_context(part_type=part_type),
         )
 
-    context = manager.add_part_context(request.POST)
-    if context['part_type'] not in manager.PART_MODELS:
+    context = modal_forms.add_part_context(request.POST)
+    if context['part_type'] not in PART_MODELS:
         return HttpResponse(status=400)
 
-    result = manager.add_part(context, request.POST)
+    result = part_manager.add_part(context, request.POST)
     if result is None:
         return render(request, 'partials/modals/part_add_modal.html', context)
 
     inv, stacked = result
-    row = manager.part_row(inv)
+    row = RowBuilder.part_row(inv)
     if stacked:
         messages.success(
             request, f'Updated quantity of {row["name"]} to {inv.quantity}.'
         )
     else:
         messages.success(request, f'Added {row["name"]} to parts.')
-    response = render(request, 'partials/rows/part_row.html', {'part': row})
-    if stacked:
-        return htmx_swap(
-            response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT
-        )
-    return htmx_swap(
-        response, '#table-parts tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
+    target, swap = (
+        (f'#part-{inv.pk}', 'outerHTML')
+        if stacked
+        else ('#table-parts tbody', 'beforeend')
     )
+    return swap_row(request, 'partials/rows/part_row.html', {'part': row}, target, swap)
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def edit_part(request):
-    part_id = request.GET.get('id', '')
-    if not part_id.isdigit():
-        return HttpResponse(status=400)
+    part_manager = PartManager(request.user)
+    modal_forms = ModalForms(request.user)
+    inv = standalone_part_or_404(request, part_manager)
 
-    manager = KeyboardManager(request.user)
-    inv = manager.standalone_part(part_id)
-    if inv is None:
-        messages.error(request, 'That part no longer exists.')
-        raise Http404
-
+    post = request.POST if request.method == 'POST' else None
     action_url = f'{reverse("part_edit")}?id={inv.pk}'
-    urls = {'delete_url': f'{reverse("part_delete")}?ids={inv.pk}', 'promote_url': None}
+    context = modal_forms.edit_part_context(inv, action_url, post)
+    context['delete_url'] = f'{reverse("part_delete")}?ids={inv.pk}'
+    context['promote_url'] = None
     if request.user.has_perm('boards.can_upload_stock_data'):
-        urls['promote_url'] = f'{reverse("part_promote")}?id={inv.pk}'
-    if request.method != 'POST':
-        context = manager.edit_part_context(inv, action_url)
-        context.update(urls)
+        context['promote_url'] = f'{reverse("part_promote")}?id={inv.pk}'
+    if post is None:
         return render(request, 'partials/modals/part_edit_modal.html', context)
 
-    context = manager.edit_part_context(inv, action_url, request.POST)
-    context.update(urls)
-    inv = manager.edit_part(context, request.POST)
+    inv = part_manager.edit_part(context, post)
     if inv is None:
         return render(request, 'partials/modals/part_edit_modal.html', context)
 
-    row = manager.part_row(inv)
+    row = RowBuilder.part_row(inv)
     messages.success(request, f'Saved {row["name"]}.')
-    response = render(request, 'partials/rows/part_row.html', {'part': row})
-    return htmx_swap(response, f'#part-{inv.pk}', 'outerHTML', const.CLOSE_DIALOG_EVENT)
+    return swap_row(
+        request, 'partials/rows/part_row.html', {'part': row}, f'#part-{inv.pk}'
+    )
 
 
 @permission_required('boards.can_upload_stock_data', raise_exception=True)
 def promote_part(request):
-    part_id = request.GET.get('id', '')
-    if not part_id.isdigit():
-        return HttpResponse(status=400)
+    part_manager = PartManager(request.user)
+    inv = standalone_part_or_404(request, part_manager)
 
-    manager = KeyboardManager(request.user)
-    inv = manager.standalone_part(part_id)
-    if inv is None:
-        messages.error(request, 'That part no longer exists.')
-        raise Http404
-
-    part_type = manager.part_type_of(inv)
+    part_type = part_type_of(inv)
     wrapper = getattr(inv, part_type)
     if not wrapper.custom_id:
         return HttpResponse(status=400)
 
-    name = manager.part_name(wrapper.obj)
+    name = part_name(wrapper.obj)
     if request.method != 'POST':
         context = {
             'name': name,
@@ -172,28 +173,23 @@ def promote_part(request):
         }
         return render(request, 'partials/modals/part_promote_modal.html', context)
 
-    manager.promote_part(inv)
+    CatalogManager.promote_part(inv)
     messages.success(request, f'Added {name} to the catalog.')
-    row = manager.part_row(manager.standalone_part(inv.pk))
-    response = render(request, 'partials/rows/part_row.html', {'part': row})
-    return htmx_swap(
-        response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
+    row = RowBuilder.part_row(part_manager.standalone_part(inv.pk))
+    return swap_row(
+        request, 'partials/rows/part_row.html', {'part': row}, f'#{row["row_id"]}'
     )
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def part_quantity(request):
-    part_id = request.GET.get('id', '')
-    if request.method != 'POST' or not part_id.isdigit():
+    if request.method != 'POST':
         return HttpResponse(status=400)
 
-    manager = KeyboardManager(request.user)
-    inv = manager.standalone_part(part_id)
-    if inv is None:
-        messages.error(request, 'That part no longer exists.')
-        raise Http404
+    part_manager = PartManager(request.user)
+    inv = standalone_part_or_404(request, part_manager)
 
-    quantity = manager.parse_quantity(request.POST.get('quantity'))
+    quantity = parse_quantity(request.POST.get('quantity'))
     if quantity is None:
         messages.error(request, const.QUANTITY_ERROR)
     elif quantity != inv.quantity:
@@ -201,11 +197,11 @@ def part_quantity(request):
         inv.save(update_fields=['quantity'])
         messages.success(
             request,
-            f'Updated quantity of {manager.part_row(inv)["name"]} to {quantity}.',
+            f'Updated quantity of {RowBuilder.part_row(inv)["name"]} to {quantity}.',
         )
 
     return render(
-        request, 'partials/rows/part_row.html', {'part': manager.part_row(inv)}
+        request, 'partials/rows/part_row.html', {'part': RowBuilder.part_row(inv)}
     )
 
 
@@ -223,15 +219,15 @@ def deleted_label(names, plural):
     return names[0] if len(names) == 1 else f'{len(names)} {plural}'
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def delete_parts(request):
     ids = [value for value in bulk_ids(request) if value.isdigit()]
-    manager = KeyboardManager(request.user)
-    invs = list(manager.standalone_parts().filter(pk__in=ids).order_by('pk'))
+    part_manager = PartManager(request.user)
+    invs = list(part_manager.standalone_parts().filter(pk__in=ids).order_by('pk'))
     if not invs:
         return HttpResponse(status=400)
 
-    rows = [manager.part_row(inv) for inv in invs]
+    rows = [RowBuilder.part_row(inv) for inv in invs]
     names = [row['name'] for row in rows]
     if request.method != 'POST':
         return delete_modal(
@@ -246,26 +242,26 @@ def delete_parts(request):
         )
 
     for inv in invs:
-        manager.delete_part(inv)
+        part_manager.delete_part(inv)
     messages.success(request, f'Removed {deleted_label(names, "parts")} from parts.')
-    return bulk_deleted([row['row_id'] for row in rows], const.CLOSE_DIALOG_EVENT)
+    return bulk_deleted([row['row_id'] for row in rows])
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def delete_keyboards(request):
-    manager = KeyboardManager(request.user)
+    kb_manager = KeyboardManager(request.user)
     inventories = []
     for value in bulk_ids(request):
         kind, _, kb_id = value.partition('-')
         if kind in ('stock', 'custom') and kb_id.isdigit():
-            inventory = manager.keyboard_inventory(kb_id, kind == 'stock')
+            inventory = kb_manager.keyboard_inventory(kb_id, kind == 'stock')
             if inventory is not None:
                 inventories.append((value, inventory))
     if not inventories:
         return HttpResponse(status=400)
 
     keyboards = [inventory.keyboard.obj for _, inventory in inventories]
-    names = [keyboard_name(manager.keyboard_row(kb)) for kb in keyboards]
+    names = [keyboard_name(RowBuilder.keyboard_row(kb)) for kb in keyboards]
     single = len(keyboards) == 1
     if request.method != 'POST':
         context = {
@@ -276,8 +272,8 @@ def delete_keyboards(request):
             'action_url': reverse('keyboard_delete'),
         }
         if single:
-            context['parts'] = manager.keyboard_delete_parts(keyboards[0])
-            context['keep_default'] = manager.profile.keep_parts_on_delete
+            context['parts'] = KeyboardManager.keyboard_delete_parts(keyboards[0])
+            context['keep_default'] = kb_manager.profile.keep_parts_on_delete
         else:
             context['reminder'] = (
                 'Their parts are deleted too. To keep any parts, delete each '
@@ -288,8 +284,8 @@ def delete_keyboards(request):
     keep = request.POST.getlist('keep') if single else []
     row_ids = []
     for kb, (_, inventory) in zip(keyboards, inventories, strict=True):
-        row_ids.append(manager.row_id(kb))
-        manager.delete_keyboard(inventory, keep)
+        row_ids.append(RowBuilder.row_id(kb))
+        kb_manager.delete_keyboard(inventory, keep)
     label = deleted_label(names, 'keyboards')
     if keep:
         messages.success(
@@ -297,7 +293,7 @@ def delete_keyboards(request):
         )
     else:
         messages.success(request, f'Deleted {label}.')
-    return bulk_deleted(row_ids, const.CLOSE_DIALOG_EVENT)
+    return bulk_deleted(row_ids)
 
 
 def edit_url(url):
@@ -316,20 +312,16 @@ def part_detail(request):
     part_id = request.GET.get('id', '')
     stock = request.GET.get('stock')
 
-    if (
-        part_type not in KeyboardManager.PART_MODELS
-        or not part_id.isdigit()
-        or stock not in ('0', '1')
-    ):
+    if part_type not in PART_MODELS or not part_id.isdigit() or stock not in ('0', '1'):
         return HttpResponse(status=400)
 
     # 404 for someone else's custom part too, so ids aren't confirmed
-    obj = KeyboardManager(request.user).visible_part(part_type, part_id, stock == '1')
+    obj = PartManager(request.user).visible_part(part_type, part_id, stock == '1')
     if obj is None:
         raise Http404
 
     context = {
-        'name': KeyboardManager.part_name(obj),
+        'name': part_name(obj),
         'type_label': const.PART_SINGULARS[part_type],
         'stock': stock == '1',
         'edit_url': edit_url(request.GET.get('edit', '')),
@@ -349,45 +341,50 @@ def part_detail(request):
 # GET: modal body
 # POST: validate + create, if error, re-render the modal on the first broken step
 #       if success, put new row on table and close dialog
-@login_required(login_url='/accounts/login')
+@login_required
 def add_keyboard(request):
-    manager = KeyboardManager(request.user)
+    modal_forms = ModalForms(request.user)
+    kb_manager = KeyboardManager(request.user)
     action_url = reverse('keyboard_add')
     if request.method != 'POST':
         kind = request.GET.get('kind')
         if kind not in const.KEYBOARD_KINDS:
             kind = None
-        context = manager.keyboard_form_context(action_url, kind=kind)
+        context = modal_forms.keyboard_form_context(action_url, kind=kind)
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
-    context = manager.keyboard_form_context(action_url, request.POST)
+    context = modal_forms.keyboard_form_context(action_url, request.POST)
     match context['kind']:
         case 'prebuilt':
-            kb = manager.add_prebuilt(context, request.POST)
+            kb = kb_manager.add_prebuilt(context, request.POST)
         case 'custom':
-            kb = manager.add_custom(context, request.POST)
+            kb = kb_manager.add_custom(context, request.POST)
         case _:
             return HttpResponse(status=400)
 
     if kb is None:
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
-    row = manager.keyboard_row(kb)
+    row = RowBuilder.keyboard_row(kb)
     messages.success(request, f'Added {keyboard_name(row)} to keyboards.')
-    response = render(request, 'partials/rows/keyboard_row.html', {'kb': row})
-    return htmx_swap(
-        response, '#table-keyboards tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
+    return swap_row(
+        request,
+        'partials/rows/keyboard_row.html',
+        {'kb': row},
+        '#table-keyboards tbody',
+        'beforeend',
     )
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def edit_keyboard(request):
     params = keyboard_params(request)
     if params is None:
         return HttpResponse(status=400)
 
-    manager = KeyboardManager(request.user)
-    inventory = manager.keyboard_inventory(*params)
+    kb_manager = KeyboardManager(request.user)
+    modal_forms = ModalForms(request.user)
+    inventory = kb_manager.keyboard_inventory(*params)
     if inventory is None:
         messages.error(request, 'That keyboard no longer exists.')
         raise Http404
@@ -395,31 +392,32 @@ def edit_keyboard(request):
     current = inventory.keyboard.obj
     action_url = f'{reverse("keyboard_edit")}?id={params[0]}&stock={int(params[1])}'
     delete_url = f'{reverse("keyboard_delete")}?ids={"stock" if params[1] else "custom"}-{params[0]}'
-    if request.method != 'POST':
-        context = manager.keyboard_form_context(action_url, current=current)
-        context['delete_url'] = delete_url
-        if request.GET.get('step') in manager.PART_MODELS:
+    post = request.POST if request.method == 'POST' else None
+    context = modal_forms.keyboard_form_context(action_url, post, current=current)
+    context['delete_url'] = delete_url
+    if post is None:
+        if request.GET.get('step') in PART_MODELS:
             context['step'] = request.GET['step']
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
-    context = manager.keyboard_form_context(action_url, request.POST, current=current)
-    context['delete_url'] = delete_url
-    kb = manager.edit_keyboard(inventory, context, request.POST)
+    kb = kb_manager.edit_keyboard(inventory, context, post)
     if kb is None:
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
-    row = manager.keyboard_row(kb)
+    row = RowBuilder.keyboard_row(kb)
     messages.success(request, f'Saved {keyboard_name(row)}.')
-    response = render(request, 'partials/rows/keyboard_row.html', {'kb': row})
-    return htmx_swap(
-        response, f'#{manager.row_id(current)}', 'outerHTML', const.CLOSE_DIALOG_EVENT
+    return swap_row(
+        request,
+        'partials/rows/keyboard_row.html',
+        {'kb': row},
+        f'#{RowBuilder.row_id(current)}',
     )
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def account(request):
-    manager = KeyboardManager(request.user)
-    form = ProfileForm(request.POST or None, instance=manager.profile)
+    kb_manager = KeyboardManager(request.user)
+    form = ProfileForm(request.POST or None, instance=kb_manager.profile)
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, 'Saved preferences.')
@@ -428,7 +426,7 @@ def account(request):
     if 'HX-Request' in request.headers:
         return render(request, 'partials/sections/account_preferences.html', context)
 
-    stats = manager.dashboard()
+    stats = kb_manager.dashboard()
     context.update(
         page_title='Account',
         keyboard_count=stats['keyboard_count'],
@@ -437,24 +435,15 @@ def account(request):
     return render(request, 'pages/account.html', context)
 
 
-# add/change individual parts in inventory
-# 1 view for each form to handle xhr post request from edit_keyboard
-# Kit, Keycaps, Switch, Stabilizer, Plate, Mod
-
-
-# unified search for stock parts
-def search_stock(request):
-    pass
-
-
-# 1 view for each list of stock parts: Keyboard, Kit, Keycaps, Switch, Stabilizer, Plate
 def stock_prebuilts(request):
-    manager = KeyboardManager(request.user)
-    rows = manager.stock_prebuilt_rows()
+    catalog_manager = CatalogManager(request.user)
+    rows = catalog_manager.stock_prebuilt_rows()
     context = {
         'page_title': 'Prebuilt Keyboards',
         'prebuilts': rows,
-        'facets': manager.filter_facets(rows, request.GET, const.STOCK_PREBUILT_FACETS),
+        'facets': RowBuilder.filter_facets(
+            rows, request.GET, const.STOCK_PREBUILT_FACETS
+        ),
         'query': request.GET.get('q', ''),
     }
     return render(request, 'pages/stock_prebuilts.html', context)
@@ -462,25 +451,28 @@ def stock_prebuilts(request):
 
 @permission_required('boards.can_upload_stock_data', raise_exception=True)
 def add_stock_prebuilt(request):
-    manager = KeyboardManager(request.user)
+    modal_forms = ModalForms(request.user)
     action_url = reverse('stock_prebuilt_add')
     if request.method != 'POST':
         return render(
             request,
             'partials/modals/stock_prebuilt_modal.html',
-            manager.stock_keyboard_form_context(action_url),
+            modal_forms.stock_keyboard_form_context(action_url),
         )
 
-    context = manager.stock_keyboard_form_context(action_url, request.POST)
-    stock_kb = manager.save_stock_keyboard(context, request.POST)
+    context = modal_forms.stock_keyboard_form_context(action_url, request.POST)
+    stock_kb = CatalogManager.save_stock_keyboard(context, request.POST)
     if stock_kb is None:
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
-    row = manager.stock_prebuilt_row(stock_kb)
+    row = RowBuilder.stock_prebuilt_row(stock_kb)
     messages.success(request, f'Added {row["name"]} to the catalog.')
-    response = render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
-    return htmx_swap(
-        response, '#table-prebuilts tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
+    return swap_row(
+        request,
+        'partials/rows/stock_prebuilt_row.html',
+        {'kb': row},
+        '#table-prebuilts tbody',
+        'beforeend',
     )
 
 
@@ -495,31 +487,31 @@ def edit_stock_prebuilt(request):
         messages.error(request, 'That prebuilt is no longer in the catalog.')
         raise Http404
 
-    manager = KeyboardManager(request.user)
+    modal_forms = ModalForms(request.user)
+    catalog_manager = CatalogManager(request.user)
     action_url = f'{reverse("stock_prebuilt_edit")}?id={current.pk}'
     delete_url = None
     if request.user.has_perm('boards.can_delete_stock_data'):
         delete_url = f'{reverse("stock_prebuilt_delete")}?ids={current.pk}'
-    if request.method != 'POST':
-        context = manager.stock_keyboard_form_context(action_url, current=current)
-        context['delete_url'] = delete_url
+    post = request.POST if request.method == 'POST' else None
+    context = modal_forms.stock_keyboard_form_context(action_url, post, current=current)
+    context['delete_url'] = delete_url
+    if post is None:
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
-    context = manager.stock_keyboard_form_context(
-        action_url, request.POST, current=current
-    )
-    context['delete_url'] = delete_url
-    stock_kb = manager.save_stock_keyboard(context, request.POST)
+    stock_kb = CatalogManager.save_stock_keyboard(context, post)
     if stock_kb is None:
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
-    row = manager.stock_prebuilt_row(
-        stock_kb, stock_kb.pk in manager.owned_prebuilt_ids()
+    row = RowBuilder.stock_prebuilt_row(
+        stock_kb, stock_kb.pk in catalog_manager.owned_prebuilt_ids()
     )
     messages.success(request, f'Saved {row["name"]}.')
-    response = render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
-    return htmx_swap(
-        response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
+    return swap_row(
+        request,
+        'partials/rows/stock_prebuilt_row.html',
+        {'kb': row},
+        f'#{row["row_id"]}',
     )
 
 
@@ -532,8 +524,7 @@ def delete_stock_prebuilts(request):
     if not stock_kbs:
         return HttpResponse(status=400)
 
-    manager = KeyboardManager(request.user)
-    rows = [manager.stock_prebuilt_row(kb) for kb in stock_kbs]
+    rows = [RowBuilder.stock_prebuilt_row(kb) for kb in stock_kbs]
     if request.method != 'POST':
         owners = (
             Inventory.objects.filter(keyboard__stock__in=stock_kbs)
@@ -558,13 +549,13 @@ def delete_stock_prebuilts(request):
         )
 
     for stock_kb in stock_kbs:
-        manager.delete_stock_keyboard(stock_kb)
+        CatalogManager.delete_stock_keyboard(stock_kb)
     label = deleted_label([row['name'] for row in rows], 'prebuilts')
     messages.success(request, f'Removed {label} from the catalog.')
-    return bulk_deleted([row['row_id'] for row in rows], const.CLOSE_DIALOG_EVENT)
+    return bulk_deleted([row['row_id'] for row in rows])
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def collect_stock_prebuilt(request):
     kb_id = request.GET.get('id', '')
     if request.method != 'POST' or not kb_id.isdigit():
@@ -575,20 +566,21 @@ def collect_stock_prebuilt(request):
         messages.error(request, 'That prebuilt is no longer in the catalog.')
         raise Http404
 
-    manager = KeyboardManager(request.user)
-    row = manager.stock_prebuilt_row(stock_kb, owned=True)
-    if stock_kb.pk in manager.owned_prebuilt_ids():
+    catalog_manager = CatalogManager(request.user)
+    kb_manager = KeyboardManager(request.user)
+    row = RowBuilder.stock_prebuilt_row(stock_kb, owned=True)
+    if stock_kb.pk in catalog_manager.owned_prebuilt_ids():
         messages.info(request, f'{row["name"]} is already in your inventory.')
     else:
-        manager.collect_prebuilt(stock_kb)
+        kb_manager.collect_prebuilt(stock_kb)
         messages.success(request, f'Added {row["name"]} to keyboards.')
     return render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
 
 
 def stock_parts(request, part_type):
-    manager = KeyboardManager(request.user)
-    rows = manager.stock_part_rows(part_type)
-    columns, facet_specs = manager.stock_part_specs(part_type)
+    catalog_manager = CatalogManager(request.user)
+    rows = catalog_manager.stock_part_rows(part_type)
+    columns, facet_specs = RowBuilder.stock_part_specs(part_type)
     context = {
         'page_title': const.PART_PLURALS[part_type],
         'part_type': part_type,
@@ -596,42 +588,22 @@ def stock_parts(request, part_type):
         'noun': const.PART_PLURALS[part_type].lower(),
         'parts': rows,
         'columns': columns,
-        'facets': manager.filter_facets(rows, request.GET, facet_specs),
+        'facets': RowBuilder.filter_facets(rows, request.GET, facet_specs),
         'query': request.GET.get('q', ''),
     }
     return render(request, 'pages/stock_parts.html', context)
 
 
-def stock_kits(request):
-    return stock_parts(request, 'kit')
-
-
-def stock_keycaps(request):
-    return stock_parts(request, 'keycaps')
-
-
-def stock_switches(request):
-    return stock_parts(request, 'switch')
-
-
-def stock_stabilizers(request):
-    return stock_parts(request, 'stabilizer')
-
-
-def stock_plates(request):
-    return stock_parts(request, 'plate')
-
-
-def stock_part_from_request(request, manager):
+def stock_part_from_request(request):
     part_type = request.GET.get('type')
     part_id = request.GET.get('id', '')
-    if part_type not in manager.PART_MODELS or not part_id.isdigit():
-        return part_type, None, HttpResponse(status=400)
-    obj = manager.stock_part(part_type, part_id)
+    if part_type not in PART_MODELS or not part_id.isdigit():
+        raise BadRequest
+    obj = CatalogManager.stock_part(part_type, part_id)
     if obj is None:
         messages.error(request, 'That part is no longer in the catalog.')
         raise Http404
-    return part_type, obj, None
+    return part_type, obj
 
 
 def stock_part_modal_context(part_type, form, action_url, delete_url=None):
@@ -647,18 +619,21 @@ def stock_part_modal_context(part_type, form, action_url, delete_url=None):
 @permission_required('boards.can_upload_stock_data', raise_exception=True)
 def add_stock_part(request):
     part_type = request.GET.get('type')
-    if part_type not in KeyboardManager.PART_MODELS:
+    if part_type not in PART_MODELS:
         return HttpResponse(status=400)
 
-    form_class = KeyboardManager.STOCK_FORMS[part_type]
+    form_class = PART_MODELS[part_type].stock_form
     form = form_class(request.POST or None, prefix=part_type)
     action_url = f'{reverse("stock_part_add")}?type={part_type}'
     if request.method == 'POST' and form.is_valid():
-        row = KeyboardManager.stock_part_row(part_type, form.save())
+        row = RowBuilder.stock_part_row(part_type, form.save())
         messages.success(request, f'Added {row["name"]} to the catalog.')
-        response = render(request, 'partials/rows/stock_part_row.html', {'part': row})
-        return htmx_swap(
-            response, '#table-stock tbody', 'beforeend', const.CLOSE_DIALOG_EVENT
+        return swap_row(
+            request,
+            'partials/rows/stock_part_row.html',
+            {'part': row},
+            '#table-stock tbody',
+            'beforeend',
         )
 
     return render(
@@ -722,12 +697,10 @@ def stock_upload_template(request):
 
 @permission_required('boards.can_edit_stock_data', raise_exception=True)
 def edit_stock_part(request):
-    manager = KeyboardManager(request.user)
-    part_type, obj, error = stock_part_from_request(request, manager)
-    if error:
-        return error
+    catalog_manager = CatalogManager(request.user)
+    part_type, obj = stock_part_from_request(request)
 
-    form = manager.STOCK_FORMS[part_type](
+    form = PART_MODELS[part_type].stock_form(
         request.POST or None, prefix=part_type, instance=obj
     )
     action_url = f'{reverse("stock_part_edit")}?type={part_type}&id={obj.pk}'
@@ -736,12 +709,14 @@ def edit_stock_part(request):
         delete_url = f'{reverse("stock_part_delete")}?type={part_type}&ids={obj.pk}'
     if request.method == 'POST' and form.is_valid():
         obj = form.save()
-        quantity = manager.stock_part_quantities(part_type).get(obj.pk, 0)
-        row = manager.stock_part_row(part_type, obj, quantity)
+        quantity = catalog_manager.stock_part_quantities(part_type).get(obj.pk, 0)
+        row = RowBuilder.stock_part_row(part_type, obj, quantity)
         messages.success(request, f'Saved {row["name"]}.')
-        response = render(request, 'partials/rows/stock_part_row.html', {'part': row})
-        return htmx_swap(
-            response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
+        return swap_row(
+            request,
+            'partials/rows/stock_part_row.html',
+            {'part': row},
+            f'#{row["row_id"]}',
         )
 
     return render(
@@ -754,26 +729,23 @@ def edit_stock_part(request):
 @permission_required('boards.can_delete_stock_data', raise_exception=True)
 def delete_stock_parts(request):
     part_type = request.GET.get('type')
-    if part_type not in KeyboardManager.PART_MODELS:
+    if part_type not in PART_MODELS:
         return HttpResponse(status=400)
 
-    manager = KeyboardManager(request.user)
     ids = [value for value in bulk_ids(request) if value.isdigit()]
-    objs = list(
-        manager.PART_MODELS[part_type][2].objects.filter(pk__in=ids).order_by('pk')
-    )
+    objs = list(PART_MODELS[part_type].stock.objects.filter(pk__in=ids).order_by('pk'))
     if not objs:
         return HttpResponse(status=400)
 
     deletable, blocked = [], []
     for obj in objs:
-        usage = manager.stock_part_usage(part_type, obj)
+        usage = CatalogManager.stock_part_usage(part_type, obj)
         if usage['prebuilts']:
-            blocked.append((manager.part_name(obj), ', '.join(usage['prebuilts'])))
+            blocked.append((part_name(obj), ', '.join(usage['prebuilts'])))
         else:
             deletable.append(obj)
     plural = const.PART_PLURALS[part_type].lower()
-    names = [manager.part_name(obj) for obj in deletable]
+    names = [part_name(obj) for obj in deletable]
 
     if request.method != 'POST':
         return delete_modal(
@@ -796,23 +768,21 @@ def delete_stock_parts(request):
 
     row_ids = []
     for obj in deletable:
-        row_ids.append(manager.stock_part_row(part_type, obj)['row_id'])
-        manager.delete_stock_part(part_type, obj)
+        row_ids.append(RowBuilder.stock_part_row(part_type, obj)['row_id'])
+        CatalogManager.delete_stock_part(part_type, obj)
     message = f'Removed {deleted_label(names, plural)} from the catalog.'
     if blocked:
         message += f' Kept {len(blocked)} used by prebuilts.'
     messages.success(request, message)
-    return bulk_deleted(row_ids, const.CLOSE_DIALOG_EVENT)
+    return bulk_deleted(row_ids)
 
 
-@login_required(login_url='/accounts/login')
+@login_required
 def collect_stock_part(request):
-    manager = KeyboardManager(request.user)
-    part_type, obj, error = stock_part_from_request(request, manager)
-    if error:
-        return error
+    part_manager = PartManager(request.user)
+    part_type, obj = stock_part_from_request(request)
 
-    name = manager.part_name(obj)
+    name = part_name(obj)
     context = {
         'name': name,
         'part_type': part_type,
@@ -824,21 +794,20 @@ def collect_stock_part(request):
     if request.method != 'POST':
         return render(request, 'partials/modals/stock_part_collect_modal.html', context)
 
-    quantity = manager.parse_quantity(request.POST.get('quantity'))
+    quantity = parse_quantity(request.POST.get('quantity'))
     if quantity is None:
         context['quantity_error'] = const.QUANTITY_ERROR
         return render(request, 'partials/modals/stock_part_collect_modal.html', context)
 
-    inv, stacked = manager.collect_stock_part(part_type, obj, quantity)
+    inv, stacked = part_manager.collect_stock_part(part_type, obj, quantity)
     if stacked:
         messages.success(request, f'Updated quantity of {name} to {inv.quantity}.')
     else:
         messages.success(request, f'Added {name} to parts.')
-    row = manager.stock_part_row(part_type, obj, inv.quantity)
-    response = render(request, 'partials/rows/stock_part_row.html', {'part': row})
-    return htmx_swap(
-        response, f'#{row["row_id"]}', 'outerHTML', const.CLOSE_DIALOG_EVENT
+    row = RowBuilder.stock_part_row(part_type, obj, inv.quantity)
+    return swap_row(
+        request,
+        'partials/rows/stock_part_row.html',
+        {'part': row},
+        f'#{row["row_id"]}',
     )
-
-
-# upload canned parts (needs permission)

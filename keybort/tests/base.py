@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from boards.managers import KeyboardManager
+from boards.managers import CatalogManager, KeyboardManager, ModalForms, PartManager
 from boards.models import (
     CustomKeyboard,
     CustomKit,
@@ -102,7 +102,10 @@ class UserTestCase(TestCase):
         cls.other = make_user('someone-else')
 
     def setUp(self):
-        self.manager = KeyboardManager(self.user)
+        self.modal_forms = ModalForms(self.user)
+        self.part_manager = PartManager(self.user)
+        self.kb_manager = KeyboardManager(self.user)
+        self.catalog_manager = CatalogManager(self.user)
 
 
 class ClientTestCase(UserTestCase):
