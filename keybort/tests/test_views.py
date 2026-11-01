@@ -124,7 +124,7 @@ class AddKeyboardViewTests(ClientTestCase):
         self.assertTemplateUsed(response, 'partials/modals/keyboard_modal.html')
         self.assertNotIn('HX-Retarget', response)
         self.assertEqual(response.context['step'], 'kit')
-        self.assertContains(response, 'Some of these details need fixing.')
+        self.assertContains(response, 'Found some errors while checking the form.')
 
     def test_post_unknown_kind(self):
         self.assertEqual(
