@@ -32,5 +32,12 @@ services:
     restart: always
     command: python manage.py runserver 0.0.0.0:8000
 
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - 8025:8025
+    restart: always
+
 volumes:
   pg_data:

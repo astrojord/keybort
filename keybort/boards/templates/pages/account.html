@@ -22,10 +22,11 @@
     <div class="card">
         <header>
             <h2>Security</h2>
-            <p>Change the password you sign in with.</p>
+            <p>Change the password you sign in with or manage your email addresses.</p>
         </header>
-        <section>
+        <section class="flex flex-wrap gap-2">
             <a href="{% url 'account_change_password' %}" class="btn" data-variant="outline">Change password</a>
+            <a href="{% url 'account_email' %}" class="btn" data-variant="outline">Manage email</a>
         </section>
     </div>
 </div>
