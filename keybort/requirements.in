@@ -3,5 +3,6 @@ pip-tools
 django
 django-allauth
 psycopg2-binary
+gunicorn
 ruff
 coverage
