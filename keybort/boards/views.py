@@ -4,9 +4,10 @@ from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
 from django.shortcuts import render
 from django.urls import Resolver404, resolve, reverse
+from django.views.decorators.http import require_POST
 
 from . import const
-from .forms import ProfileForm
+from .forms import ProfileForm, TypingResultForm
 from .handlers import (
     handle_canned_parts_upload,
     stock_csv_columns,
@@ -19,6 +20,7 @@ from .managers import (
     ModalForms,
     PartManager,
     RowBuilder,
+    TypingManager,
     parse_quantity,
     part_name,
     part_type_of,
@@ -58,9 +60,37 @@ def standalone_part_or_404(request, part_manager):
 def index(request):
     context = {'page_title': 'Home'}
     if request.user.is_authenticated:
-        context.update(KeyboardManager(request.user).dashboard())
+        dashboard = KeyboardManager(request.user).dashboard()
+        context.update(dashboard)
+        context.update(
+            TypingManager(request.user).race_context(dashboard['owned_keyboards'])
+        )
         context['quick_actions'] = const.QUICK_ACTIONS
+        context['race_words'] = const.TYPING_RACE_WORDS
+        context['race_word_choices'] = const.TYPING_RACE_WORD_CHOICES
     return render(request, 'pages/index.html', context)
+
+
+@login_required
+@require_POST
+def save_typing_result(request):
+    form = TypingResultForm(request.POST)
+    if not form.is_valid():
+        raise BadRequest
+    data = form.cleaned_data
+    manager = TypingManager(request.user)
+    saved = manager.record(
+        keyboard_id=data['keyboard'],
+        word_count=data['word_count'],
+        characters=data['characters'],
+        mistakes=data['mistakes'],
+        duration_ms=data['duration_ms'],
+    )
+    if not saved:
+        raise BadRequest
+    return render(
+        request, 'partials/components/typing_history.html', manager.history_context()
+    )
 
 
 @login_required

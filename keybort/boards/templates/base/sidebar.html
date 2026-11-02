@@ -1,3 +1,4 @@
+{% load static %}
 <aside id="sidebar" class="sidebar" data-side="left">
     <nav aria-label="Sidebar navigation">
         <header>
@@ -8,10 +9,13 @@
                 data-size="lg"
             >
                 <div class="foreground flex items-center justify-center">
-                    <span
-                        class="badge size-8 aspect-square bg-gray-50 text-gray-700 dark:bg-gray-950 dark:text-gray-300"
-                        ><i class="fa fa-keyboard"></i
-                    ></span>
+                    <img
+                        src="{% static 'logos/keybort_icon.png' %}"
+                        alt=""
+                        width="32"
+                        height="32"
+                        class="size-8 shrink-0 [image-rendering:pixelated]"
+                    >
                     <span class="font-semibold mx-4 text-brand">Keybort</span>
                     <span class="font-normal">v0.1</span>
                 </div>

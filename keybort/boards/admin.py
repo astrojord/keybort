@@ -27,5 +27,6 @@ admin.site.register(
         models.StockKeycaps,
         models.StockMod,
         models.Profile,
+        models.TypingResult,
     ]
 )

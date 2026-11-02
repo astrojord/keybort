@@ -1,0 +1,38 @@
+{% if race_history %}
+<div class="overflow-x-auto">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Board</th>
+                <th class="text-right">Races</th>
+                <th class="text-right">Best</th>
+                <th class="text-right">Last 5</th>
+                <th class="hidden sm:table-cell text-right">Accuracy</th>
+                <th class="hidden sm:table-cell">Trend</th>
+            </tr>
+        </thead>
+        <tbody class="tabular-nums">
+            {% for row in race_history %}
+            <tr>
+                <td class="{% if forloop.first %}font-semibold{% else %}font-medium{% endif %}">{{ row.label }}</td>
+                <td class="text-right">{{ row.races }}</td>
+                <td class="text-right">{{ row.best_wpm|floatformat:0 }}</td>
+                <td class="text-right">{{ row.recent_wpm|floatformat:0 }}</td>
+                <td class="hidden sm:table-cell text-right">{{ row.recent_accuracy|floatformat:0 }}%</td>
+                <td class="hidden sm:table-cell">
+                    {% with spark=row.sparkline %}
+                    <svg width="{{ spark.width }}" height="{{ spark.height }}" viewBox="0 0 {{ spark.width }} {{ spark.height }}" role="img" aria-label="WPM over the last {{ spark.points|length }} races">
+                        {% if spark.points|length > 1 %}<polyline points="{{ spark.line }}" fill="none" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>{% endif %}
+                        <circle cx="{{ spark.last.x }}" cy="{{ spark.last.y }}" r="4" fill="var(--color-brand)" stroke="var(--card)" stroke-width="2"/>
+                        {% for point in spark.points %}<circle cx="{{ point.x }}" cy="{{ point.y }}" r="6" fill="transparent"><title>{{ point.label }}</title></circle>{% endfor %}
+                    </svg>
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-sm text-muted-foreground">Finish a race to start tracking your speed.</p>
+{% endif %}

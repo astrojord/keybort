@@ -4,6 +4,7 @@ from boards.managers import (
     ModalForms,
     PartManager,
     RowBuilder,
+    TypingManager,
     board_switch_count,
     parse_quantity,
     part_in_use,
@@ -23,6 +24,7 @@ from boards.models import (
     Stabilizer,
     StockKeyboard,
     Switch,
+    TypingResult,
 )
 
 from .base import (
@@ -230,6 +232,28 @@ class KeyboardQueryTests(UserTestCase):
         self.assertEqual(stats['custom_count'], 2)
         self.assertEqual(stats['switches_on_boards'], 82 + 1 + 82)
         self.assertEqual(len(stats['recent_keyboards']), 3)
+
+    def test_race_context_adds_one_query(self):
+        owned = list(self.kb_manager.owned_keyboards())
+        raced = owned[0].keyboard_id
+        for keyboard_id in (None, raced):
+            TypingResult.objects.create(
+                user=self.user,
+                keyboard_id=keyboard_id,
+                word_count=25,
+                characters=150,
+                duration_ms=30_000,
+            )
+
+        with self.assertNumQueries(1):
+            context = TypingManager(self.user).race_context(owned)
+
+        self.assertEqual(len(context['race_boards']), 3)
+        self.assertEqual(context['race_selected_board'], raced)
+        self.assertEqual(
+            [row['races'] for row in context['race_history']],
+            [2, 1],
+        )
 
     def test_inventory_counts_use_one_query(self):
         with self.assertNumQueries(1):

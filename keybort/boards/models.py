@@ -587,3 +587,30 @@ class Profile(models.Model):
 
     def __str__(self):
         return f'{self.user.username} profile'
+
+
+class TypingResult(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    keyboard = models.ForeignKey(
+        'Keyboard', null=True, blank=True, on_delete=models.SET_NULL
+    )
+
+    word_count = models.PositiveSmallIntegerField()
+    characters = models.PositiveIntegerField()
+    mistakes = models.PositiveIntegerField(default=0)
+    duration_ms = models.PositiveIntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def wpm(self):
+        return (self.characters / const.TYPING_CHARS_PER_WORD) / (
+            self.duration_ms / 60_000
+        )
+
+    @property
+    def accuracy(self):
+        return 100 * self.characters / (self.characters + self.mistakes)
+
+    def __str__(self):
+        return f'{self.user.username} - {self.wpm:.0f} wpm'

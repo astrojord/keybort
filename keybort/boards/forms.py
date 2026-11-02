@@ -1,5 +1,6 @@
 from django import forms
 
+from . import const
 from .models import (
     CustomKeyboard,
     CustomKeycaps,
@@ -14,6 +15,7 @@ from .models import (
     StockPlate,
     StockStabilizer,
     StockSwitch,
+    TypingResult,
 )
 
 # ruff: noqa: RUF012
@@ -145,3 +147,27 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['default_part_source', 'keep_parts_on_delete']
+
+
+class TypingResultForm(forms.Form):
+    keyboard = forms.IntegerField(required=False, min_value=1)
+    word_count = forms.TypedChoiceField(
+        choices=[(count, count) for count in const.TYPING_RACE_WORD_CHOICES],
+        coerce=int,
+    )
+    characters = forms.IntegerField(min_value=1, max_value=const.TYPING_MAX_CHARACTERS)
+    mistakes = forms.IntegerField(min_value=0, max_value=const.TYPING_MAX_CHARACTERS)
+    duration_ms = forms.IntegerField(
+        min_value=1, max_value=const.TYPING_MAX_DURATION_MS
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.errors:
+            return cleaned
+        result = TypingResult(
+            characters=cleaned['characters'], duration_ms=cleaned['duration_ms']
+        )
+        if result.wpm > const.TYPING_MAX_WPM:
+            raise forms.ValidationError('That result is too fast to be real.')
+        return cleaned

@@ -13,6 +13,7 @@ from boards.models import (
     CustomKit,
     CustomPlate,
     Inventory,
+    Keyboard,
     Kit,
     Plate,
     Profile,
@@ -22,6 +23,7 @@ from boards.models import (
     StockPlate,
     StockSwitch,
     Switch,
+    TypingResult,
 )
 
 from .base import (
@@ -1494,3 +1496,147 @@ class StockUploadViewTests(ClientTestCase):
         self.assertContains(self.client.get(url), reverse('stock_part_upload'))
         self.client.force_login(self.user)
         self.assertNotContains(self.client.get(url), reverse('stock_part_upload'))
+
+
+class TypingRaceTests(ClientTestCase):
+    def post_result(self, **overrides):
+        data = {
+            'keyboard': '',
+            'word_count': 25,
+            'characters': 150,
+            'mistakes': 3,
+            'duration_ms': 30_000,
+            **overrides,
+        }
+        return self.client.post(reverse('typing_result_save'), data)
+
+    def owned_keyboard(self):
+        return Keyboard.objects.get(stock=prebuilt_in_inventory(self.user))
+
+    def test_saves_result_for_owned_board(self):
+        keyboard = self.owned_keyboard()
+        response = self.post_result(keyboard=keyboard.pk)
+
+        self.assertEqual(response.status_code, 200)
+        result = TypingResult.objects.get(user=self.user)
+        self.assertEqual(result.keyboard, keyboard)
+        self.assertEqual(result.word_count, const.TYPING_RACE_WORDS)
+        self.assertAlmostEqual(result.wpm, 60)
+        self.assertAlmostEqual(result.accuracy, 100 * 150 / 153)
+        self.assertContains(response, 'All boards')
+        self.assertContains(response, 'Keychron Q1')
+
+    def test_saves_each_race_length(self):
+        for count in const.TYPING_RACE_WORD_CHOICES:
+            with self.subTest(count):
+                self.assertEqual(self.post_result(word_count=count).status_code, 200)
+        saved = TypingResult.objects.order_by('pk').values_list('word_count', flat=True)
+        self.assertEqual(tuple(saved), const.TYPING_RACE_WORD_CHOICES)
+
+    def test_race_length_buttons(self):
+        response = self.client.get(reverse('index'))
+        for count in const.TYPING_RACE_WORD_CHOICES:
+            self.assertContains(response, f'data-race-length="{count}"')
+
+    def test_touch_note_only_on_dashboard(self):
+        note = 'Visit the site on a device with a physical keyboard'
+        self.assertContains(self.client.get(reverse('index')), note)
+        self.client.logout()
+        self.assertNotContains(self.client.get(reverse('index')), note)
+
+    def test_saves_result_without_board(self):
+        response = self.post_result()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(TypingResult.objects.get(user=self.user).keyboard)
+        self.assertContains(response, 'All boards')
+
+    def test_rejects_board_user_does_not_own(self):
+        other_keyboard = Keyboard.objects.get(stock=prebuilt_in_inventory(self.other))
+        response = self.post_result(keyboard=other_keyboard.pk)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(TypingResult.objects.exists())
+
+    def test_rejects_impossible_results(self):
+        for overrides in (
+            {'duration_ms': 0},
+            {'characters': 0},
+            {'mistakes': -1},
+            {'characters': 1000, 'duration_ms': 1000},
+            {'word_count': 30},
+            {'word_count': ''},
+        ):
+            with self.subTest(overrides):
+                self.assertEqual(self.post_result(**overrides).status_code, 400)
+        self.assertFalse(TypingResult.objects.exists())
+
+    def test_get_not_allowed(self):
+        response = self.client.get(reverse('typing_result_save'))
+        self.assertEqual(response.status_code, 405)
+
+    def test_anonymous_cannot_save(self):
+        self.client.logout()
+        response = self.post_result()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(TypingResult.objects.exists())
+
+    def test_anonymous_landing_page_has_no_race(self):
+        self.client.logout()
+        response = self.client.get(reverse('index'))
+
+        self.assertNotContains(response, 'data-typing-race')
+        self.assertNotContains(response, 'typing_race.js')
+
+    def test_dashboard_lists_boards_and_preselects_last_raced(self):
+        first = self.owned_keyboard()
+        custom_keyboard(self.user)
+        self.post_result(keyboard=first.pk)
+        response = self.client.get(reverse('index'))
+
+        self.assertContains(response, 'data-save-url')
+        self.assertIn(first.pk, response.context['race_boards'])
+        self.assertEqual(response.context['race_selected_board'], first.pk)
+
+    def test_history_tracks_each_board_and_overall(self):
+        keyboard = self.owned_keyboard()
+        for _ in range(6):
+            self.post_result(keyboard=keyboard.pk, duration_ms=60_000)
+        self.post_result(keyboard=keyboard.pk, duration_ms=30_000)
+        self.post_result()
+        TypingResult.objects.create(
+            user=self.other, word_count=25, characters=500, duration_ms=10_000
+        )
+        rows = self.client.get(reverse('index')).context['race_history']
+
+        self.assertEqual(
+            [(row['label'], row['races']) for row in rows],
+            [('All boards', 8), ('Keychron Q1', 7)],
+        )
+        self.assertAlmostEqual(rows[1]['best_wpm'], 60)
+        self.assertAlmostEqual(rows[1]['recent_wpm'], 36)
+
+    def test_result_survives_board_removal(self):
+        keyboard = self.owned_keyboard()
+        self.post_result(keyboard=keyboard.pk)
+        Inventory.objects.filter(keyboard=keyboard).delete()
+        keyboard.delete()
+
+        self.assertIsNone(TypingResult.objects.get(user=self.user).keyboard)
+        rows = self.client.get(reverse('index')).context['race_history']
+        self.assertEqual([row['label'] for row in rows], ['All boards'])
+
+    def test_blank_kit_name_gets_fallback(self):
+        custom_keyboard(self.user, kit=custom_kit_wrapper(brand=None, name=None))
+        boards = self.client.get(reverse('index')).context['race_boards']
+
+        self.assertEqual(list(boards.values()), ['Untitled keyboard'])
+
+    def test_sparkline_keeps_small_changes_flat(self):
+        self.post_result(duration_ms=30_000)
+        self.post_result(duration_ms=29_950)
+        rows = self.client.get(reverse('index')).context['race_history']
+        first, second = rows[0]['sparkline']['points']
+
+        self.assertLess(abs(first['y'] - second['y']), 1)

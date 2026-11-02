@@ -44,6 +44,7 @@ from .models import (
     StockStabilizer,
     StockSwitch,
     Switch,
+    TypingResult,
 )
 from .utils import is_id
 
@@ -846,7 +847,8 @@ class KeyboardManager(UserScoped):
 
     def dashboard(self):
         counts = self.inventory_counts()
-        keyboards = [inv.obj for inv in self.owned_keyboards().order_by('-pk')]
+        owned = list(self.owned_keyboards().order_by('-pk'))
+        keyboards = [inv.obj for inv in owned]
 
         return {
             **counts,
@@ -855,6 +857,7 @@ class KeyboardManager(UserScoped):
                 board_switch_count(kb) for kb in keyboards if kb.switch
             ),
             'recent_keyboards': [RowBuilder.keyboard_row(kb) for kb in keyboards[:5]],
+            'owned_keyboards': owned,
         }
 
     # for the "which do you still have" checklist
@@ -984,6 +987,98 @@ class KeyboardManager(UserScoped):
                 keep=submission.removal[part_type] != 'delete',
                 quantity=quantity,
             )
+
+
+def typing_sparkline(results):
+    width, height, inset = 120, 32, 4
+    values = [result.wpm for result in results]
+    low, high = min(values), max(values)
+    wpm_range = max(high - low, const.TYPING_SPARKLINE_MIN_WPM_RANGE)
+    bottom = (low + high - wpm_range) / 2
+    x_step = (width - 2 * inset) / max(len(values) - 1, 1)
+    y_step = (height - 2 * inset) / wpm_range
+    points = [
+        {
+            'x': round(inset + index * x_step, 1),
+            'y': round(height - inset - (value - bottom) * y_step, 1),
+            'label': f'{value:.0f} WPM',
+        }
+        for index, value in enumerate(values)
+    ]
+    return {
+        'width': width,
+        'height': height,
+        'points': points,
+        'line': ' '.join(f'{point["x"]},{point["y"]}' for point in points),
+        'last': points[-1],
+    }
+
+
+class TypingManager(UserScoped):
+    @staticmethod
+    def board_names(owned):
+        names = {}
+        for inv in owned:
+            kit = inv.obj.kit
+            obj = part_obj(kit) if kit else None
+            name = ' '.join(filter(None, (obj.brand, obj.name))) if obj else ''
+            names.setdefault(inv.keyboard_id, name or 'Untitled keyboard')
+        return names
+
+    @staticmethod
+    def summary(label, results):
+        recent = results[-const.TYPING_RECENT_RACES :]
+        recent_wpm = sum(result.wpm for result in recent) / len(recent)
+        return {
+            'label': label,
+            'races': len(results),
+            'best_wpm': max(result.wpm for result in results),
+            'recent_wpm': recent_wpm,
+            'recent_accuracy': sum(result.accuracy for result in recent) / len(recent),
+            'sparkline': typing_sparkline(results[-const.TYPING_SPARKLINE_RACES :]),
+        }
+
+    def results(self):
+        return list(
+            TypingResult.objects.filter(user=self.user).order_by('created_at', 'pk')
+        )
+
+    def history(self, board_names, results):
+        if not results:
+            return []
+        rows = [self.summary('All boards', results)]
+        for keyboard_id, name in board_names.items():
+            board_results = [r for r in results if r.keyboard_id == keyboard_id]
+            if board_results:
+                rows.append(self.summary(name, board_results))
+        return rows
+
+    def race_context(self, owned):
+        names = self.board_names(owned)
+        results = self.results()
+        return {
+            'race_boards': names,
+            'race_selected_board': results[-1].keyboard_id if results else None,
+            'race_history': self.history(names, results),
+        }
+
+    def record(self, *, keyboard_id, word_count, characters, mistakes, duration_ms):
+        owned = KeyboardManager(self.user).owned_keyboards()
+        if keyboard_id and not owned.filter(keyboard_id=keyboard_id).exists():
+            return False
+        TypingResult.objects.create(
+            user=self.user,
+            keyboard_id=keyboard_id,
+            word_count=word_count,
+            characters=characters,
+            mistakes=mistakes,
+            duration_ms=duration_ms,
+        )
+        return True
+
+    def history_context(self):
+        owned = KeyboardManager(self.user).owned_keyboards().order_by('-pk')
+        return {'race_history': self.history(self.board_names(owned), self.results())}
 
 
 class CatalogManager(UserScoped):

@@ -1,0 +1,43 @@
+{% load static %}
+<div class="mt-4 card" data-typing-race data-word-count="{{ race_words }}" data-words="{% static 'words/words.txt' %}" data-save-url="{% url 'typing_result_save' %}" data-csrf="{{ csrf_token }}">
+    <header class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-semibold">WPM test :)</h2>
+        <div class="flex flex-wrap items-center gap-2">
+            <select class="select w-auto max-w-56 h-8 text-sm" data-race-board aria-label="Keyboard you're typing on">
+                <option value="">No board selected</option>
+                {% for id, name in race_boards.items %}
+                <option value="{{ id }}"{% if id == race_selected_board %} selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            <div class="flex items-center gap-1" role="group" aria-label="Words in the race">
+                {% for count in race_word_choices %}
+                <button type="button" class="btn" data-variant="{% if count == race_words %}secondary{% else %}ghost{% endif %}" data-size="sm" data-race-length="{{ count }}" aria-pressed="{% if count == race_words %}true{% else %}false{% endif %}">{{ count }}</button>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn" data-variant="ghost" data-size="sm" data-race-restart><i class="fas fa-rotate-right me-1"></i>New race</button>
+        </div>
+    </header>
+    <section class="flex flex-col gap-4">
+        <div class="race-track" data-race-track>
+            <div class="race-finish"></div>
+            <div class="race-runner" data-race-runner aria-hidden="true"></div>
+        </div>
+        <div class="race-text font-mono" data-race-text>
+            <div class="race-words" data-race-words aria-hidden="true"></div>
+            <input type="text" class="race-text-input" data-race-input aria-label="Type the words shown" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <div class="race-prompt font-sans" data-race-prompt>Click here to start typing</div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-sm text-muted-foreground" role="status">
+            <div class="flex flex-wrap gap-x-4 tabular-nums">
+                <span><span class="font-semibold text-foreground" data-race-wpm>0</span> WPM</span>
+                <span><span class="font-semibold text-foreground" data-race-accuracy>100</span>% accuracy</span>
+                <span><span class="font-semibold text-foreground" data-race-time>0.0</span>s</span>
+                <span>word <span class="font-semibold text-foreground" data-race-word>0</span>/<span data-race-total>{{ race_words }}</span></span>
+            </div>
+            <span data-race-status></span>
+        </div>
+        <div id="typing-history" data-race-history>
+            {% include 'partials/components/typing_history.html' %}
+        </div>
+    </section>
+</div>

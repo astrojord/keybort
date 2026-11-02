@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
 {% block content %}
@@ -10,6 +11,8 @@
     · <a href="{% url 'inventory_parts' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold">{{ part_entries }} part{{ part_entries|pluralize }}</a> ({{ part_units }} item{{ part_units|pluralize }})
     · <a href="{% url 'inventory_parts' %}?type=switch" class="hover:text-foreground hover:underline underline-offset-4 font-bold">{{ switches_loose }} loose switch{{ switches_loose|pluralize:"es" }}</a> ({{ switches_on_boards }} on boards)
 </p>
+
+<p class="race-touch-note mt-2 text-muted-foreground text-sm">Hey! Visit the site on a device with a physical keyboard to test your WPM.</p>
 
 <div class="mt-4 grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-4">
     {% for action in quick_actions %}
@@ -24,6 +27,8 @@
     </a>
     {% endfor %}
 </div>
+
+{% include 'partials/components/typing_race.html' %}
 
 <div class="mt-4 card">
     <header class="flex items-center justify-between">
@@ -69,7 +74,7 @@
 </div>
 {% else %}
 <div class="mx-auto max-w-2xl py-12 text-center">
-    <span class="badge size-12 aspect-square text-xl"><i class="fa fa-keyboard"></i></span>
+    <img src="{% static 'logos/keybort_icon.png' %}" alt="" width="64" height="64" class="mx-auto size-16 [image-rendering:pixelated]">
     <h1 class="mt-4 text-3xl font-semibold"><span class="text-brand">Keybort</span></h1>
     <p class="mt-2 text-muted-foreground">
         Track your mechanical keyboard collection and parts inventory.<br>Input your own parts or pick and choose from prebuilt and stock catalogs.
@@ -82,3 +87,9 @@
 {% endif %}
 
 {% endblock content %}
+
+{% block page_js %}
+{% if request.user.is_authenticated %}
+<script src="{% static 'typing_race.js' %}"></script>
+{% endif %}
+{% endblock page_js %}

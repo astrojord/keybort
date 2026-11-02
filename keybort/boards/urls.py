@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('typing/results', views.save_typing_result, name='typing_result_save'),
     path('inventory/', views.inventory_keyboards),
     path('inventory/keyboards', views.inventory_keyboards, name='inventory_keyboards'),
     path('inventory/keyboards/edit', views.edit_keyboard, name='keyboard_edit'),
