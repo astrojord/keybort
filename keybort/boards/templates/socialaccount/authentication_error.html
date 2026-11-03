@@ -1,0 +1,15 @@
+{% extends "socialaccount/base_entrance.html" %}
+{% load i18n %}
+{% load allauth %}
+{% block page_title %}
+    {% trans "Third-Party Login Failure" %}
+{% endblock page_title %}
+{% block head_title %}
+    {% trans "Third-Party Login Failure" %}
+{% endblock head_title %}
+{% block content %}
+    {% url 'account_login' as login_url %}
+    {% element p %}
+        {% blocktranslate %}An error occurred while attempting to sign in via your third-party account. Please <a href="{{ login_url }}">try again</a>.{% endblocktranslate %}
+    {% endelement %}
+{% endblock content %}

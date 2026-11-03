@@ -40,7 +40,7 @@ Most helper classes here are supposed to be instantiated once per request, ie `S
     - `can_delete_stock_data`
 
 #### Auth
-Handed off to django-allauth. Social account integration will be added in the future.
+Handed off to django-allauth, including Google and GitHub sign-in through `allauth.socialaccount`. Provider credentials come from the environment and `SOCIALACCOUNT_PROVIDERS` only includes providers with both values set, so an unconfigured provider has no sign-in button. There are no `SocialApp` rows to manage in admin.
 
 #### Tests
 Tests are unified in `keybort/tests/` rather than in the usual Django `tests.py` file per app. Shared factories like `make_user` and `stock_kit` are in `tests/base.py`. Test run info is in the main README.

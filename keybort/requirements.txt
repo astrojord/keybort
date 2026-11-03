@@ -10,34 +10,54 @@ asgiref==3.11.1
     #   django-allauth
 build==1.5.0
     # via pip-tools
+certifi==2026.10.23
+    # via requests
+cffi==2.1.1
+    # via cryptography
+charset-normalizer==3.5.2
+    # via requests
 click==8.4.2
     # via pip-tools
 coverage==7.17.0
     # via -r requirements.in
+cryptography==50.0.2
+    # via pyjwt
 django==6.0.6
     # via
     #   -r requirements.in
     #   django-allauth
-django-allauth==65.18.0
+django-allauth[socialaccount]==65.18.0
     # via -r requirements.in
 gunicorn==26.2.0
     # via -r requirements.in
+idna==3.20
+    # via requests
+oauthlib==3.3.1
+    # via django-allauth
 packaging==26.2
     # via
     #   build
     #   wheel
-pip-tools==7.5.3
+pip-tools==7.6.2
     # via -r requirements.in
 psycopg2-binary==2.9.12
     # via -r requirements.in
+pycparser==3.12
+    # via cffi
+pyjwt[crypto]==2.15.1
+    # via django-allauth
 pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
+requests==2.34.2
+    # via django-allauth
 ruff==0.17.1
     # via -r requirements.in
 sqlparse==0.5.5
     # via django
+urllib3==2.8.0
+    # via requests
 wheel==0.47.0
     # via pip-tools
 

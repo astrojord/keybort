@@ -53,6 +53,9 @@ INSTALLED_APPS = [
     'boards.apps.BoardsConfig',
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.google',
 ]
 
 MIDDLEWARE = [
@@ -160,6 +163,18 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_CONFIRM_EMAIL_ON_GET = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    provider: {
+        'APP': {
+            'client_id': os.environ[f'{provider.upper()}_CLIENT_ID'],
+            'secret': os.environ[f'{provider.upper()}_CLIENT_SECRET'],
+        }
+    }
+    for provider in ('github', 'google')
+    if os.environ.get(f'{provider.upper()}_CLIENT_ID')
+    and os.environ.get(f'{provider.upper()}_CLIENT_SECRET')
+}
 
 EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend'
