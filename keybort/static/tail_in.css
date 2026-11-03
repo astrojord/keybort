@@ -17,6 +17,12 @@
     display: none;
 }
 
+.sidebar nav > section li > :is(a, button, details > summary) > i {
+    flex-shrink: 0;
+    width: 1.25em;
+    text-align: center;
+}
+
 tr:target {
     animation: row-highlight 2s ease-out;
     scroll-margin-top: 4rem;
