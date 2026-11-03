@@ -346,9 +346,9 @@ class CollectionStatsTests(UserTestCase):
             for item in stats['stats_breakdowns']
         }
 
-        self.assertEqual(leaders['Most used switch']['label'], 'Gateron Yellow')
-        self.assertEqual(leaders['Most used switch']['count'], 2)
-        self.assertEqual(leaders['Most used keycap brand']['count'], 2)
+        self.assertEqual(leaders['Top switch']['label'], 'Gateron Yellow')
+        self.assertEqual(leaders['Top switch']['count'], 2)
+        self.assertEqual(leaders['Top keycap brand']['count'], 2)
         self.assertEqual(breakdowns['Layout'][0][1], 2)
         self.assertEqual(breakdowns['Layout'][1], ('Not set', 1))
         self.assertEqual(breakdowns['Switch type'], [('Linear', 2), ('Not set', 1)])
