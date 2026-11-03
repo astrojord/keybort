@@ -1,0 +1,81 @@
+{% extends "base/base.html" %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+<h1 class="text-2xl text-brand font-semibold">Stats</h1>
+
+{% if stats_keyboard_count %}
+<p class="mt-1 text-muted-foreground text-sm">Based on the {{ stats_keyboard_count }} keyboard{{ stats_keyboard_count|pluralize }} in your inventory.</p>
+
+<div class="mt-4 grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+    {% for stat in stats_leaders %}
+    <div class="card py-4">
+        <section>
+            <h2 class="text-muted-foreground text-sm">{{ stat.label }}</h2>
+            {% if stat.leader %}
+            <p class="mt-1 text-lg font-semibold break-words">{{ stat.leader.label }}</p>
+            <p class="text-muted-foreground text-sm">{{ stat.leader.count }} board{{ stat.leader.count|pluralize }}{% if stat.leader.tied %} · tied with {{ stat.leader.tied }} more{% endif %}</p>
+            {% else %}
+            <p class="mt-1 text-lg font-semibold">—</p>
+            <p class="text-muted-foreground text-sm">Not set on any board</p>
+            {% endif %}
+        </section>
+    </div>
+    {% endfor %}
+    <div class="card py-4">
+        <section>
+            <h2 class="text-muted-foreground text-sm">Switches owned</h2>
+            <p class="mt-1 text-lg font-semibold tabular-nums">{{ switches_total }}</p>
+            <p class="text-muted-foreground text-sm tabular-nums">{{ switches_on_boards }} on boards · {{ switches_loose }} loose</p>
+        </section>
+    </div>
+</div>
+
+<div class="mt-4 grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+    {% for breakdown in stats_breakdowns %}
+    <div class="card">
+        <header>
+            <h2 class="font-semibold">{{ breakdown.title }}</h2>
+        </header>
+        <section>
+            <ul class="flex flex-col gap-3">
+                {% for row in breakdown.rows %}
+                <li title="{{ row.label }}: {{ row.count }} of {{ breakdown.total }} board{{ breakdown.total|pluralize }} ({{ row.percent }}%)">
+                    <div class="flex items-baseline justify-between gap-4 text-sm">
+                        <span class="min-w-0 break-words{% if row.muted %} text-muted-foreground{% endif %}">{{ row.label }}</span>
+                        <span class="font-medium tabular-nums">{{ row.count }}</span>
+                    </div>
+                    <div class="mt-1 h-2 rounded-r bg-muted">
+                        <div class="h-full rounded-r {% if row.muted %}bg-muted-foreground/50{% else %}bg-brand{% endif %}" style="width: {{ row.percent }}%"></div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="mt-4 card">
+    <div class="empty">
+        <header>
+            <h3>No keyboards yet</h3>
+            <p>Collection stats show up once you've added a keyboard.</p>
+        </header>
+        <section>
+            <a href="{% url 'inventory_keyboards' %}?add=custom" class="btn"><i class="fas fa-plus me-1"></i>Add keyboard</a>
+        </section>
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-4 card">
+    <header class="flex items-center justify-between">
+        <h2 class="font-semibold">WPM testing records</h2>
+        <a href="{% url 'index' %}" class="btn" data-variant="ghost" data-size="sm">Race</a>
+    </header>
+    <section>
+        {% include 'partials/components/typing_history.html' %}
+    </section>
+</div>
+{% endblock content %}

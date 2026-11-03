@@ -27,13 +27,13 @@ Most helper classes here are supposed to be instantiated once per request, ie `S
 - `ModalForms` - builds context dicts for the add/edit modals
 - `PartChoice` / `KeyboardSubmission` - dataclasses for user responses in add/edit modals
 - `PartManager` - standalone parts in a given user's inventory
-- `KeyboardManager` - a given user's keyboards and dashboard numbers
+- `KeyboardManager` - a given user's keyboards, dashboard numbers, and collection stats
 - `TypingManager` - saves typing race results + builds the history/sparklines
 - `CatalogManager` - CRUD operations on stock part data
 
 #### Access
 - Public: home, the stock catalog pages, and `get_part_detail` (404s on custom parts you don't own)
-- Login required: anything under `inventory/`, `account`, typing results, and adding stock items to your inventory
+- Login required: anything under `inventory/`, `account`, `stats`, typing results, and adding stock items to your inventory
 - Stock data permissions, defined on the empty `BoardsPermissions` model:
     - `can_upload_stock_data` - add stock items, CSV upload, promote a custom part to stock
     - `can_edit_stock_data`

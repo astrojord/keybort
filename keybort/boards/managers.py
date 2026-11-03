@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, NamedTuple
@@ -127,6 +128,46 @@ def board_switch_count(kb, fallback=1):
 
 def board_quantity(kb, part_type):
     return board_switch_count(kb) if part_type == 'switch' else 1
+
+
+def stat_rows(values):
+    labels = {}
+    counts = Counter()
+    for value in values:
+        value = (value or '').strip()
+        if value:
+            key = value.casefold()
+            labels.setdefault(key, value)
+            counts[key] += 1
+    return sorted(
+        ({'label': labels[key], 'count': count} for key, count in counts.items()),
+        key=lambda row: (-row['count'], row['label'].casefold()),
+    )
+
+
+def stat_leader(values):
+    rows = stat_rows(values)
+    if not rows:
+        return None
+    return {
+        **rows[0],
+        'tied': sum(row['count'] == rows[0]['count'] for row in rows[1:]),
+    }
+
+
+def stat_breakdown(title, values):
+    values = list(values)
+    all_rows = stat_rows(values)
+    rows = all_rows[: const.STATS_BREAKDOWN_ROWS]
+    other = sum(row['count'] for row in all_rows[const.STATS_BREAKDOWN_ROWS :])
+    not_set = len(values) - sum(row['count'] for row in all_rows)
+    if other:
+        rows.append({'label': 'Other', 'count': other, 'muted': True})
+    if not_set:
+        rows.append({'label': 'Not set', 'count': not_set, 'muted': True})
+    for row in rows:
+        row['percent'] = round(100 * row['count'] / len(values))
+    return {'title': title, 'rows': rows, 'total': len(values)}
 
 
 def parse_quantity(value):
@@ -858,6 +899,60 @@ class KeyboardManager(UserScoped):
             ),
             'recent_keyboards': [RowBuilder.keyboard_row(kb) for kb in keyboards[:5]],
             'owned_keyboards': owned,
+        }
+
+    def collection_stats(self):
+        owned = list(self.owned_keyboards().order_by('-pk'))
+        keyboards = [inv.obj for inv in owned]
+
+        def parts(part_type):
+            for kb in keyboards:
+                part = getattr(kb, part_type)
+                yield part_obj(part) if part else None
+
+        def field(part_type, name):
+            return [getattr(obj, name, None) for obj in parts(part_type)]
+
+        switch_names = [
+            ' '.join(filter(None, (obj.brand, obj.name))) if obj else None
+            for obj in parts('switch')
+        ]
+        switch_types = [
+            obj.get_category_display() if obj else None for obj in parts('switch')
+        ]
+        switches_on_boards = sum(
+            board_switch_count(kb) for kb in keyboards if kb.switch
+        )
+        switches_loose = self.inventory_counts()['switches_loose']
+
+        return {
+            'owned_keyboards': owned,
+            'stats_keyboard_count': len(keyboards),
+            'stats_leaders': [
+                {
+                    'label': 'Top switch',
+                    'leader': stat_leader(switch_names),
+                },
+                {
+                    'label': 'Top keycap brand',
+                    'leader': stat_leader(field('keycaps', 'brand')),
+                },
+                {
+                    'label': 'Top kit brand',
+                    'leader': stat_leader(field('kit', 'brand')),
+                },
+            ],
+            'switches_total': switches_on_boards + switches_loose,
+            'switches_on_boards': switches_on_boards,
+            'switches_loose': switches_loose,
+            'stats_breakdowns': [
+                stat_breakdown('Layout', field('kit', 'layout')),
+                stat_breakdown('Size', field('kit', 'size')),
+                stat_breakdown('Switch type', switch_types),
+                stat_breakdown('Switches', switch_names),
+                stat_breakdown('Keycap brands', field('keycaps', 'brand')),
+                stat_breakdown('Mount type', field('kit', 'mount_type')),
+            ],
         }
 
     # for the "which do you still have" checklist

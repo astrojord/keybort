@@ -72,6 +72,17 @@ def index(request):
 
 
 @login_required
+def stats(request):
+    context = {'page_title': 'Stats'}
+    collection = KeyboardManager(request.user).collection_stats()
+    context.update(collection)
+    context.update(
+        TypingManager(request.user).race_context(collection['owned_keyboards'])
+    )
+    return render(request, 'pages/stats.html', context)
+
+
+@login_required
 @require_POST
 def save_typing_result(request):
     form = TypingResultForm(request.POST)

@@ -174,6 +174,8 @@ PART_SOURCE_DEFAULTS = {
     'custom': ('Custom', 'Enter the details yourself.'),
 }
 
+STATS_BREAKDOWN_ROWS = 5
+
 TYPING_RACE_WORDS = 25
 TYPING_RACE_WORD_CHOICES = (25, 50, 100, 250)
 TYPING_CHARS_PER_WORD = 5

@@ -20,7 +20,6 @@ Test with the Django runner, `just test` or `docker compose exec app python mana
 - [ ] UI/UX improvements - brainstorm
   - [ ] Mobile tables are way too long - switch to some sort of stacked card/collapsible approach perhaps
   - [ ] Overall, just needs more juice/visual interest
-- [ ] Collection stats type stuff on dashboard - layout breakdown, most used switch, most used keycap brand, etc
 - [ ] allauth social account stuff
 - [ ] Set up [Resend](https://resend.com/home) for email stuff on the deployed version
 

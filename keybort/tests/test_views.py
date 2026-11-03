@@ -55,6 +55,7 @@ class LoginRequiredTests(TestCase):
             'part_delete',
             'part_quantity',
             'account',
+            'stats',
         ):
             with self.subTest(name=name):
                 response = self.client.get(reverse(name))
@@ -556,6 +557,36 @@ class DashboardTests(ClientTestCase):
         self.assertEqual(response.context['switches_loose'], 0)
         self.assertEqual(response.context['recent_keyboards'], [])
         self.assertContains(response, 'No keyboards yet')
+
+
+class StatsPageTests(ClientTestCase):
+    def test_empty_inventory(self):
+        response = self.client.get(reverse('stats'))
+        self.assertContains(response, 'No keyboards yet')
+        self.assertContains(response, 'Finish a race to start tracking your speed.')
+
+    def test_only_counts_own_boards(self):
+        custom_keyboard(self.user)
+        custom_keyboard(
+            self.other,
+            kit=custom_kit_wrapper(brand='Other', name='Board'),
+        )
+        response = self.client.get(reverse('stats'))
+        self.assertEqual(response.context['stats_keyboard_count'], 1)
+        self.assertEqual(
+            response.context['stats_leaders'][2]['leader']['label'], 'KBDfans'
+        )
+        self.assertNotContains(response, 'Other Board')
+
+    def test_shows_typing_history(self):
+        custom_keyboard(self.user)
+        TypingResult.objects.create(
+            user=self.user, word_count=25, characters=150, duration_ms=30_000
+        )
+        response = self.client.get(reverse('stats'))
+        self.assertEqual(response.context['race_history'][0]['label'], 'All boards')
+        self.assertContains(response, 'All boards')
+        self.assertNotContains(response, 'typing_race.js')
 
 
 class AccountViewTests(ClientTestCase):

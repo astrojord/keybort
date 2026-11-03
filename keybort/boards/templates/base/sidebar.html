@@ -31,6 +31,12 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{% url 'stats' %}"{% if current == 'stats' %} aria-current="page"{% endif %}>
+                            <i class="fas fa-chart-simple"></i>
+                            <span>Stats</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 

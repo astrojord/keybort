@@ -9,6 +9,8 @@ from boards.managers import (
     parse_quantity,
     part_in_use,
     part_name,
+    stat_breakdown,
+    stat_leader,
 )
 from boards.models import (
     CustomKeyboard,
@@ -233,6 +235,12 @@ class KeyboardQueryTests(UserTestCase):
         self.assertEqual(stats['switches_on_boards'], 82 + 1 + 82)
         self.assertEqual(len(stats['recent_keyboards']), 3)
 
+    def test_collection_stats_use_two_queries(self):
+        with self.assertNumQueries(2):
+            stats = self.kb_manager.collection_stats()
+        self.assertEqual(stats['stats_keyboard_count'], 3)
+        self.assertEqual(stats['switches_on_boards'], 82 + 1 + 82)
+
     def test_race_context_adds_one_query(self):
         owned = list(self.kb_manager.owned_keyboards())
         raced = owned[0].keyboard_id
@@ -280,6 +288,80 @@ class KeyboardQueryTests(UserTestCase):
                 'switches_loose': 0,
             },
         )
+
+
+class CollectionStatsTests(UserTestCase):
+    def test_leader_merges_case_and_ignores_blanks(self):
+        leader = stat_leader(['GMK', 'gmk ', 'ePBT', None, '', '  '])
+        self.assertEqual(leader, {'label': 'GMK', 'count': 2, 'tied': 0})
+
+    def test_leader_reports_ties(self):
+        leader = stat_leader(['b', 'a', 'c', 'c', 'a'])
+        self.assertEqual(leader, {'label': 'a', 'count': 2, 'tied': 1})
+
+    def test_leader_without_values(self):
+        self.assertIsNone(stat_leader([None, '']))
+
+    def test_breakdown_folds_other_and_not_set(self):
+        values = ['a', 'a', 'b', 'c', 'd', 'e', 'f', 'g', None, None]
+        breakdown = stat_breakdown('Things', values)
+        self.assertEqual(
+            [(row['label'], row['count']) for row in breakdown['rows']],
+            [
+                ('a', 2),
+                ('b', 1),
+                ('c', 1),
+                ('d', 1),
+                ('e', 1),
+                ('Other', 2),
+                ('Not set', 2),
+            ],
+        )
+        self.assertEqual(breakdown['rows'][0]['percent'], 20)
+        self.assertEqual(breakdown['total'], 10)
+
+    def test_collection_stats_read_custom_and_stock_boards(self):
+        prebuilt_in_inventory(
+            self.user,
+            stock_keyboard(
+                kit=stock_kit(layout='QWERTY', size='75'),
+                keycaps=stock_keycaps(brand='GMK'),
+            ),
+        )
+        custom_keyboard(
+            self.user,
+            kit=custom_kit_wrapper(layout='qwerty'),
+            switch=Switch.objects.create(stock=stock_switch()),
+            keycaps=Keycaps.objects.create(stock=stock_keycaps(brand='gmk')),
+        )
+        custom_keyboard(self.user)
+        self.part_manager.add_to_parts(
+            'switch', Switch.objects.create(stock=stock_switch()), quantity=10
+        )
+
+        stats = self.kb_manager.collection_stats()
+        leaders = {stat['label']: stat['leader'] for stat in stats['stats_leaders']}
+        breakdowns = {
+            item['title']: [(row['label'], row['count']) for row in item['rows']]
+            for item in stats['stats_breakdowns']
+        }
+
+        self.assertEqual(leaders['Most used switch']['label'], 'Gateron Yellow')
+        self.assertEqual(leaders['Most used switch']['count'], 2)
+        self.assertEqual(leaders['Most used keycap brand']['count'], 2)
+        self.assertEqual(breakdowns['Layout'][0][1], 2)
+        self.assertEqual(breakdowns['Layout'][1], ('Not set', 1))
+        self.assertEqual(breakdowns['Switch type'], [('Linear', 2), ('Not set', 1)])
+        self.assertEqual(stats['switches_loose'], 10)
+        self.assertEqual(
+            stats['switches_total'],
+            stats['switches_on_boards'] + stats['switches_loose'],
+        )
+
+    def test_collection_stats_without_keyboards(self):
+        stats = self.kb_manager.collection_stats()
+        self.assertEqual(stats['stats_keyboard_count'], 0)
+        self.assertIsNone(stats['stats_leaders'][0]['leader'])
 
 
 class SwitchCountTests(UserTestCase):
