@@ -16,7 +16,8 @@ Fully served by Django's template engine, with HTMX for anything that shouldn't 
 #### HTMX patterns
 - Modals - a button does `hx-get` with `hx-target="#page-dialog"`, and the `<dialog>` in `partials/components/page_dialog.html` opens itself after the swap
 - Saving a modal - On success, return the relevant row partial and `htmx_swap()` retargets the response to the relevant table, with a `close-dialog` trigger to shut the dialog. On error, re-renders the modal in place with error display
-- Bulk delete - `bulk_deleted()` returns an empty response with a `rows-deleted` trigger, and `bulk_select.js` removes the rows
+- Bulk delete - `bulk_deleted()` returns an empty response with a `rows-deleted` trigger, and `bulk_select.js` fades out and removes the rows (`removeRow()` in `tables.js`)
+- Row flash - table rows swapped in by a request from inside a dialog or from an element with `data-flash-swap` get `data-flash`, highlighted quickly red, and scroll into view
 - Toasts - views just call Django's `messages.success()` etc, which get picked up by `HtmxMessagesMiddleware` into an `HX-Trigger` header and shown by `toasts.js`
 - CSRF - set once for all HTMX requests through `hx-headers` on `<body>`
 

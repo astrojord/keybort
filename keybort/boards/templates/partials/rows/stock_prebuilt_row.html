@@ -29,6 +29,7 @@
             hx-post="{% url 'stock_prebuilt_collect' %}?id={{kb.id}}"
             hx-target="closest tr"
             hx-swap="outerHTML"
+            data-flash-swap
         >
             <i class="fas fa-plus"></i>Add
         </button>

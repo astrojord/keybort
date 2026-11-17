@@ -33,7 +33,10 @@ window.initBulkSelect = ({ table, bar, url }) => {
     });
 
     document.addEventListener("rows-deleted", (event) => {
-        for (const id of event.detail.ids) document.getElementById(id)?.remove();
+        for (const id of event.detail.ids) {
+            const row = document.getElementById(id);
+            if (row) removeRow(row);
+        }
     });
     new MutationObserver(sync).observe(tbody, { childList: true, subtree: true, attributeFilter: ["hidden"] });
 

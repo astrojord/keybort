@@ -1,3 +1,39 @@
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// flash rows that come back from a dialog save/data-flash-swap and bring new into view
+(() => {
+    let flashing = false;
+    document.addEventListener("htmx:beforeSwap", (event) => {
+        const source = event.detail.requestConfig?.elt;
+        flashing = Boolean(source?.closest("dialog, [data-flash-swap]"));
+    });
+    document.addEventListener("htmx:load", (event) => {
+        const row = event.detail.elt;
+        if (!flashing || !(row instanceof HTMLTableRowElement)) return;
+        row.removeAttribute("data-flash");
+        void row.offsetWidth; // restart the animation if the same row is saved twice in a row
+        row.setAttribute("data-flash", "");
+        row.addEventListener("animationend", () => row.removeAttribute("data-flash"), { once: true });
+        row.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+    });
+    document.addEventListener("htmx:afterSettle", () => {
+        flashing = false;
+    });
+})();
+
+// fade a row out before removing it
+function removeRow(row) {
+    if (reducedMotion() || !row.animate) return row.remove();
+    row.style.pointerEvents = "none";
+    row.animate(
+        [
+            { opacity: 1, transform: "none" },
+            { opacity: 0, transform: "translateX(0.75rem)" },
+        ],
+        { duration: 200, easing: "ease-in" }
+    ).finished.then(() => row.remove(), () => row.remove());
+}
+
 function setUrlParams(params) {
     const url = new URL(location);
     for (const [key, value] of Object.entries(params)) {

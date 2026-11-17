@@ -149,6 +149,31 @@ tr:target {
     }
 }
 
+/* rows saved from a dialog (tables.js) */
+tr[data-flash] {
+    animation: row-highlight 1.6s ease-out;
+    scroll-margin-block: 4rem;
+}
+
+/* basecoat's dialog scale-in is 100ms and easy to miss; stretch it a bit with a small overshoot */
+@layer components {
+    .dialog > * {
+        transition-duration: 180ms;
+        transition-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    tr:target,
+    tr[data-flash] {
+        animation: none;
+    }
+
+    .dialog > * {
+        transition-duration: 0s;
+    }
+}
+
 .race-track {
     position: relative;
     height: 4rem;
