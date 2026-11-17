@@ -34,6 +34,7 @@ Fully served by Django's template engine, with HTMX for anything that shouldn't 
 | `filter_card.js` | Combobox filters + search on the stock pages |
 | `bulk_select.js` | Row checkboxes + bulk action bar |
 | `shortcuts.js` | Keyboard shortcuts (give an element `data-shortcut="n"` (+ optional `data-shortcut-label`), mark visible `<kbd>` hints with `data-kbd-hint` so they hide on touch devices) |
+| `count_up.js` | Bar growth animation helper |
 | `typing_race.js` | WPM test typing race thing on the dashboard |
 | `words/words.txt` | Word list for the WPM test |
 

@@ -7,9 +7,9 @@
 <h1 class="text-2xl text-brand font-semibold">Dashboard</h1>
 
 <p class="mt-1 text-muted-foreground text-sm">
-    <a href="{% url 'inventory_keyboards' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold">{{ keyboard_count }} keyboard{{ keyboard_count|pluralize }}</a> ({{ prebuilt_count }} prebuilt, {{ custom_count }} custom)
-    · <a href="{% url 'inventory_parts' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold">{{ part_entries }} part{{ part_entries|pluralize }}</a> ({{ part_units }} item{{ part_units|pluralize }})
-    · <a href="{% url 'inventory_parts' %}?type=switch" class="hover:text-foreground hover:underline underline-offset-4 font-bold">{{ switches_loose }} loose switch{{ switches_loose|pluralize:"es" }}</a> ({{ switches_on_boards }} on boards)
+    <a href="{% url 'inventory_keyboards' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ keyboard_count }}</span> keyboard{{ keyboard_count|pluralize }}</a> ({{ prebuilt_count }} prebuilt, {{ custom_count }} custom)
+    · <a href="{% url 'inventory_parts' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ part_entries }}</span> part{{ part_entries|pluralize }}</a> ({{ part_units }} item{{ part_units|pluralize }})
+    · <a href="{% url 'inventory_parts' %}?type=switch" class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ switches_loose }}</span> loose switch{{ switches_loose|pluralize:"es" }}</a> ({{ switches_on_boards }} on boards)
 </p>
 
 <p class="race-touch-note mt-2 text-muted-foreground text-sm">Hey! Visit the site on a device with a physical keyboard to test your WPM.</p>
