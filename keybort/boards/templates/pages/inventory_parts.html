@@ -8,10 +8,12 @@
         type="button"
         class="btn"
         hx-get="{% url 'part_add' %}"
+        data-shortcut="n"
+        data-shortcut-label="Add"
         hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}'
         hx-target="#page-dialog"
     >
-        <i class="fas fa-plus me-1"></i>Add
+        <i class="fas fa-plus me-1"></i>Add<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
     </button>
 </div>
 {% include "partials/components/filter_chips.html" with id_prefix="parts" noun="parts" param="type" %}

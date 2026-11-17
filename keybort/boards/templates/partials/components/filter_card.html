@@ -9,7 +9,10 @@
     <section class="grid gap-4 grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
         <div class="grid content-start gap-2">
             <label for="{{ id_prefix }}-search" class="label">Search</label>
-            <input type="search" id="{{ id_prefix }}-search" class="input" placeholder="{{ placeholder }}" value="{{ query }}" data-filter-search>
+            <div class="relative">
+                <input type="search" id="{{ id_prefix }}-search" class="peer input w-full" placeholder="{{ placeholder }}" value="{{ query }}" data-filter-search data-shortcut="/" data-shortcut-label="Search">
+                <kbd class="kbd absolute end-2 top-1/2 -translate-y-1/2 peer-focus:hidden peer-[:not(:placeholder-shown)]:hidden" data-kbd-hint>/</kbd>
+            </div>
         </div>
         {% for facet in facets %}
         {% include "partials/components/filter_combobox.html" %}

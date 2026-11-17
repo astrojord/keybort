@@ -8,6 +8,17 @@
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+@media (pointer: coarse) {
+    [data-kbd-hint] {
+        display: none !important;
+    }
+}
+
+.btn:is(:not([data-variant]), [data-variant="primary"]) .kbd {
+    background-color: color-mix(in oklab, var(--primary-foreground) 20%, transparent);
+    color: inherit;
+}
+
 .toaster .toast .toast-content section p {
     word-break: normal;
     overflow-wrap: anywhere;

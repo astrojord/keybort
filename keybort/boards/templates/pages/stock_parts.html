@@ -19,9 +19,11 @@
             type="button"
             class="btn"
             hx-get="{% url 'stock_part_add' %}?type={{ part_type }}"
+            data-shortcut="n"
+            data-shortcut-label="Add"
             hx-target="#page-dialog"
         >
-            <i class="fas fa-plus me-1"></i>Add to catalog
+            <i class="fas fa-plus me-1"></i>Add to catalog<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
         </button>
     </div>
     {% endif %}
