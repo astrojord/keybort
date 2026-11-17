@@ -29,7 +29,7 @@ Fully served by Django's template engine, with HTMX for anything that shouldn't 
 | `htmx-2.0.1.min.js` | Vendored HTMX |
 | `toasts.js` | Show toasts from Django `messages` |
 | `step_form.js` | Multi-step modal forms, call `initStepForm()` in the modal template |
-| `tables.js` | Shared table helpers + `initTableSort()` |
+| `tables.js` | Shared table helpers + `initTableSort()` + `initTableStack()` |
 | `table_filter.js` | Type chips + search on the inventory pages |
 | `filter_card.js` | Combobox filters + search on the stock pages |
 | `bulk_select.js` | Row checkboxes + bulk action bar |

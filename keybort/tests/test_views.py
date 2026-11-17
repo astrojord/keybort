@@ -294,7 +294,7 @@ class PartsPageTests(ClientTestCase):
         response = self.client.get(reverse('inventory_parts'))
         column_count = len(response.context['part_columns'])
         self.assertEqual(len(response.context['inventory'][0]['cells']), column_count)
-        self.assertContains(response, '<td data-filter-column="kit" hidden>', count=6)
+        self.assertContains(response, '<td data-secondary data-filter-column="kit" hidden>', count=6)
 
     def test_quantity_response_keeps_part_columns(self):
         inv = Inventory.objects.create(

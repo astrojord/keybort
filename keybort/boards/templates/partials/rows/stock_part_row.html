@@ -1,8 +1,8 @@
 <tr id="{{part.row_id}}"{% for key, values in part.facets.items %} data-facet-{{key}}="{{values|join:'|'}}"{% endfor %}>
-    {% if perms.boards.can_delete_stock_data %}<td><input type="checkbox" class="input" data-bulk value="{{part.id}}" aria-label="Select {{part.name}}"></td>{% endif %}
+    {% if perms.boards.can_delete_stock_data %}<td data-role="select"><input type="checkbox" class="input" data-bulk value="{{part.id}}" aria-label="Select {{part.name}}"></td>{% endif %}
     {% if user.is_authenticated %}
-    <td>
-        <div class="flex items-center gap-1">
+    <td data-role="actions">
+        <div class="flex flex-wrap items-center justify-end gap-1 md:justify-start">
         {% if perms.boards.can_edit_stock_data %}
         <button
             type="button"
@@ -34,9 +34,14 @@
         </div>
     </td>
     {% endif %}
-    <td class="font-medium" data-sort-value="{{part.name}}">{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}</td>
+    <td data-role="title" class="font-medium" data-sort-value="{{part.name}}">{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}</td>
     {% for cell in part.columns %}
-    <td>{% include "partials/components/field_cell.html" %}</td>
+    <td data-secondary>{% include "partials/components/field_cell.html" %}</td>
     {% endfor %}
-    <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{part.notes|default:''}}">{{part.notes|default:''}}</p></td>
+    <td data-secondary><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{part.notes|default:''}}">{{part.notes|default:''}}</p></td>
+    <td data-role="toggle" class="md:hidden">
+        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-row-toggle aria-expanded="false" hidden>
+            More details<span class="tabular-nums text-muted-foreground" data-row-toggle-count></span><i class="fas fa-chevron-down text-xs"></i>
+        </button>
+    </td>
 </tr>

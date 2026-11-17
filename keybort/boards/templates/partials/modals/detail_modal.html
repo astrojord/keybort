@@ -3,7 +3,7 @@
       <h2 id="page-dialog-title">{{ name }}</h2>
       <p id="page-dialog-description">{% if stock %}Stock {{ type_label|lower }}{% else %}{{ type_label }}{% endif %}</p>
     </header>
-    <section>
+    <section class="-mx-6 min-h-0 overflow-y-auto px-6">
         <table class="table">
             {% for f,v in fields.items %}
                 <tr>

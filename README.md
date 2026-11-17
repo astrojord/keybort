@@ -17,9 +17,7 @@ Track personal mechanical keyboard collection and parts inventory. Users can wri
 Test with the Django runner, `just test` or `docker compose exec app python manage.py test`. GitHub Actions runs ruff and testing with coverage output.
 
 #### To do
-- [ ] UI/UX improvements - brainstorm
-  - [ ] Mobile tables are way too long - switch to some sort of stacked card/collapsible approach perhaps
-  - [ ] Overall, just needs more juice/visual interest
+- [ ] Overall, just needs more juice/visual interest
 - [ ] allauth social account stuff
 - [ ] Set up [Resend](https://resend.com/home) for email stuff on the deployed version
 

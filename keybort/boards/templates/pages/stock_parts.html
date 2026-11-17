@@ -31,16 +31,22 @@
 <div class="w-full mt-4">
     <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
         <section>
-            <table id="table-stock" class="table">
+            <table id="table-stock" class="table" data-stack>
                 <thead>
                     <tr>
-                        {% if perms.boards.can_delete_stock_data %}<th class="w-px"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"></th>{% endif %}
+                        {% if perms.boards.can_delete_stock_data %}<th class="w-px" data-stack-toolbar><label class="flex items-center gap-2"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"><span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span></label></th>{% endif %}
                         {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
                         {% include "partials/components/sort_header.html" with key="name" label="Name" %}
                         {% for key, label in columns %}
                         {% include "partials/components/sort_header.html" %}
                         {% endfor %}
                         <th>Notes</th>
+                        <th class="md:hidden" data-stack-toolbar>
+                            <label class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                                Sort
+                                <select class="select h-8 text-sm" data-stack-sort aria-label="Sort {{ noun }}"></select>
+                            </label>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,6 +74,7 @@
         empty: document.getElementById("stock-empty"),
         noun: "{{ noun|escapejs }}",
     });
+    initTableStack(document.getElementById("table-stock"));
 </script>
 {% if perms.boards.can_delete_stock_data %}<script src="{% static 'bulk_select.js' %}"></script>
 <script>

@@ -1,6 +1,6 @@
 <tr id="{{kb.row_id}}" data-type="{% if kb.stock %}prebuilt{% else %}custom{% endif %}">
-    <td><input type="checkbox" class="input" data-bulk value="{% if kb.stock %}stock{% else %}custom{% endif %}-{{kb.id}}" aria-label="Select {{kb.kit_str|default:"keyboard"}}"></td>
-    <td>
+    <td data-role="select"><input type="checkbox" class="input" data-bulk value="{% if kb.stock %}stock{% else %}custom{% endif %}-{{kb.id}}" aria-label="Select {{kb.kit_str|default:"keyboard"}}"></td>
+    <td data-role="actions">
         <div class="flex items-center gap-1">
             <button
                 type="button"
@@ -16,11 +16,19 @@
             </button>
         </div>
     </td>
-    <td class="font-medium">{% if kb.kit_str %}{% include "partials/components/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}{% endif %}</td>
-    <td>{{kb.pcb}}</td>
-    <td>{% if kb.switches_str %}{% include "partials/components/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}{% endif %}</td>
-    <td>{% if kb.keycaps_str %}{% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_url_params %}{% endif %}</td>
-    <td>{% if kb.plate_str %}{% include "partials/components/part_link.html" with label=kb.plate_str params=kb.plate_url_params %}{% endif %}</td>
-    <td>{% if kb.stabilizer_str %}{% include "partials/components/part_link.html" with label=kb.stabilizer_str params=kb.stabilizer_url_params %}{% endif %}</td>
-    <td><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{kb.notes|default:''}}">{{kb.notes|default:''}}</p></td>
+    <td data-role="title" class="font-medium" data-sort-value="{{kb.kit_str|default:''}}">
+        {% if kb.kit_str %}{% include "partials/components/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}{% endif %}
+        <div class="md:hidden mt-1"><span class="badge" data-variant="secondary">{% if kb.stock %}Prebuilt{% else %}Custom{% endif %}</span></div>
+    </td>
+    <td data-secondary>{{kb.pcb}}</td>
+    <td data-secondary>{% if kb.switches_str %}{% include "partials/components/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{kb.switch_count}}</span>{% endif %}{% endif %}</td>
+    <td data-secondary>{% if kb.keycaps_str %}{% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_url_params %}{% endif %}</td>
+    <td data-secondary>{% if kb.plate_str %}{% include "partials/components/part_link.html" with label=kb.plate_str params=kb.plate_url_params %}{% endif %}</td>
+    <td data-secondary>{% if kb.stabilizer_str %}{% include "partials/components/part_link.html" with label=kb.stabilizer_str params=kb.stabilizer_url_params %}{% endif %}</td>
+    <td data-secondary><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{kb.notes|default:''}}">{{kb.notes|default:''}}</p></td>
+    <td data-role="toggle" class="md:hidden">
+        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-row-toggle aria-expanded="false" hidden>
+            More details<span class="tabular-nums text-muted-foreground" data-row-toggle-count></span><i class="fas fa-chevron-down text-xs"></i>
+        </button>
+    </td>
 </tr>
