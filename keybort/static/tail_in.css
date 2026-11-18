@@ -40,7 +40,7 @@
 
 /* arcade-carpet pattern (partials/components/carpet.html): fills its nearest positioned ancestor,
    which should also set isolation so the pattern sits under its content. --carpet-cut is the
-   surface behind it, used for the holes in the MX stems */
+   surface behind it, used for the MX stem cross (.stem) and logo guy eyes (.eyes) */
 :root {
     --carpet-1: #dc143c;
     --carpet-2: #0f9b8e;
@@ -68,33 +68,33 @@
     opacity: var(--carpet-strength);
 }
 
-.carpet :is(.f1, .f2, .f3, .f4) {
+.carpet :is(.fill1, .fill2, .fill3, .fill4) {
     fill: var(--carpet-color);
 }
 
-.carpet :is(.s1, .s2, .s3, .s4) {
+.carpet :is(.stroke1, .stroke2, .stroke3, .stroke4) {
     fill: none;
     stroke: var(--carpet-color);
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.carpet :is(.f1, .s1) { --carpet-color: var(--carpet-1); }
-.carpet :is(.f2, .s2) { --carpet-color: var(--carpet-2); }
-.carpet :is(.f3, .s3) { --carpet-color: var(--carpet-3); }
-.carpet :is(.f4, .s4) { --carpet-color: var(--carpet-4); }
+.carpet :is(.fill1, .stroke1) { --carpet-color: var(--carpet-1); }
+.carpet :is(.fill2, .stroke2) { --carpet-color: var(--carpet-2); }
+.carpet :is(.fill3, .stroke3) { --carpet-color: var(--carpet-3); }
+.carpet :is(.fill4, .stroke4) { --carpet-color: var(--carpet-4); }
 
-.carpet .cuts {
+.carpet .stem {
     fill: none;
     stroke: var(--carpet-cut);
     stroke-linecap: square;
 }
 
-.carpet .cut {
+.carpet .eyes {
     fill: var(--carpet-cut);
 }
 
-/* put a background on text that could be on the carpet background */
+/* put a background on text that could be on the carpet so we can still read it */
 @layer components {
     .on-carpet,
     .page-title {
