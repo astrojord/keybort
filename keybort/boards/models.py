@@ -584,6 +584,7 @@ class Profile(models.Model):
         default='smart',
     )
     keep_parts_on_delete = models.BooleanField(default=True)
+    show_carpet = models.BooleanField(default=True)
 
     def __str__(self):
         return f'{self.user.username} profile'

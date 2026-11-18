@@ -626,6 +626,39 @@ class AccountViewTests(ClientTestCase):
             Profile.objects.get(user=self.user).default_part_source, 'smart'
         )
 
+    def test_carpet_shown_by_default(self):
+        response = self.client.get(reverse('index'))
+        self.assertContains(response, 'id="carpet-main"')
+        response = self.client.get(reverse('account'))
+        self.assertContains(response, 'name="show_carpet" checked')
+
+    def test_turning_off_carpet_hides_it_everywhere(self):
+        response = self.client.post(
+            reverse('account'),
+            {'default_part_source': 'smart', 'keep_parts_on_delete': 'on'},
+            headers={'HX-Request': 'true'},
+        )
+        self.assertFalse(Profile.objects.get(user=self.user).show_carpet)
+        # the out-of-band wrapper comes back empty so the open page drops the carpet
+        self.assertContains(
+            response, 'id="page-carpet" class="contents" hx-swap-oob="true"'
+        )
+        self.assertNotContains(response, '<svg class="carpet"')
+        self.assertNotContains(self.client.get(reverse('index')), '<svg class="carpet"')
+        self.assertNotContains(
+            self.client.get(reverse('account_change_password')), '<svg class="carpet"'
+        )
+
+    def test_turning_carpet_back_on_swaps_it_in(self):
+        Profile.objects.create(user=self.user, show_carpet=False)
+        response = self.client.post(
+            reverse('account'),
+            {'default_part_source': 'smart', 'show_carpet': 'on'},
+            headers={'HX-Request': 'true'},
+        )
+        self.assertTrue(Profile.objects.get(user=self.user).show_carpet)
+        self.assertContains(response, 'id="carpet-main"')
+
 
 class AnonymousDashboardTests(TestCase):
     def test_landing_page(self):

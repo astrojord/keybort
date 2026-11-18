@@ -10,7 +10,7 @@
     {% csrf_token %}
     <header>
         <h2>Preferences</h2>
-        <p>Change how forms act when you first open them. You can still make changes after that.</p>
+        <p>Change how the site looks and how forms act when you first open them.</p>
     </header>
 
     <section class="grid gap-6">
@@ -47,9 +47,18 @@
                 <p id="keep-parts-hint">If turned on, parts start checked in the delete dialog. This makes them move to your parts inventory instead of being deleted as well.</p>
             </section>
         </div>
+
+        <div class="field" data-orientation="horizontal">
+            <input type="checkbox" id="id_show_carpet" name="show_carpet"{% if form.show_carpet.value %} checked{% endif %} aria-describedby="show-carpet-hint">
+            <section>
+                <label for="id_show_carpet">Fun background :)</label>
+                <p id="show-carpet-hint">Show the arcade carpet pattern as the background.</p>
+            </section>
+        </div>
     </section>
 
     <footer>
         <button type="submit" class="btn">Save preferences</button>
     </footer>
 </form>
+{% if carpet_oob %}{% include "partials/components/page_carpet.html" %}{% endif %}

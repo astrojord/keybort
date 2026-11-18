@@ -1,0 +1,7 @@
+{% comment %}
+wrapper for the page-wide carpet so the account preferences form can swap it out-of-band when
+show_carpet changes. display: contents keeps the svg positioned against the enclosing <main>
+{% endcomment %}
+<div id="page-carpet" class="contents"{% if carpet_oob %} hx-swap-oob="true"{% endif %}>
+    {% if show_carpet %}{% include "partials/components/carpet.html" with carpet_scale="1" %}{% endif %}
+</div>

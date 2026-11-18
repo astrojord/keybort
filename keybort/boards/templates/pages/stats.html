@@ -2,10 +2,10 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
 {% block content %}
-<h1 class="text-2xl text-brand font-semibold">Stats</h1>
+<h1 class="page-title">Stats</h1>
 
 {% if stats_keyboard_count %}
-<p class="mt-1 text-muted-foreground text-sm">Based on the {{ stats_keyboard_count }} keyboard{{ stats_keyboard_count|pluralize }} in your inventory.</p>
+<p class="on-carpet mt-1 text-muted-foreground text-sm">Based on the {{ stats_keyboard_count }} keyboard{{ stats_keyboard_count|pluralize }} in your inventory.</p>
 
 <div class="mt-4 grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
     {% for stat in stats_leaders %}

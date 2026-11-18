@@ -488,6 +488,8 @@ def account(request):
 
     context = {'form': form, 'source_options': const.PART_SOURCE_DEFAULTS}
     if 'HX-Request' in request.headers:
+        # re-render the page carpet too so toggling it applies without a reload
+        context.update(carpet_oob=True, carpet_id='carpet-main')
         return render(request, 'partials/sections/account_preferences.html', context)
 
     context.update(page_title='Account', **kb_manager.inventory_counts())

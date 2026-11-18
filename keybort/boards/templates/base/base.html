@@ -17,7 +17,8 @@
     <div>
         {% include 'base/header.html' %}
 
-        <main class="w-full">
+        <main class="relative isolate min-h-[calc(100svh-3rem)] w-full">
+            {% include "partials/components/page_carpet.html" with carpet_id="carpet-main" %}
             <div class="w-full p-4">
                 {% block content %}{% endblock content %}
             </div>
