@@ -34,7 +34,7 @@
         </div>
     </td>
     {% endif %}
-    <td data-role="title" class="font-medium" data-sort-value="{{part.name}}">{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}</td>
+    <td data-role="title" class="font-medium" data-sort-value="{{part.name}}">{% include "partials/components/switch_dot.html" with kind=part.switch_kind %}{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}</td>
     {% for cell in part.columns %}
     <td data-secondary>{% include "partials/components/field_cell.html" %}</td>
     {% endfor %}

@@ -11,6 +11,7 @@ from boards.managers import (
     part_name,
     stat_breakdown,
     stat_leader,
+    switch_kind,
 )
 from boards.models import (
     CustomKeyboard,
@@ -63,6 +64,14 @@ class PartDisplayTests(UserTestCase):
             RowBuilder.part_info('switch', switch),
             'Tactile, 62gf, Polycarbonate top, lubed, hand lubed',
         )
+
+    def test_switch_kind_maps_category(self):
+        self.assertEqual(
+            switch_kind(CustomSwitch(category='st')),
+            {'slug': 'silent-tactile', 'label': 'Silent Tactile'},
+        )
+        self.assertIsNone(switch_kind(CustomSwitch()))
+        self.assertIsNone(switch_kind(None))
 
     def test_kit_info(self):
         kit = CustomKit(size='65%', pcb='Hotswap')
@@ -352,6 +361,12 @@ class CollectionStatsTests(UserTestCase):
         self.assertEqual(breakdowns['Layout'][0][1], 2)
         self.assertEqual(breakdowns['Layout'][1], ('Not set', 1))
         self.assertEqual(breakdowns['Switch type'], [('Linear', 2), ('Not set', 1)])
+        type_rows = next(
+            item['rows']
+            for item in stats['stats_breakdowns']
+            if item['title'] == 'Switch type'
+        )
+        self.assertEqual([row['switch_kind'] for row in type_rows], ['linear', None])
         self.assertEqual(stats['switches_loose'], 10)
         self.assertEqual(
             stats['switches_total'],

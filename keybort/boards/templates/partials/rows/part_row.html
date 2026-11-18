@@ -18,7 +18,7 @@
     </td>
     <td data-role="subtitle" data-filter-column="">{{part.type_label}}</td>
     <td data-role="title" data-sort-value="{{part.name}}">
-        {% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
+        {% include "partials/components/switch_dot.html" with kind=part.switch_kind %}{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
     </td>
     <td data-role="control" class="text-center" data-sort-value="{{part.quantity}}">
         <div class="inline-flex items-center gap-1">

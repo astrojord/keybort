@@ -130,6 +130,16 @@ def board_quantity(kb, part_type):
     return board_switch_count(kb) if part_type == 'switch' else 1
 
 
+def switch_kind(obj):
+    """{slug, label} for a switch's category dot, or None"""
+    if not obj or not obj.category:
+        return None
+    return {
+        'slug': const.SWITCH_KINDS[obj.category],
+        'label': obj.get_category_display(),
+    }
+
+
 def stat_rows(values):
     labels = {}
     counts = Counter()
@@ -318,6 +328,7 @@ class RowBuilder:
         return {
             'value': cls.field_display(obj, name),
             'flag': getattr(obj, name) if name in const.ICON_FIELDS else None,
+            'switch_kind': switch_kind(obj) if name == 'category' else None,
         }
 
     @staticmethod
@@ -384,6 +395,7 @@ class RowBuilder:
             'quantity': inv.quantity,
             'info': cls.part_info(part_type, obj),
             'cells': cls.part_cells(part_type, obj),
+            'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
             'detail_params': cls.detail_params(
                 part_type, obj, f'{reverse("part_edit")}?id={inv.pk}'
             ),
@@ -419,6 +431,7 @@ class RowBuilder:
                         'switch', switch, f'{edit_url}switch'
                     ),
                     'switches_str': f'{switch.brand} {switch.name}',
+                    'switch_kind': switch_kind(switch),
                     'switch_count': kb.switch_count,
                 }
             )
@@ -466,6 +479,7 @@ class RowBuilder:
             'facets': facets,
             'notes': obj.notes,
             'quantity': quantity,
+            'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
         }
 
     @classmethod
@@ -505,6 +519,7 @@ class RowBuilder:
             if part:
                 data[f'{part_type}_str'] = part_name(part)
                 data[f'{part_type}_params'] = cls.detail_params(part_type, part, '')
+        data['switch_kind'] = switch_kind(kb.switch)
         return data
 
 
@@ -917,9 +932,14 @@ class KeyboardManager(UserScoped):
             ' '.join(filter(None, (obj.brand, obj.name))) if obj else None
             for obj in parts('switch')
         ]
-        switch_types = [
-            obj.get_category_display() if obj else None for obj in parts('switch')
-        ]
+        switch_kinds = [switch_kind(obj) for obj in parts('switch')]
+        switch_types = [kind and kind['label'] for kind in switch_kinds]
+        slugs_by_label = {
+            kind['label']: kind['slug'] for kind in filter(None, switch_kinds)
+        }
+        type_breakdown = stat_breakdown('Switch type', switch_types)
+        for row in type_breakdown['rows']:
+            row['switch_kind'] = slugs_by_label.get(row['label'])
         switches_on_boards = sum(
             board_switch_count(kb) for kb in keyboards if kb.switch
         )
@@ -948,7 +968,7 @@ class KeyboardManager(UserScoped):
             'stats_breakdowns': [
                 stat_breakdown('Layout', field('kit', 'layout')),
                 stat_breakdown('Size', field('kit', 'size')),
-                stat_breakdown('Switch type', switch_types),
+                type_breakdown,
                 stat_breakdown('Switches', switch_names),
                 stat_breakdown('Keycap brands', field('keycaps', 'brand')),
                 stat_breakdown('Mount type', field('kit', 'mount_type')),

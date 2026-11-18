@@ -42,11 +42,11 @@
                 {% for row in breakdown.rows %}
                 <li title="{{ row.label }}: {{ row.count }} of {{ breakdown.total }} board{{ breakdown.total|pluralize }} ({{ row.percent }}%)">
                     <div class="flex items-baseline justify-between gap-4 text-sm">
-                        <span class="min-w-0 break-words{% if row.muted %} text-muted-foreground{% endif %}">{{ row.label }}</span>
+                        <span class="min-w-0 break-words{% if row.muted %} text-muted-foreground{% endif %}">{% if row.switch_kind %}<span class="switch-dot" data-switch="{{ row.switch_kind }}" aria-hidden="true"></span>{% endif %}{{ row.label }}</span>
                         <span class="font-medium tabular-nums" data-count-up>{{ row.count }}</span>
                     </div>
                     <div class="mt-1 h-2 rounded-r bg-muted">
-                        <div class="h-full rounded-r {% if row.muted %}bg-muted-foreground/50{% else %}bg-brand{% endif %}" style="width: {{ row.percent }}%; --i: {{ forloop.counter0 }}" data-grow></div>
+                        <div class="h-full rounded-r {% if row.muted %}bg-muted-foreground/50{% elif not row.switch_kind %}bg-brand{% endif %}"{% if row.switch_kind %} data-switch="{{ row.switch_kind }}"{% endif %} style="width: {{ row.percent }}%; --i: {{ forloop.counter0 }}" data-grow></div>
                     </div>
                 </li>
                 {% endfor %}

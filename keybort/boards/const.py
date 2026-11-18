@@ -6,6 +6,15 @@ SWITCH_CATEGORIES = [
     ('c', 'Clicky'),
 ]
 
+# category -> css data-switch value for the colored dots and stats bars (silent ones draw hollow)
+SWITCH_KINDS = {
+    'l': 'linear',
+    'sl': 'silent-linear',
+    't': 'tactile',
+    'st': 'silent-tactile',
+    'c': 'clicky',
+}
+
 SWITCH_STEMS = [
     ('mx', 'MX'),
     ('topre', 'Topre'),
