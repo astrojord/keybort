@@ -1,75 +1,76 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-<div class="w-full flex justify-between items-center">
-    <h1 class="page-title">{{page_title}}</h1>
-    {% if perms.boards.can_upload_stock_data %}
-    <div class="flex gap-2">
-        <button
-            type="button"
-            class="btn"
-            data-variant="outline"
-            hx-get="{% url 'stock_part_upload' %}"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-file-csv me-1"></i>Upload CSV
-        </button>
-        <button
-            type="button"
-            class="btn"
-            hx-get="{% url 'stock_part_add' %}?type={{ part_type }}"
-            data-shortcut="n"
-            data-shortcut-label="Add"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-plus me-1"></i>Add to catalog<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
-        </button>
+    <div class="w-full flex justify-between items-center">
+        <h1 class="page-title">{{ page_title }}</h1>
+        {% if perms.boards.can_upload_stock_data %}
+            <div class="flex gap-2">
+                <button type="button"
+                        class="btn"
+                        data-variant="outline"
+                        hx-get="{% url 'stock_part_upload' %}"
+                        hx-target="#page-dialog">
+                    <i class="fas fa-file-csv me-1"></i>Upload CSV
+                </button>
+                <button type="button"
+                        class="btn"
+                        hx-get="{% url 'stock_part_add' %}?type={{ part_type }}"
+                        data-shortcut="n"
+                        data-shortcut-label="Add"
+                        hx-target="#page-dialog">
+                    <i class="fas fa-plus me-1"></i>Add to catalog<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
+                </button>
+            </div>
+        {% endif %}
     </div>
+    {% include "partials/components/filter_card.html" with id_prefix="stock" placeholder="Name, notes…" %}
+    {% if perms.boards.can_delete_stock_data %}
+        {% include "partials/components/bulk_bar.html" with id_prefix="stock" %}
     {% endif %}
-</div>
-{% include "partials/components/filter_card.html" with id_prefix="stock" placeholder="Name, notes…" %}
-{% if perms.boards.can_delete_stock_data %}{% include "partials/components/bulk_bar.html" with id_prefix="stock" %}{% endif %}
-<div class="w-full mt-4">
-    <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
-        <section>
-            <table id="table-stock" class="table" data-stack>
-                <thead>
-                    <tr>
-                        {% if perms.boards.can_delete_stock_data %}<th class="w-px" data-stack-toolbar><label class="flex items-center gap-2"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"><span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span></label></th>{% endif %}
-                        {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
-                        {% include "partials/components/sort_header.html" with key="name" label="Name" %}
-                        {% for key, label in columns %}
-                        {% include "partials/components/sort_header.html" %}
+    <div class="w-full mt-4">
+        <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
+            <section>
+                <table id="table-stock" class="table" data-stack>
+                    <thead>
+                        <tr>
+                            {% if perms.boards.can_delete_stock_data %}<th class="w-px" data-stack-toolbar><label class="flex items-center gap-2"><input type="checkbox"
+                                                                                                                                                         class="input"
+                                                                                                                                                         data-bulk-all
+                                                                                                                                                         aria-label="Select all shown"><span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span></label></th>{% endif %}
+                            {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
+                            {% include "partials/components/sort_header.html" with key="name" label="Name" %}
+                            {% for key, label in columns %}
+                                {% include "partials/components/sort_header.html" %}
+                            {% endfor %}
+                            <th>Notes</th>
+                            <th class="md:hidden" data-stack-toolbar>
+                                <label class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                                    Sort
+                                    <select class="select h-8 text-sm"
+                                            data-stack-sort
+                                            aria-label="Sort {{ noun }}"></select>
+                                </label>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for part in parts %}
+                            {% include "partials/rows/stock_part_row.html" %}
                         {% endfor %}
-                        <th>Notes</th>
-                        <th class="md:hidden" data-stack-toolbar>
-                            <label class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                                Sort
-                                <select class="select h-8 text-sm" data-stack-sort aria-label="Sort {{ noun }}"></select>
-                            </label>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for part in parts %}
-                    {% include "partials/rows/stock_part_row.html" %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </section>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+        {% url 'stock_part_add' as add_url %}
+        {% include "partials/components/empty_state.html" with id_prefix="stock" icon="package" description="The catalog is empty for now." show_action=perms.boards.can_upload_stock_data action_url=add_url|add:"?type="|add:part_type action_label="Add to catalog" %}
     </div>
-    {% url 'stock_part_add' as add_url %}
-    {% include "partials/components/empty_state.html" with id_prefix="stock" icon="package" description="The catalog is empty for now." show_action=perms.boards.can_upload_stock_data action_url=add_url|add:"?type="|add:part_type action_label="Add to catalog" %}
-</div>
-
-{% include "partials/components/page_dialog.html" %}
+    {% include "partials/components/page_dialog.html" %}
 {% endblock content %}
-
 {% block page_js %}
-<script src="{% static 'tables.js' %}"></script>
-<script src="{% static 'filter_card.js' %}"></script>
-<script>
+    <script src="{% static 'tables.js' %}"></script>
+    <script src="{% static 'filter_card.js' %}"></script>
+    <script>
     initFilterCard({
         card: document.getElementById("stock-filters"),
         table: document.getElementById("table-stock"),
@@ -77,13 +78,15 @@
         noun: "{{ noun|escapejs }}",
     });
     initTableStack(document.getElementById("table-stock"));
-</script>
-{% if perms.boards.can_delete_stock_data %}<script src="{% static 'bulk_select.js' %}"></script>
-<script>
+    </script>
+    {% if perms.boards.can_delete_stock_data %}
+        <script src="{% static 'bulk_select.js' %}"></script>
+        <script>
     initBulkSelect({
         table: document.getElementById("table-stock"),
         bar: document.getElementById("stock-bulk"),
         url: "{% url 'stock_part_delete' %}?type={{ part_type }}",
     });
-</script>{% endif %}
+        </script>
+    {% endif %}
 {% endblock page_js %}

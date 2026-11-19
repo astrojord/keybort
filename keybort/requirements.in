@@ -5,4 +5,5 @@ django-allauth
 psycopg2-binary
 gunicorn
 ruff
+djlint
 coverage

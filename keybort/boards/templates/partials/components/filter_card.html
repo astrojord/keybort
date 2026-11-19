@@ -1,21 +1,39 @@
-<div id="{{ id_prefix }}-filters" class="card mt-4 overflow-visible" role="search" aria-label="Filter {{ noun }}">
+<div id="{{ id_prefix }}-filters"
+     class="card mt-4 overflow-visible"
+     role="search"
+     aria-label="Filter {{ noun }}">
     <header class="flex flex-wrap items-center justify-between gap-2">
         <h2>Filters</h2>
         <div class="flex items-center gap-3">
-            <span class="text-muted-foreground text-sm tabular-nums" data-filter-summary aria-live="polite"></span>
-            <button type="button" class="btn" data-variant="outline" data-size="sm" data-filter-clear hidden><i class="fas fa-xmark"></i>Clear filters</button>
+            <span class="text-muted-foreground text-sm tabular-nums"
+                  data-filter-summary
+                  aria-live="polite"></span>
+            <button type="button"
+                    class="btn"
+                    data-variant="outline"
+                    data-size="sm"
+                    data-filter-clear
+                    hidden><i class="fas fa-xmark"></i>Clear filters</button>
         </div>
     </header>
     <section class="grid gap-4 grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
         <div class="grid content-start gap-2">
             <label for="{{ id_prefix }}-search" class="label">Search</label>
             <div class="relative">
-                <input type="search" id="{{ id_prefix }}-search" class="peer input w-full" placeholder="{{ placeholder }}" value="{{ query }}" data-filter-search data-shortcut="/" data-shortcut-label="Search">
-                <kbd class="kbd absolute end-2 top-1/2 -translate-y-1/2 peer-focus:hidden peer-[:not(:placeholder-shown)]:hidden" data-kbd-hint>/</kbd>
+                <input type="search"
+                       id="{{ id_prefix }}-search"
+                       class="peer input w-full"
+                       placeholder="{{ placeholder }}"
+                       value="{{ query }}"
+                       data-filter-search
+                       data-shortcut="/"
+                       data-shortcut-label="Search">
+                <kbd class="kbd absolute end-2 top-1/2 -translate-y-1/2 peer-focus:hidden peer-[:not(:placeholder-shown)]:hidden"
+                     data-kbd-hint>/</kbd>
             </div>
         </div>
         {% for facet in facets %}
-        {% include "partials/components/filter_combobox.html" %}
+            {% include "partials/components/filter_combobox.html" %}
         {% endfor %}
     </section>
 </div>

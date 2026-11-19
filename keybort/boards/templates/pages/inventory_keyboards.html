@@ -1,76 +1,71 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% block page_title%}{{page_title}}{% endblock page_title %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-<div class="w-full flex justify-between items-center">
-    <h1 class="page-title">Keyboard Inventory</h1>
-    <button
-        type="button"
-        class="btn"
-        hx-get="{% url 'keyboard_add' %}"
-        data-shortcut="n"
-        data-shortcut-label="Add"
-        hx-vals='js:{kind: document.getElementById("keyboards-filter").dataset.active}'
-        hx-target="#page-dialog"
-    >
-        <i class="fas fa-plus me-1"></i>Add<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
-    </button>
-</div>
-{% include "partials/components/filter_chips.html" with id_prefix="keyboards" noun="keyboards" param="kind" %}
-{% include "partials/components/bulk_bar.html" with id_prefix="keyboards" %}
-<div class="w-full mt-4">
-    <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
-        <section>
-            <table
-                id="table-keyboards"
-                class="table"
-                data-stack
-            >
-                <thead>
-                    <tr>
-                        <th class="w-px" data-stack-toolbar>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" class="input" data-bulk-all aria-label="Select all shown">
-                                <span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span>
-                            </label>
-                        </th>
-                        <th data-stack-toolbar>
-                            <label class="md:hidden flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                                Sort
-                                <select class="select h-8 text-sm" data-stack-sort aria-label="Sort keyboards"></select>
-                            </label>
-                        </th>
-                        {% include "partials/components/sort_header.html" with key="kit" label="Kit" %}
-                        {% include "partials/components/sort_header.html" with key="pcb" label="PCB" %}
-                        {% include "partials/components/sort_header.html" with key="switches" label="Switches" %}
-                        {% include "partials/components/sort_header.html" with key="keycaps" label="Keycaps" %}
-                        {% include "partials/components/sort_header.html" with key="plate" label="Plate" %}
-                        {% include "partials/components/sort_header.html" with key="stabilizer" label="Stabilizer" %}
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for kb in inventory %}
-                    {% include "partials/rows/keyboard_row.html" %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </section>
+    <div class="w-full flex justify-between items-center">
+        <h1 class="page-title">Keyboard Inventory</h1>
+        <button type="button"
+                class="btn"
+                hx-get="{% url 'keyboard_add' %}"
+                data-shortcut="n"
+                data-shortcut-label="Add"
+                hx-vals='js:{kind: document.getElementById("keyboards-filter").dataset.active}'
+                hx-target="#page-dialog">
+            <i class="fas fa-plus me-1"></i>Add<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
+        </button>
     </div>
-    {% url 'keyboard_add' as add_url %}
-    {% include "partials/components/empty_state.html" with id_prefix="keyboards" icon="keyboard" noun="keyboards" description="Add a prebuilt from the catalog or put together a custom build." show_action=True action_url=add_url action_label="Add keyboard" param="kind" %}
-</div>
-
-{% include "partials/components/open_add_loader.html" with param="kind" %}
-
-{% include "partials/components/page_dialog.html" %}
-
+    {% include "partials/components/filter_chips.html" with id_prefix="keyboards" noun="keyboards" param="kind" %}
+    {% include "partials/components/bulk_bar.html" with id_prefix="keyboards" %}
+    <div class="w-full mt-4">
+        <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
+            <section>
+                <table id="table-keyboards" class="table" data-stack>
+                    <thead>
+                        <tr>
+                            <th class="w-px" data-stack-toolbar>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox"
+                                           class="input"
+                                           data-bulk-all
+                                           aria-label="Select all shown">
+                                    <span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span>
+                                </label>
+                            </th>
+                            <th data-stack-toolbar>
+                                <label class="md:hidden flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                                    Sort
+                                    <select class="select h-8 text-sm"
+                                            data-stack-sort
+                                            aria-label="Sort keyboards"></select>
+                                </label>
+                            </th>
+                            {% include "partials/components/sort_header.html" with key="kit" label="Kit" %}
+                            {% include "partials/components/sort_header.html" with key="pcb" label="PCB" %}
+                            {% include "partials/components/sort_header.html" with key="switches" label="Switches" %}
+                            {% include "partials/components/sort_header.html" with key="keycaps" label="Keycaps" %}
+                            {% include "partials/components/sort_header.html" with key="plate" label="Plate" %}
+                            {% include "partials/components/sort_header.html" with key="stabilizer" label="Stabilizer" %}
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kb in inventory %}
+                            {% include "partials/rows/keyboard_row.html" %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+        {% url 'keyboard_add' as add_url %}
+        {% include "partials/components/empty_state.html" with id_prefix="keyboards" icon="keyboard" noun="keyboards" description="Add a prebuilt from the catalog or put together a custom build." show_action=True action_url=add_url action_label="Add keyboard" param="kind" %}
+    </div>
+    {% include "partials/components/open_add_loader.html" with param="kind" %}
+    {% include "partials/components/page_dialog.html" %}
 {% endblock content %}
-
 {% block page_js %}
-<script src="{% static 'tables.js' %}"></script>
-<script src="{% static 'table_filter.js' %}"></script>
-<script>
+    <script src="{% static 'tables.js' %}"></script>
+    <script src="{% static 'table_filter.js' %}"></script>
+    <script>
     initTableFilter({
         filter: document.getElementById("keyboards-filter"),
         table: document.getElementById("table-keyboards"),
@@ -79,13 +74,13 @@
         param: "kind",
     });
     initTableStack(document.getElementById("table-keyboards"));
-</script>
-<script src="{% static 'bulk_select.js' %}"></script>
-<script>
+    </script>
+    <script src="{% static 'bulk_select.js' %}"></script>
+    <script>
     initBulkSelect({
         table: document.getElementById("table-keyboards"),
         bar: document.getElementById("keyboards-bulk"),
         url: "{% url 'keyboard_delete' %}",
     });
-</script>
+    </script>
 {% endblock page_js %}

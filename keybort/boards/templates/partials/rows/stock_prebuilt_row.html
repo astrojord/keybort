@@ -1,52 +1,77 @@
-<tr id="{{kb.row_id}}"{% for key, values in kb.facets.items %} data-facet-{{key}}="{{values|join:'|'}}"{% endfor %}>
-    {% if perms.boards.can_delete_stock_data %}<td data-role="select"><input type="checkbox" class="input" data-bulk value="{{kb.id}}" aria-label="Select {{kb.name}}"></td>{% endif %}
-    {% if user.is_authenticated %}
-    <td data-role="actions">
-        <div class="flex flex-wrap items-center justify-end gap-1 md:justify-start">
-        {% if perms.boards.can_edit_stock_data %}
-        <button
-            type="button"
-            class="btn"
-            data-variant="ghost"
-            data-size="icon-sm"
-            aria-label="Edit {{kb.name}}"
-            data-tooltip="Edit"
-            hx-get="{% url 'stock_prebuilt_edit' %}?id={{kb.id}}"
-            hx-target="#page-dialog"
-        >
-            <i class="fas fa-edit"></i>
-        </button>
-        {% endif %}
-        {% if kb.owned %}
-        <a href="{% url 'inventory_keyboards' %}?kind=prebuilt" class="badge" data-variant="secondary"><i class="fas fa-check"></i>In inventory</a>
-        {% else %}
-        <button
-            type="button"
-            class="btn"
-            data-variant="outline"
-            data-size="sm"
-            aria-label="Add {{kb.name}} to my keyboards"
-            hx-post="{% url 'stock_prebuilt_collect' %}?id={{kb.id}}"
-            hx-target="closest tr"
-            hx-swap="outerHTML"
-            data-flash-swap
-        >
-            <i class="fas fa-plus"></i>Add
-        </button>
-        {% endif %}
-        </div>
-    </td>
+<tr id="{{ kb.row_id }}"{% for key, values in kb.facets.items %} data-facet-{{ key }}="{{ values|join:'|' }}"{% endfor %}>
+    {% if perms.boards.can_delete_stock_data %}
+        <td data-role="select">
+            <input type="checkbox"
+                   class="input"
+                   data-bulk
+                   value="{{ kb.id }}"
+                   aria-label="Select {{ kb.name }}">
+        </td>
     {% endif %}
-    <td data-role="title" class="font-medium" data-sort-value="{{kb.name}}">{% if kb.kit_params %}{% include "partials/components/part_link.html" with label=kb.name params=kb.kit_params %}{% else %}{{kb.name}}{% endif %}</td>
-    <td data-secondary>{{kb.size|default:''}}</td>
-    <td data-secondary>{{kb.layout|default:''}}</td>
-    <td data-secondary>{% if kb.switch_str %}{% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}{% include "partials/components/part_link.html" with label=kb.switch_str params=kb.switch_params %}{% endif %}</td>
-    <td data-secondary>{% if kb.keycaps_str %}{% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_params %}{% endif %}</td>
-    <td data-secondary>{{kb.connectivity}}</td>
-    <td data-secondary><p class="max-w-xs line-clamp-2 whitespace-normal" title="{{kb.notes|default:''}}">{{kb.notes|default:''}}</p></td>
+    {% if user.is_authenticated %}
+        <td data-role="actions">
+            <div class="flex flex-wrap items-center justify-end gap-1 md:justify-start">
+                {% if perms.boards.can_edit_stock_data %}
+                    <button type="button"
+                            class="btn"
+                            data-variant="ghost"
+                            data-size="icon-sm"
+                            aria-label="Edit {{ kb.name }}"
+                            data-tooltip="Edit"
+                            hx-get="{% url 'stock_prebuilt_edit' %}?id={{ kb.id }}"
+                            hx-target="#page-dialog">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                {% endif %}
+                {% if kb.owned %}
+                    <a href="{% url 'inventory_keyboards' %}?kind=prebuilt"
+                       class="badge"
+                       data-variant="secondary"><i class="fas fa-check"></i>In inventory</a>
+                {% else %}
+                    <button type="button"
+                            class="btn"
+                            data-variant="outline"
+                            data-size="sm"
+                            aria-label="Add {{ kb.name }} to my keyboards"
+                            hx-post="{% url 'stock_prebuilt_collect' %}?id={{ kb.id }}"
+                            hx-target="closest tr"
+                            hx-swap="outerHTML"
+                            data-flash-swap>
+                        <i class="fas fa-plus"></i>Add
+                    </button>
+                {% endif %}
+            </div>
+        </td>
+    {% endif %}
+    <td data-role="title" class="font-medium" data-sort-value="{{ kb.name }}">{% if kb.kit_params %}{% include "partials/components/part_link.html" with label=kb.name params=kb.kit_params %}{% else %}{{ kb.name }}{% endif %}</td>
+    <td data-secondary>{{ kb.size|default:'' }}</td>
+    <td data-secondary>{{ kb.layout|default:'' }}</td>
+    <td data-secondary>
+        {% if kb.switch_str %}
+            {% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}
+            {% include "partials/components/part_link.html" with label=kb.switch_str params=kb.switch_params %}
+        {% endif %}
+    </td>
+    <td data-secondary>
+        {% if kb.keycaps_str %}
+            {% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_params %}
+        {% endif %}
+    </td>
+    <td data-secondary>{{ kb.connectivity }}</td>
+    <td data-secondary>
+        <p class="max-w-xs line-clamp-2 whitespace-normal"
+           title="{{ kb.notes|default:'' }}">{{ kb.notes|default:'' }}</p>
+    </td>
     <td data-role="toggle" class="md:hidden">
-        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-row-toggle aria-expanded="false" hidden>
-            More details<span class="tabular-nums text-muted-foreground" data-row-toggle-count></span><i class="fas fa-chevron-down text-xs"></i>
+        <button type="button"
+                class="btn"
+                data-variant="ghost"
+                data-size="sm"
+                data-row-toggle
+                aria-expanded="false"
+                hidden>
+            More details<span class="tabular-nums text-muted-foreground"
+                              data-row-toggle-count></span><i class="fas fa-chevron-down text-xs"></i>
         </button>
     </td>
 </tr>

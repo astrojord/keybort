@@ -1,33 +1,31 @@
 {% extends "base/base.html" %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
-
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-<div class="w-full flex justify-between items-center">
-    <h1 class="page-title">Account</h1>
-</div>
-
-<div class="mt-4 grid max-w-2xl gap-4">
-    <div class="card">
-        <header>
-            <h2>Profile</h2>
-            <p>
-                Joined {{ request.user.date_joined|date:"F Y" }}.
-                {{ keyboard_count }} keyboard{{ keyboard_count|pluralize }} and {{ part_entries }} part{{ part_entries|pluralize }} in your inventory.
-            </p>
-        </header>
+    <div class="w-full flex justify-between items-center">
+        <h1 class="page-title">Account</h1>
     </div>
-
-    {% include "partials/sections/account_preferences.html" %}
-
-    <div class="card">
-        <header>
-            <h2>Security</h2>
-            <p>Change the password you sign in with or manage your email addresses.</p>
-        </header>
-        <section class="flex flex-wrap gap-2">
-            <a href="{% url 'account_change_password' %}" class="btn" data-variant="outline">Change password</a>
-            <a href="{% url 'account_email' %}" class="btn" data-variant="outline">Manage email</a>
-        </section>
+    <div class="mt-4 grid max-w-2xl gap-4">
+        <div class="card">
+            <header>
+                <h2>Profile</h2>
+                <p>
+                    Joined {{ request.user.date_joined|date:"F Y" }}.
+                    {{ keyboard_count }} keyboard{{ keyboard_count|pluralize }} and {{ part_entries }} part{{ part_entries|pluralize }} in your inventory.
+                </p>
+            </header>
+        </div>
+        {% include "partials/sections/account_preferences.html" %}
+        <div class="card">
+            <header>
+                <h2>Security</h2>
+                <p>Change the password you sign in with or manage your email addresses.</p>
+            </header>
+            <section class="flex flex-wrap gap-2">
+                <a href="{% url 'account_change_password' %}"
+                   class="btn"
+                   data-variant="outline">Change password</a>
+                <a href="{% url 'account_email' %}" class="btn" data-variant="outline">Manage email</a>
+            </section>
+        </div>
     </div>
-</div>
 {% endblock content %}

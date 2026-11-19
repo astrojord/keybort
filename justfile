@@ -6,6 +6,10 @@ check:
     docker compose exec app ruff check --fix
 check-unsafe:
     docker compose exec app ruff check --fix --unsafe-fixes
+format-templates:
+    docker compose exec app djlint boards/templates --reformat
+lint-templates:
+    docker compose exec app djlint boards/templates --lint
 test:
     docker compose exec app python manage.py test
 empty-migration APP:

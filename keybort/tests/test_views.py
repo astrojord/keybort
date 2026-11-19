@@ -600,7 +600,9 @@ class AccountViewTests(ClientTestCase):
         response = self.client.get(reverse('account'))
         self.assertEqual(response.context['keyboard_count'], 1)
         self.assertEqual(response.context['part_entries'], 1)
-        self.assertContains(response, 'value="smart" required checked')
+        self.assertRegex(
+            response.content.decode(), r'value="smart"\s+required\s+checked'
+        )
         self.assertContains(response, 'name="keep_parts_on_delete" checked')
 
     def test_htmx_post_saves_and_toasts(self):
@@ -641,7 +643,9 @@ class AccountViewTests(ClientTestCase):
         self.assertFalse(Profile.objects.get(user=self.user).show_carpet)
         # the out-of-band wrapper comes back empty so the open page drops the carpet
         self.assertContains(
-            response, 'id="page-carpet" class="contents" hx-swap-oob="true"'
+            response,
+            '<div id="page-carpet" class="contents" hx-swap-oob="true"></div>',
+            html=True,
         )
         self.assertNotContains(response, '<svg class="carpet"')
         self.assertNotContains(self.client.get(reverse('index')), '<svg class="carpet"')
@@ -1429,7 +1433,7 @@ class MultiDeleteViewTests(ClientTestCase):
         self.client.force_login(deleter)
         response = self.client.get(reverse('stock_switches'))
         self.assertContains(response, 'data-bulk-all')
-        self.assertContains(response, 'data-bulk value=')
+        self.assertRegex(response.content.decode(), r'data-bulk\s+value=')
 
 
 class PromotePartViewTests(ClientTestCase):

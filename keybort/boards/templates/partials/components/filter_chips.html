@@ -1,14 +1,25 @@
 <div class="card mt-4 py-4">
     <section class="flex flex-wrap items-center justify-between gap-2">
-        <div id="{{ id_prefix }}-filter" data-active="" class="flex flex-wrap gap-1" role="group" aria-label="Filter by {{ param }}">
+        <div id="{{ id_prefix }}-filter"
+             data-active=""
+             class="flex flex-wrap gap-1"
+             role="group"
+             aria-label="Filter by {{ param }}">
             {% include "partials/components/filter_chip.html" with value="" label="All" filter_label=noun %}
             {% for value, label in filters %}
-            {% include "partials/components/filter_chip.html" with filter_label=label|lower %}
+                {% include "partials/components/filter_chip.html" with filter_label=label|lower %}
             {% endfor %}
         </div>
         <div class="relative w-full sm:w-64">
-            <input type="search" id="{{ id_prefix }}-search" class="peer input w-full" placeholder="Search {{ noun }}" aria-label="Search {{ noun }}" data-shortcut="/" data-shortcut-label="Search">
-            <kbd class="kbd absolute end-2 top-1/2 -translate-y-1/2 peer-focus:hidden peer-[:not(:placeholder-shown)]:hidden" data-kbd-hint>/</kbd>
-            </div>
+            <input type="search"
+                   id="{{ id_prefix }}-search"
+                   class="peer input w-full"
+                   placeholder="Search {{ noun }}"
+                   aria-label="Search {{ noun }}"
+                   data-shortcut="/"
+                   data-shortcut-label="Search">
+            <kbd class="kbd absolute end-2 top-1/2 -translate-y-1/2 peer-focus:hidden peer-[:not(:placeholder-shown)]:hidden"
+                 data-kbd-hint>/</kbd>
+        </div>
     </section>
 </div>

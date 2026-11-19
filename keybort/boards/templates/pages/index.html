@@ -1,97 +1,106 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
-
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-{% if request.user.is_authenticated %}
-<h1 class="page-title">Dashboard</h1>
-
-<p class="on-carpet mt-1 text-muted-foreground text-sm">
-    <a href="{% url 'inventory_keyboards' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ keyboard_count }}</span> keyboard{{ keyboard_count|pluralize }}</a> ({{ prebuilt_count }} prebuilt, {{ custom_count }} custom)
-    · <a href="{% url 'inventory_parts' %}" class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ part_entries }}</span> part{{ part_entries|pluralize }}</a> ({{ part_units }} item{{ part_units|pluralize }})
-    · <a href="{% url 'inventory_parts' %}?type=switch" class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ switches_loose }}</span> loose switch{{ switches_loose|pluralize:"es" }}</a> ({{ switches_on_boards }} on boards)
-</p>
-
-<p class="race-touch-note on-carpet mt-2 text-muted-foreground text-sm">Hey! Visit the site on a device with a physical keyboard to test your WPM.</p>
-
-<div class="mt-4 grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-4">
-    {% for action in quick_actions %}
-    <a href="{% url action.url_name %}?add={{ action.add }}" class="card py-3 lg:py-6 hover:bg-accent/50 transition-colors">
-        <header class="flex items-center gap-2 lg:gap-3">
-            <span class="badge size-7 lg:size-9 aspect-square shrink-0" data-variant="secondary"><i class="{{ action.icon }}"></i></span>
-            <div>
-                <h2 class="font-semibold text-sm lg:text-base">{{ action.label }}</h2>
-                <p class="hidden lg:block text-muted-foreground text-sm">{{ action.description }}</p>
-            </div>
-        </header>
-    </a>
-    {% endfor %}
-</div>
-
-{% include 'partials/components/typing_race.html' %}
-
-<div class="mt-4 card">
-    <header class="flex items-center justify-between">
-        <h2 class="font-semibold">Recent keyboards</h2>
-        <a href="{% url 'inventory_keyboards' %}" class="btn" data-variant="ghost" data-size="sm">View all</a>
-    </header>
-    <section>
-        {% if recent_keyboards %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Kit</th>
-                    <th>Switches</th>
-                    <th>Keycaps</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for kb in recent_keyboards %}
-                <tr>
-                    <td class="font-medium"><a href="{% url 'inventory_keyboards' %}#{{ kb.row_id }}" class="underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 hover:decoration-solid">{{ kb.kit_str|default:"Untitled keyboard" }}</a></td>
-                    <td>{% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}{{ kb.switches_str|default:"—" }}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}</td>
-                    <td>{{ kb.keycaps_str|default:"—" }}</td>
-                    <td class="text-right">
-                        <span class="badge" data-variant="{% if kb.stock %}secondary{% else %}outline{% endif %}">{% if kb.stock %}Prebuilt{% else %}Custom{% endif %}</span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty">
-            <header>
-                <h3>No keyboards yet</h3>
-                <p>Add a prebuilt from the catalog or put together a custom build.</p>
+    {% if request.user.is_authenticated %}
+        <h1 class="page-title">Dashboard</h1>
+        <p class="on-carpet mt-1 text-muted-foreground text-sm">
+            <a href="{% url 'inventory_keyboards' %}"
+               class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ keyboard_count }}</span> keyboard{{ keyboard_count|pluralize }}</a> ({{ prebuilt_count }} prebuilt, {{ custom_count }} custom)
+            · <a href="{% url 'inventory_parts' %}"
+                 class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ part_entries }}</span> part{{ part_entries|pluralize }}</a> ({{ part_units }} item{{ part_units|pluralize }})
+            · <a href="{% url 'inventory_parts' %}?type=switch"
+                 class="hover:text-foreground hover:underline underline-offset-4 font-bold"><span data-count-up>{{ switches_loose }}</span> loose switch{{ switches_loose|pluralize:"es" }}</a> ({{ switches_on_boards }} on boards)
+        </p>
+        <p class="race-touch-note on-carpet mt-2 text-muted-foreground text-sm">Hey! Visit the site on a device with a physical keyboard to test your WPM.</p>
+        <div class="mt-4 grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-4">
+            {% for action in quick_actions %}
+                <a href="{% url action.url_name %}?add={{ action.add }}"
+                   class="card py-3 lg:py-6 hover:bg-accent/50 transition-colors">
+                    <header class="flex items-center gap-2 lg:gap-3">
+                        <span class="badge size-7 lg:size-9 aspect-square shrink-0"
+                              data-variant="secondary"><i class="{{ action.icon }}"></i></span>
+                        <div>
+                            <h2 class="font-semibold text-sm lg:text-base">{{ action.label }}</h2>
+                            <p class="hidden lg:block text-muted-foreground text-sm">{{ action.description }}</p>
+                        </div>
+                    </header>
+                </a>
+            {% endfor %}
+        </div>
+        {% include "partials/components/typing_race.html" %}
+        <div class="mt-4 card">
+            <header class="flex items-center justify-between">
+                <h2 class="font-semibold">Recent keyboards</h2>
+                <a href="{% url 'inventory_keyboards' %}"
+                   class="btn"
+                   data-variant="ghost"
+                   data-size="sm">View all</a>
             </header>
             <section>
-                <a href="{% url 'inventory_keyboards' %}?add=custom" class="btn"><i class="fas fa-plus me-1"></i>Add keyboard</a>
+                {% if recent_keyboards %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Kit</th>
+                                <th>Switches</th>
+                                <th>Keycaps</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for kb in recent_keyboards %}
+                                <tr>
+                                    <td class="font-medium"><a href="{% url 'inventory_keyboards' %}#{{ kb.row_id }}"
+                                                               class="underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 hover:decoration-solid">{{ kb.kit_str|default:"Untitled keyboard" }}</a></td>
+                                    <td>{% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}{{ kb.switches_str|default:"—" }}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}</td>
+                                    <td>{{ kb.keycaps_str|default:"—" }}</td>
+                                    <td class="text-right">
+                                        <span class="badge"
+                                              data-variant="{% if kb.stock %}secondary{% else %}outline{% endif %}">{% if kb.stock %}Prebuilt{% else %}Custom{% endif %}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty">
+                        <header>
+                            <h3>No keyboards yet</h3>
+                            <p>Add a prebuilt from the catalog or put together a custom build.</p>
+                        </header>
+                        <section>
+                            <a href="{% url 'inventory_keyboards' %}?add=custom"
+                               class="btn"><i class="fas fa-plus me-1"></i>Add keyboard</a>
+                        </section>
+                    </div>
+                {% endif %}
             </section>
         </div>
-        {% endif %}
-    </section>
-</div>
-{% else %}
-<div class="px-4 py-12">
-    <div class="mx-auto max-w-2xl rounded-xl border bg-card px-6 py-10 text-center shadow-xs">
-        <img src="{% static 'logos/keybort_icon.png' %}" alt="" width="64" height="64" class="mx-auto size-16 [image-rendering:pixelated]">
-        <h1 class="mt-4 text-3xl font-semibold"><span class="text-brand">Keybort</span></h1>
-        <p class="mt-2 text-muted-foreground">
-            Track your mechanical keyboard collection and parts inventory.<br>Input your own parts or pick and choose from prebuilt and stock catalogs.
-        </p>
-        <div class="mt-6 flex justify-center gap-2">
-            <a href="{% url 'account_login' %}" class="btn">Sign in</a>
-            <a href="{% url 'stock_prebuilts' %}" class="btn" data-variant="outline">Browse the catalog</a>
+    {% else %}
+        <div class="px-4 py-12">
+            <div class="mx-auto max-w-2xl rounded-xl border bg-card px-6 py-10 text-center shadow-xs">
+                <img src="{% static 'logos/keybort_icon.png' %}"
+                     alt=""
+                     width="64"
+                     height="64"
+                     class="mx-auto size-16 [image-rendering:pixelated]">
+                <h1 class="mt-4 text-3xl font-semibold"><span class="text-brand">Keybort</span></h1>
+                <p class="mt-2 text-muted-foreground">
+                    Track your mechanical keyboard collection and parts inventory.
+                    <br>
+                    Input your own parts or pick and choose from prebuilt and stock catalogs.
+                </p>
+                <div class="mt-6 flex justify-center gap-2">
+                    <a href="{% url 'account_login' %}" class="btn">Sign in</a>
+                    <a href="{% url 'stock_prebuilts' %}" class="btn" data-variant="outline">Browse the catalog</a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-{% endif %}
-
+    {% endif %}
 {% endblock content %}
-
 {% block page_js %}
-{% if request.user.is_authenticated %}
-<script src="{% static 'typing_race.js' %}"></script>
-{% endif %}
+    {% if request.user.is_authenticated %}
+        <script src="{% static 'typing_race.js' %}"></script>
+    {% endif %}
 {% endblock page_js %}

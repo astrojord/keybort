@@ -11,21 +11,39 @@ asgiref==3.11.1
 build==1.5.0
     # via pip-tools
 click==8.4.2
-    # via pip-tools
+    # via
+    #   djlint
+    #   pip-tools
 coverage==7.17.0
     # via -r requirements.in
+cssbeautifier==2.0.3
+    # via djlint
 django==6.0.6
     # via
     #   -r requirements.in
     #   django-allauth
 django-allauth==65.18.0
     # via -r requirements.in
+djlint==1.54.0
+    # via -r requirements.in
+editorconfig==0.17.1
+    # via
+    #   cssbeautifier
+    #   jsbeautifier
 gunicorn==26.2.0
     # via -r requirements.in
+jsbeautifier==2.0.3
+    # via
+    #   cssbeautifier
+    #   djlint
+json5==0.17.3
+    # via djlint
 packaging==26.2
     # via
     #   build
     #   wheel
+pathspec==1.1.1
+    # via djlint
 pip-tools==7.5.3
     # via -r requirements.in
 psycopg2-binary==2.9.12
@@ -34,6 +52,10 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
+pyyaml==6.0.3
+    # via djlint
+regex==2026.11.19
+    # via djlint
 ruff==0.17.1
     # via -r requirements.in
 sqlparse==0.5.5

@@ -1,76 +1,70 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% block page_title%}{{page_title}}{% endblock page_title %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-<div class="w-full flex justify-between items-center">
-    <h1 class="page-title">Parts Inventory</h1>
-    <button
-        type="button"
-        class="btn"
-        hx-get="{% url 'part_add' %}"
-        data-shortcut="n"
-        data-shortcut-label="Add"
-        hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}'
-        hx-target="#page-dialog"
-    >
-        <i class="fas fa-plus me-1"></i>Add<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
-    </button>
-</div>
-{% include "partials/components/filter_chips.html" with id_prefix="parts" noun="parts" param="type" %}
-{% include "partials/components/bulk_bar.html" with id_prefix="parts" %}
-<div class="w-full mt-4">
-    <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
-        <section class="table-container">
-            <table
-                id="table-parts"
-                class="table"
-                data-stack
-            >
-                <thead>
-                    <tr>
-                        <th class="w-px" data-stack-toolbar>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" class="input" data-bulk-all aria-label="Select all shown">
-                                <span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span>
-                            </label>
-                        </th>
-                        <th class="w-px text-nowrap" data-stack-toolbar>
-                            <label class="md:hidden flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                                Sort
-                                <select class="select h-8 text-sm" data-stack-sort aria-label="Sort parts"></select>
-                            </label>
-                        </th>
-                        {% include "partials/components/sort_header.html" with key="type" label="Type" class="w-1/12" filter_column="" %}
-                        {% include "partials/components/sort_header.html" with key="name" label="Name" class="w-3/12" %}
-                        {% include "partials/components/sort_header.html" with key="quantity" label="Quantity" class="w-px text-center text-nowrap" %}
-                        <th data-filter-column="">Information</th>
-                        {% for column in part_columns %}
-                        {% include "partials/components/sort_header.html" with key=column.key label=column.label filter_column=column.type %}
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for part in inventory %}
-                    {% include "partials/rows/part_row.html" %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </section>
+    <div class="w-full flex justify-between items-center">
+        <h1 class="page-title">Parts Inventory</h1>
+        <button type="button"
+                class="btn"
+                hx-get="{% url 'part_add' %}"
+                data-shortcut="n"
+                data-shortcut-label="Add"
+                hx-vals='js:{type: document.getElementById("parts-filter").dataset.active}'
+                hx-target="#page-dialog">
+            <i class="fas fa-plus me-1"></i>Add<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
+        </button>
     </div>
-    {% url 'part_add' as add_url %}
-    {% include "partials/components/empty_state.html" with id_prefix="parts" icon="package" noun="parts" description="Anything you own that isn't currently on a built board goes here." show_action=True action_url=add_url action_label="Add part" param="type" %}
-</div>
-
-{% include "partials/components/open_add_loader.html" with param="type" %}
-
-{% include "partials/components/page_dialog.html" %}
-
+    {% include "partials/components/filter_chips.html" with id_prefix="parts" noun="parts" param="type" %}
+    {% include "partials/components/bulk_bar.html" with id_prefix="parts" %}
+    <div class="w-full mt-4">
+        <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
+            <section class="table-container">
+                <table id="table-parts" class="table" data-stack>
+                    <thead>
+                        <tr>
+                            <th class="w-px" data-stack-toolbar>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox"
+                                           class="input"
+                                           data-bulk-all
+                                           aria-label="Select all shown">
+                                    <span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span>
+                                </label>
+                            </th>
+                            <th class="w-px text-nowrap" data-stack-toolbar>
+                                <label class="md:hidden flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                                    Sort
+                                    <select class="select h-8 text-sm" data-stack-sort aria-label="Sort parts">
+                                    </select>
+                                </label>
+                            </th>
+                            {% include "partials/components/sort_header.html" with key="type" label="Type" class="w-1/12" filter_column="" %}
+                            {% include "partials/components/sort_header.html" with key="name" label="Name" class="w-3/12" %}
+                            {% include "partials/components/sort_header.html" with key="quantity" label="Quantity" class="w-px text-center text-nowrap" %}
+                            <th data-filter-column="">Information</th>
+                            {% for column in part_columns %}
+                                {% include "partials/components/sort_header.html" with key=column.key label=column.label filter_column=column.type %}
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for part in inventory %}
+                            {% include "partials/rows/part_row.html" %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+        {% url 'part_add' as add_url %}
+        {% include "partials/components/empty_state.html" with id_prefix="parts" icon="package" noun="parts" description="Anything you own that isn't currently on a built board goes here." show_action=True action_url=add_url action_label="Add part" param="type" %}
+    </div>
+    {% include "partials/components/open_add_loader.html" with param="type" %}
+    {% include "partials/components/page_dialog.html" %}
 {% endblock content %}
-
 {% block page_js %}
-<script src="{% static 'tables.js' %}"></script>
-<script src="{% static 'table_filter.js' %}"></script>
-<script>
+    <script src="{% static 'tables.js' %}"></script>
+    <script src="{% static 'table_filter.js' %}"></script>
+    <script>
     initTableFilter({
         filter: document.getElementById("parts-filter"),
         table: document.getElementById("table-parts"),
@@ -79,13 +73,13 @@
         param: "type",
     });
     initTableStack(document.getElementById("table-parts"));
-</script>
-<script src="{% static 'bulk_select.js' %}"></script>
-<script>
+    </script>
+    <script src="{% static 'bulk_select.js' %}"></script>
+    <script>
     initBulkSelect({
         table: document.getElementById("table-parts"),
         bar: document.getElementById("parts-bulk"),
         url: "{% url 'part_delete' %}",
     });
-</script>
+    </script>
 {% endblock page_js %}

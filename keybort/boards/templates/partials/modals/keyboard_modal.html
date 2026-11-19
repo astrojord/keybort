@@ -1,118 +1,147 @@
 {% load allauth %}
-<form
-    id="keyboard-form"
-    class="sm:max-w-2xl"
-    hx-post="{{ action_url }}"
-    hx-target="#page-dialog"
-    data-initial-step="{{ step|default:'kind' }}"
-    data-path-input="kind"
-    data-default-path="custom"
-    {% if editing %}data-free-nav{% endif %}
->
+<form id="keyboard-form"
+      class="sm:max-w-2xl"
+      hx-post="{{ action_url }}"
+      hx-target="#page-dialog"
+      data-initial-step="{{ step|default:'kind' }}"
+      data-path-input="kind"
+      data-default-path="custom"
+      {% if editing %}data-free-nav{% endif %}>
     {% csrf_token %}
     <header>
         {% if editing %}
-        <h2 id="page-dialog-title">Edit keyboard</h2>
-        {% if from_prebuilt %}
-        <p id="page-dialog-description">
-            Saving turns this prebuilt into a custom build in your inventory. The catalog entry isn't changed.
-        </p>
-        {% endif %}
+            <h2 id="page-dialog-title">Edit keyboard</h2>
+            {% if from_prebuilt %}
+                <p id="page-dialog-description">
+                    Saving turns this prebuilt into a custom build in your inventory. The catalog entry isn't changed.
+                </p>
+            {% endif %}
         {% else %}
-        <h2 id="page-dialog-title">Add keyboard</h2>
-        <p id="page-dialog-description">Pick a prebuilt, or define a custom build by parts.</p>
+            <h2 id="page-dialog-title">Add keyboard</h2>
+            <p id="page-dialog-description">Pick a prebuilt, or define a custom build by parts.</p>
         {% endif %}
-        <ol class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm" aria-label="Steps">
+        <ol class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm"
+            aria-label="Steps">
             {% if not editing %}
-            <li data-step-label="kind" class="step-label">Type</li>
-            <li data-step-label="prebuilt" class="step-label">Prebuilt</li>
+                <li data-step-label="kind" class="step-label">Type</li>
+                <li data-step-label="prebuilt" class="step-label">Prebuilt</li>
             {% endif %}
             {% for part in parts %}
-            <li data-step-label="{{ part.type }}" class="step-label">{% if editing %}<button type="button" class="hover:underline" data-goto="{{ part.type }}">{{ part.label }}</button>{% else %}{{ part.label }}{% endif %}</li>
+                <li data-step-label="{{ part.type }}" class="step-label">{% if editing %}<button type="button" class="hover:underline" data-goto="{{ part.type }}">{{ part.label }}</button>{% else %}{{ part.label }}{% endif %}</li>
             {% endfor %}
             <li data-step-label="details" class="step-label">{% if editing %}<button type="button" class="hover:underline" data-goto="details">Details</button>{% else %}Details{% endif %}</li>
             <li data-step-label="review" class="step-label">{% if editing %}<button type="button" class="hover:underline" data-goto="review">Review</button>{% else %}Review{% endif %}</li>
         </ol>
-        <p class="text-muted-foreground text-xs" data-step-counter aria-live="polite"></p>
+        <p class="text-muted-foreground text-xs"
+           data-step-counter
+           aria-live="polite"></p>
     </header>
-
     <section class="-mx-6 min-h-0 overflow-y-auto px-6">
         {% if not editing %}
-        <fieldset data-step="kind" class="grid min-w-0 gap-3" role="radiogroup" aria-label="Keyboard type">
-            <label{% if not prebuilt_options %} data-disabled="true"{% endif %}>
-                <div class="field" data-orientation="horizontal">
-                    <section>
-                        <h3>Prebuilt</h3>
-                        <p>
-                            {% if prebuilt_options %}
-                            Select from the catalog ({{ prebuilt_options|length }} available).
-                            {% else %}
-                            No prebuilts in the catalog yet.
-                            {% endif %}
-                        </p>
-                    </section>
-                    <input type="radio" name="kind" value="prebuilt" required{% if kind == "prebuilt" %} checked{% endif %}{% if not prebuilt_options %} disabled{% endif %}>
+            <fieldset data-step="kind"
+                      class="grid min-w-0 gap-3"
+                      role="radiogroup"
+                      aria-label="Keyboard type">
+                <label{% if not prebuilt_options %} data-disabled="true"{% endif %}>
+                    <div class="field" data-orientation="horizontal">
+                        <section>
+                            <h3>Prebuilt</h3>
+                            <p>
+                                {% if prebuilt_options %}
+                                    Select from the catalog ({{ prebuilt_options|length }} available).
+                                {% else %}
+                                    No prebuilts in the catalog yet.
+                                {% endif %}
+                            </p>
+                        </section>
+                        <input type="radio"
+                               name="kind"
+                               value="prebuilt"
+                               required{% if kind == "prebuilt" %}
+                               checked{% endif %}{% if not prebuilt_options %}
+                               disabled{% endif %}>
+                    </div>
+                </label>
+                <label>
+                    <div class="field" data-orientation="horizontal">
+                        <section>
+                            <h3>Custom build</h3>
+                            <p>Choose each part from stock or enter your own.</p>
+                        </section>
+                        <input type="radio"
+                               name="kind"
+                               value="custom"
+                               required{% if kind != "prebuilt" %}
+                               checked{% endif %}>
+                    </div>
+                </label>
+            </fieldset>
+            <fieldset data-step="prebuilt"
+                      data-path="prebuilt"
+                      class="grid min-w-0 gap-4"
+                      hidden>
+                <div class="field"{% if prebuilt_error %} data-invalid="true"{% endif %}>
+                    <label for="id_prebuilt">Prebuilt keyboard</label>
+                    <select id="id_prebuilt"
+                            name="prebuilt"
+                            required{% if prebuilt_error %}
+                            aria-invalid="true"
+                            aria-describedby="id_prebuilt-error"{% endif %}>
+                        <option value="">Choose a keyboard…</option>
+                        {% for option in prebuilt_options %}
+                            <option value="{{ option.id }}"{% if prebuilt_id == option.id|stringformat:"s" %} selected{% endif %}>{{ option.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if prebuilt_error %}
+                        <div role="alert" id="id_prebuilt-error" class="text-sm">{{ prebuilt_error }}</div>
+                    {% endif %}
                 </div>
-            </label>
-            <label>
-                <div class="field" data-orientation="horizontal">
-                    <section>
-                        <h3>Custom build</h3>
-                        <p>Choose each part from stock or enter your own.</p>
-                    </section>
-                    <input type="radio" name="kind" value="custom" required{% if kind != "prebuilt" %} checked{% endif %}>
-                </div>
-            </label>
-        </fieldset>
-
-        <fieldset data-step="prebuilt" data-path="prebuilt" class="grid min-w-0 gap-4" hidden>
-            <div class="field"{% if prebuilt_error %} data-invalid="true"{% endif %}>
-                <label for="id_prebuilt">Prebuilt keyboard</label>
-                <select id="id_prebuilt" name="prebuilt" required{% if prebuilt_error %} aria-invalid="true" aria-describedby="id_prebuilt-error"{% endif %}>
-                    <option value="">Choose a keyboard…</option>
-                    {% for option in prebuilt_options %}
-                    <option value="{{ option.id }}"{% if prebuilt_id == option.id|stringformat:"s" %} selected{% endif %}>{{ option.name }}</option>
-                    {% endfor %}
-                </select>
-                {% if prebuilt_error %}
-                <div role="alert" id="id_prebuilt-error" class="text-sm">{{ prebuilt_error }}</div>
-                {% endif %}
-            </div>
-        </fieldset>
+            </fieldset>
         {% endif %}
-
         {% for part in parts %}
-        <fieldset data-step="{{ part.type }}" data-path="custom" class="grid min-w-0 gap-4" hidden>
-            {% include "partials/components/part_source_fields.html" %}
-        </fieldset>
+            <fieldset data-step="{{ part.type }}"
+                      data-path="custom"
+                      class="grid min-w-0 gap-4"
+                      hidden>
+                {% include "partials/components/part_source_fields.html" %}
+            </fieldset>
         {% endfor %}
-
-        <fieldset data-step="details" data-path="custom" class="grid min-w-0 gap-4" hidden>
+        <fieldset data-step="details"
+                  data-path="custom"
+                  class="grid min-w-0 gap-4"
+                  hidden>
             {% element fields form=details_form %}
             {% endelement %}
         </fieldset>
-
-        <fieldset data-step="review" data-path="custom" class="grid min-w-0 gap-3" hidden>
+        <fieldset data-step="review"
+                  data-path="custom"
+                  class="grid min-w-0 gap-3"
+                  hidden>
             <p class="text-sm">Check the build before saving. Pick a step to change it.</p>
-            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm [&_dd]:min-w-0 [&_dd]:break-words" data-review></dl>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm [&_dd]:min-w-0 [&_dd]:break-words"
+                data-review>
+            </dl>
         </fieldset>
     </section>
-
     <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         {% if delete_url %}
-        <button type="button" class="btn sm:me-auto" data-variant="destructive" hx-get="{{ delete_url }}" hx-target="#page-dialog"><i class="fas fa-trash"></i>Delete</button>
+            <button type="button"
+                    class="btn sm:me-auto"
+                    data-variant="destructive"
+                    hx-get="{{ delete_url }}"
+                    hx-target="#page-dialog"><i class="fas fa-trash"></i>Delete</button>
         {% endif %}
         <button type="button" class="btn" data-variant="outline" data-action="back">Back</button>
         <button type="button" class="btn" data-action="next">Next</button>
         {% if editing %}
-        <button type="submit" class="btn bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/50" data-action="save">Save changes</button>
+            <button type="submit"
+                    class="btn bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/50"
+                    data-action="save">Save changes</button>
         {% else %}
-        <button type="submit" class="btn" data-action="save">Add keyboard</button>
+            <button type="submit" class="btn" data-action="save">Add keyboard</button>
         {% endif %}
     </footer>
-
     {% include "partials/components/dialog_close.html" %}
-
     <script>
         (() => {
             const form = document.getElementById("keyboard-form");

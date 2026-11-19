@@ -1,66 +1,69 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-<div class="w-full flex justify-between items-center">
-    <h1 class="page-title">{{page_title}}</h1>
-    {% if perms.boards.can_upload_stock_data %}
-    <button
-        type="button"
-        class="btn"
-        hx-get="{% url 'stock_prebuilt_add' %}"
-        data-shortcut="n"
-        data-shortcut-label="Add"
-        hx-target="#page-dialog"
-    >
-        <i class="fas fa-plus me-1"></i>Add to catalog<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
-    </button>
-    {% endif %}
-</div>
-{% include "partials/components/filter_card.html" with id_prefix="prebuilts" noun="prebuilts" placeholder="Name, switches, notes…" %}
-{% if perms.boards.can_delete_stock_data %}{% include "partials/components/bulk_bar.html" with id_prefix="prebuilts" %}{% endif %}
-<div class="w-full mt-4">
-    <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
-        <section>
-            <table id="table-prebuilts" class="table" data-stack>
-                <thead>
-                    <tr>
-                        {% if perms.boards.can_delete_stock_data %}<th class="w-px" data-stack-toolbar><label class="flex items-center gap-2"><input type="checkbox" class="input" data-bulk-all aria-label="Select all shown"><span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span></label></th>{% endif %}
-                        {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
-                        {% include "partials/components/sort_header.html" with key="name" label="Keyboard" %}
-                        {% include "partials/components/sort_header.html" with key="size" label="Size" %}
-                        {% include "partials/components/sort_header.html" with key="layout" label="Layout" %}
-                        {% include "partials/components/sort_header.html" with key="switches" label="Switches" %}
-                        {% include "partials/components/sort_header.html" with key="keycaps" label="Keycaps" %}
-                        {% include "partials/components/sort_header.html" with key="connectivity" label="Connectivity" %}
-                        <th>Notes</th>
-                        <th class="md:hidden" data-stack-toolbar>
-                            <label class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                                Sort
-                                <select class="select h-8 text-sm" data-stack-sort aria-label="Sort prebuilts"></select>
-                            </label>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for kb in prebuilts %}
-                    {% include "partials/rows/stock_prebuilt_row.html" %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </section>
+    <div class="w-full flex justify-between items-center">
+        <h1 class="page-title">{{ page_title }}</h1>
+        {% if perms.boards.can_upload_stock_data %}
+            <button type="button"
+                    class="btn"
+                    hx-get="{% url 'stock_prebuilt_add' %}"
+                    data-shortcut="n"
+                    data-shortcut-label="Add"
+                    hx-target="#page-dialog">
+                <i class="fas fa-plus me-1"></i>Add to catalog<kbd class="kbd ms-1" data-kbd-hint>N</kbd>
+            </button>
+        {% endif %}
     </div>
-    {% url 'stock_prebuilt_add' as add_url %}
-    {% include "partials/components/empty_state.html" with id_prefix="prebuilts" icon="keyboard" noun="prebuilts" description="The catalog is empty for now." show_action=perms.boards.can_upload_stock_data action_url=add_url action_label="Add to catalog" %}
-</div>
-
-{% include "partials/components/page_dialog.html" %}
+    {% include "partials/components/filter_card.html" with id_prefix="prebuilts" noun="prebuilts" placeholder="Name, switches, notes…" %}
+    {% if perms.boards.can_delete_stock_data %}
+        {% include "partials/components/bulk_bar.html" with id_prefix="prebuilts" %}
+    {% endif %}
+    <div class="w-full mt-4">
+        <div class="card [&:not(:has(tbody>tr:not([hidden])))]:hidden">
+            <section>
+                <table id="table-prebuilts" class="table" data-stack>
+                    <thead>
+                        <tr>
+                            {% if perms.boards.can_delete_stock_data %}<th class="w-px" data-stack-toolbar><label class="flex items-center gap-2"><input type="checkbox"
+                                                                                                                                                         class="input"
+                                                                                                                                                         data-bulk-all
+                                                                                                                                                         aria-label="Select all shown"><span class="md:hidden text-sm font-normal text-muted-foreground">Select all</span></label></th>{% endif %}
+                            {% if user.is_authenticated %}<th class="w-px"></th>{% endif %}
+                            {% include "partials/components/sort_header.html" with key="name" label="Keyboard" %}
+                            {% include "partials/components/sort_header.html" with key="size" label="Size" %}
+                            {% include "partials/components/sort_header.html" with key="layout" label="Layout" %}
+                            {% include "partials/components/sort_header.html" with key="switches" label="Switches" %}
+                            {% include "partials/components/sort_header.html" with key="keycaps" label="Keycaps" %}
+                            {% include "partials/components/sort_header.html" with key="connectivity" label="Connectivity" %}
+                            <th>Notes</th>
+                            <th class="md:hidden" data-stack-toolbar>
+                                <label class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                                    Sort
+                                    <select class="select h-8 text-sm"
+                                            data-stack-sort
+                                            aria-label="Sort prebuilts"></select>
+                                </label>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kb in prebuilts %}
+                            {% include "partials/rows/stock_prebuilt_row.html" %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+        {% url 'stock_prebuilt_add' as add_url %}
+        {% include "partials/components/empty_state.html" with id_prefix="prebuilts" icon="keyboard" noun="prebuilts" description="The catalog is empty for now." show_action=perms.boards.can_upload_stock_data action_url=add_url action_label="Add to catalog" %}
+    </div>
+    {% include "partials/components/page_dialog.html" %}
 {% endblock content %}
-
 {% block page_js %}
-<script src="{% static 'tables.js' %}"></script>
-<script src="{% static 'filter_card.js' %}"></script>
-<script>
+    <script src="{% static 'tables.js' %}"></script>
+    <script src="{% static 'filter_card.js' %}"></script>
+    <script>
     initFilterCard({
         card: document.getElementById("prebuilts-filters"),
         table: document.getElementById("table-prebuilts"),
@@ -68,13 +71,15 @@
         noun: "prebuilts",
     });
     initTableStack(document.getElementById("table-prebuilts"));
-</script>
-{% if perms.boards.can_delete_stock_data %}<script src="{% static 'bulk_select.js' %}"></script>
-<script>
+    </script>
+    {% if perms.boards.can_delete_stock_data %}
+        <script src="{% static 'bulk_select.js' %}"></script>
+        <script>
     initBulkSelect({
         table: document.getElementById("table-prebuilts"),
         bar: document.getElementById("prebuilts-bulk"),
         url: "{% url 'stock_prebuilt_delete' %}",
     });
-</script>{% endif %}
+        </script>
+    {% endif %}
 {% endblock page_js %}

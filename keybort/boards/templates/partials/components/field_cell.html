@@ -1,5 +1,6 @@
 {% if cell.flag is not None %}
-{% include "partials/components/bool_icon.html" with value=cell.flag %}
+    {% include "partials/components/bool_icon.html" with value=cell.flag %}
 {% else %}
-<p class="max-w-xs line-clamp-2 whitespace-normal" title="{{cell.value}}">{% include "partials/components/switch_dot.html" with kind=cell.switch_kind decorative=True %}{{cell.value}}</p>
+    <p class="max-w-xs line-clamp-2 whitespace-normal"
+       title="{{ cell.value }}">{% include "partials/components/switch_dot.html" with kind=cell.switch_kind decorative=True %}{{ cell.value }}</p>
 {% endif %}

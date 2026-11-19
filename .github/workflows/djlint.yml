@@ -1,0 +1,28 @@
+name: djLint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  djlint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: keybort
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Install djlint
+        run: pip install "$(grep '^djlint==' requirements.txt)"
+      - name: Lint
+        run: djlint boards/templates --lint
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: djlint boards/templates --check

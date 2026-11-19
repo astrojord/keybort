@@ -1,37 +1,32 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    {% include 'base/head.html' %}
-    <script src="{% static 'htmx-2.0.1.min.js' %}" defer></script>
-    <script src="{% static 'step_form.js' %}" defer></script>
-    <script src="{% static 'toasts.js' %}" defer></script>
-    <title>{% block page_title %}{% endblock page_title %} | Keybort</title>
-
-    {% block page_css %}{% endblock page_css %}
-</head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-    {% include 'base/sidebar.html' %}
-
-    <div>
-        {% include 'base/header.html' %}
-
-        <main class="relative isolate min-h-[calc(100svh-3rem)] w-full">
-            {% include "partials/components/page_carpet.html" with carpet_id="carpet-main" %}
-            <div class="w-full p-4">
-                {% block content %}{% endblock content %}
-            </div>
-        </main>
-    </div>
-
-    {% include 'base/toaster.html' %}
-    {% include 'base/shortcuts_dialog.html' %}
-    <script src="{% static 'shortcuts.js' %}"></script>
-    <script src="{% static 'count_up.js' %}"></script>
-
-    {% block page_js %}{% endblock page_js %}
-
-</body>
-
+    <head>
+        {% include "base/head.html" %}
+        <script src="{% static 'htmx-2.0.1.min.js' %}" defer></script>
+        <script src="{% static 'step_form.js' %}" defer></script>
+        <script src="{% static 'toasts.js' %}" defer></script>
+        <title>{% block page_title %}{% endblock page_title %} | Keybort</title>
+        {% block page_css %}
+        {% endblock page_css %}
+    </head>
+    <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+        {% include "base/sidebar.html" %}
+        <div>
+            {% include "base/header.html" %}
+            <main class="relative isolate min-h-[calc(100svh-3rem)] w-full">
+                {% include "partials/components/page_carpet.html" with carpet_id="carpet-main" %}
+                <div class="w-full p-4">
+                    {% block content %}
+                    {% endblock content %}
+                </div>
+            </main>
+        </div>
+        {% include "base/toaster.html" %}
+        {% include "base/shortcuts_dialog.html" %}
+        <script src="{% static 'shortcuts.js' %}"></script>
+        <script src="{% static 'count_up.js' %}"></script>
+        {% block page_js %}
+        {% endblock page_js %}
+    </body>
 </html>

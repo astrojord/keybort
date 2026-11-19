@@ -1,52 +1,81 @@
-<tr id="{{part.row_id}}" data-type="{{part.type}}">
-    <td data-role="select"><input type="checkbox" class="input" data-bulk value="{{part.id}}" aria-label="Select {{part.name}}"></td>
+<tr id="{{ part.row_id }}" data-type="{{ part.type }}">
+    <td data-role="select">
+        <input type="checkbox"
+               class="input"
+               data-bulk
+               value="{{ part.id }}"
+               aria-label="Select {{ part.name }}">
+    </td>
     <td data-role="actions">
         <div class="flex items-center gap-1">
-            <button
-                type="button"
-                class="btn"
-                data-variant="ghost"
-                data-size="icon-sm"
-                aria-label="Edit {{part.name}}"
-                data-tooltip="Edit"
-                hx-get="{% url 'part_edit' %}?id={{part.id}}"
-                hx-target="#page-dialog"
-            >
+            <button type="button"
+                    class="btn"
+                    data-variant="ghost"
+                    data-size="icon-sm"
+                    aria-label="Edit {{ part.name }}"
+                    data-tooltip="Edit"
+                    hx-get="{% url 'part_edit' %}?id={{ part.id }}"
+                    hx-target="#page-dialog">
                 <i class="fas fa-edit"></i>
             </button>
         </div>
     </td>
-    <td data-role="subtitle" data-filter-column="">{{part.type_label}}</td>
-    <td data-role="title" data-sort-value="{{part.name}}">
+    <td data-role="subtitle" data-filter-column="">{{ part.type_label }}</td>
+    <td data-role="title" data-sort-value="{{ part.name }}">
         {% include "partials/components/switch_dot.html" with kind=part.switch_kind %}{% include "partials/components/part_link.html" with label=part.name params=part.detail_params %}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}
     </td>
-    <td data-role="control" class="text-center" data-sort-value="{{part.quantity}}">
+    <td data-role="control"
+        class="text-center"
+        data-sort-value="{{ part.quantity }}">
         <div class="inline-flex items-center gap-1">
-            <button type="button" class="btn md:hidden" data-variant="outline" data-size="icon-sm" data-step="-1" aria-label="Decrease quantity of {{part.name}}"><i class="fas fa-minus"></i></button>
-            <input
-                type="number"
-                class="input w-20 text-center tabular-nums"
-                name="quantity"
-                value="{{part.quantity}}"
-                min="1"
-                step="1"
-                required
-                aria-label="Quantity of {{part.name}}"
-                hx-post="{% url 'part_quantity' %}?id={{part.id}}"
-                hx-trigger="change delay:400ms"
-                hx-target="closest tr"
-                hx-swap="outerHTML"
-            >
-            <button type="button" class="btn md:hidden" data-variant="outline" data-size="icon-sm" data-step="1" aria-label="Increase quantity of {{part.name}}"><i class="fas fa-plus"></i></button>
+            <button type="button"
+                    class="btn md:hidden"
+                    data-variant="outline"
+                    data-size="icon-sm"
+                    data-step="-1"
+                    aria-label="Decrease quantity of {{ part.name }}">
+                <i class="fas fa-minus"></i>
+            </button>
+            <input type="number"
+                   class="input w-20 text-center tabular-nums"
+                   name="quantity"
+                   value="{{ part.quantity }}"
+                   min="1"
+                   step="1"
+                   required
+                   aria-label="Quantity of {{ part.name }}"
+                   hx-post="{% url 'part_quantity' %}?id={{ part.id }}"
+                   hx-trigger="change delay:400ms"
+                   hx-target="closest tr"
+                   hx-swap="outerHTML">
+            <button type="button"
+                    class="btn md:hidden"
+                    data-variant="outline"
+                    data-size="icon-sm"
+                    data-step="1"
+                    aria-label="Increase quantity of {{ part.name }}">
+                <i class="fas fa-plus"></i>
+            </button>
         </div>
     </td>
-    <td data-secondary data-filter-column=""><p class="line-clamp-2 whitespace-normal" title="{{part.info}}">{{part.info}}</p></td>
+    <td data-secondary data-filter-column="">
+        <p class="line-clamp-2 whitespace-normal" title="{{ part.info }}">{{ part.info }}</p>
+    </td>
     {% for cell in part.cells %}
-    <td data-secondary data-filter-column="{{cell.type}}" hidden>{% include "partials/components/field_cell.html" %}</td>
+        <td data-secondary data-filter-column="{{ cell.type }}" hidden>
+            {% include "partials/components/field_cell.html" %}
+        </td>
     {% endfor %}
     <td data-role="toggle" class="md:hidden">
-        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-row-toggle aria-expanded="false" hidden>
-            More details<span class="tabular-nums text-muted-foreground" data-row-toggle-count></span><i class="fas fa-chevron-down text-xs"></i>
+        <button type="button"
+                class="btn"
+                data-variant="ghost"
+                data-size="sm"
+                data-row-toggle
+                aria-expanded="false"
+                hidden>
+            More details<span class="tabular-nums text-muted-foreground"
+                              data-row-toggle-count></span><i class="fas fa-chevron-down text-xs"></i>
         </button>
     </td>
 </tr>

@@ -1,15 +1,15 @@
-<dialog
-    id="shortcuts-dialog"
-    class="dialog"
-    aria-labelledby="shortcuts-dialog-title"
-    onclick="if (event.target === this) this.close()"
->
+<dialog id="shortcuts-dialog"
+        class="dialog"
+        aria-labelledby="shortcuts-dialog-title"
+        onclick="if (event.target === this) this.close()">
     <div class="sm:max-w-sm">
         <header>
             <h2 id="shortcuts-dialog-title">Keyboard shortcuts</h2>
         </header>
         <section>
-            <ul class="divide-y text-sm [&>li]:flex [&>li]:items-center [&>li]:justify-between [&>li]:gap-6 [&>li]:py-1.5" data-shortcut-list></ul>
+            <ul class="divide-y text-sm [&>li]:flex [&>li]:items-center [&>li]:justify-between [&>li]:gap-6 [&>li]:py-1.5"
+                data-shortcut-list>
+            </ul>
         </section>
         {% include "partials/components/dialog_close.html" %}
     </div>
