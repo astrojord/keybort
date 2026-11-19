@@ -33,10 +33,13 @@ from .managers import (
     parse_quantity,
     part_columns,
     part_row,
+    part_row_id,
     part_type_of,
+    prebuilt_row_id,
     promote_to_catalog,
     save_stock_keyboard,
     stock_part_row,
+    stock_part_row_id,
     stock_part_specs,
     stock_part_usage,
     stock_prebuilt_row,
@@ -182,7 +185,7 @@ def add_part(request):
     else:
         messages.success(request, f'Added {row["name"]} to parts.')
     target, swap = (
-        (f'#part-{inv.pk}', 'outerHTML')
+        (f'#{part_row_id(inv)}', 'outerHTML')
         if stacked
         else ('#table-parts tbody', 'beforeend')
     )
@@ -218,7 +221,7 @@ def edit_part(request):
     row = part_row(inv)
     messages.success(request, f'Saved {row["name"]}.')
     return swap_row(
-        request, 'partials/rows/part_row.html', {'part': row}, f'#part-{inv.pk}'
+        request, 'partials/rows/part_row.html', {'part': row}, f'#{part_row_id(inv)}'
     )
 
 
@@ -265,8 +268,7 @@ def part_quantity(request):
         inv.quantity = quantity
         inv.save(update_fields=['quantity'])
         messages.success(
-            request,
-            f'Updated quantity of {part_row(inv)["name"]} to {quantity}.',
+            request, f'Updated quantity of {part_name(inv.obj)} to {quantity}.'
         )
 
     return render(request, 'partials/rows/part_row.html', {'part': part_row(inv)})
@@ -294,8 +296,7 @@ def delete_parts(request):
     if not invs:
         raise BadRequest
 
-    rows = [part_row(inv) for inv in invs]
-    names = [row['name'] for row in rows]
+    names = [part_name(inv.obj) for inv in invs]
     if request.method != 'POST':
         return delete_modal(
             request,
@@ -308,10 +309,11 @@ def delete_parts(request):
             },
         )
 
+    row_ids = [part_row_id(inv) for inv in invs]
     for inv in invs:
         part_manager.delete_part(inv)
     messages.success(request, f'Removed {deleted_label(names, "parts")} from parts.')
-    return bulk_deleted([row['row_id'] for row in rows])
+    return bulk_deleted(row_ids)
 
 
 @login_required
@@ -588,7 +590,7 @@ def delete_stock_prebuilts(request):
     if not stock_kbs:
         raise BadRequest
 
-    rows = [stock_prebuilt_row(kb) for kb in stock_kbs]
+    names = [str(kb) for kb in stock_kbs]
     if request.method != 'POST':
         owners = (
             Inventory.objects.filter(keyboard__stock__in=stock_kbs)
@@ -600,27 +602,26 @@ def delete_stock_prebuilts(request):
         if owners:
             description += (
                 f' {owners} user{pluralize(owners, " has,s have")}'
-                f' {pluralize(len(rows), "it,some of them")} in their inventory.'
+                f' {pluralize(len(names), "it,some of them")} in their inventory.'
                 ' Their copies will become custom builds with the same parts.'
             )
         return delete_modal(
             request,
             {
-                'title': delete_title(
-                    [row['name'] for row in rows], 'prebuilts', ' from the catalog'
-                ),
+                'title': delete_title(names, 'prebuilts', ' from the catalog'),
                 'description': description,
-                'items': [row['name'] for row in rows],
+                'items': names,
                 'ids': [kb.pk for kb in stock_kbs],
                 'action_url': reverse('stock_prebuilt_delete'),
             },
         )
 
+    row_ids = [prebuilt_row_id(kb) for kb in stock_kbs]
     for stock_kb in stock_kbs:
         delete_stock_keyboard(stock_kb)
-    label = deleted_label([row['name'] for row in rows], 'prebuilts')
+    label = deleted_label(names, 'prebuilts')
     messages.success(request, f'Removed {label} from the catalog.')
-    return bulk_deleted([row['row_id'] for row in rows])
+    return bulk_deleted(row_ids)
 
 
 @login_required
@@ -828,9 +829,8 @@ def delete_stock_parts(request):
         )
         raise BadRequest
 
-    row_ids = []
+    row_ids = [stock_part_row_id(part_type, obj) for obj in deletable]
     for obj in deletable:
-        row_ids.append(stock_part_row(part_type, obj)['row_id'])
         delete_stock_part(part_type, obj)
     message = f'Removed {deleted_label(names, plural)} from the catalog.'
     if blocked:

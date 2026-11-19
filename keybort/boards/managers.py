@@ -278,6 +278,18 @@ def keyboard_row_id(kb):
     return f'keyboard-{keyboard_ref(kb)}'
 
 
+def part_row_id(inv):
+    return f'part-{inv.pk}'
+
+
+def stock_part_row_id(part_type, obj):
+    return f'stock-{part_type}-{obj.pk}'
+
+
+def prebuilt_row_id(kb):
+    return f'prebuilt-{kb.pk}'
+
+
 def detail_params(part_type, obj, edit_url):
     return urlencode(
         {'type': part_type, 'id': obj.pk, 'stock': int(obj.stock), 'edit': edit_url}
@@ -409,7 +421,7 @@ def part_row(inv):
     obj = getattr(inv, part_type).obj
     return {
         'id': inv.pk,
-        'row_id': f'part-{inv.pk}',
+        'row_id': part_row_id(inv),
         'type': part_type,
         'type_label': const.PART_SINGULARS[part_type],
         'name': part_name(obj),
@@ -488,7 +500,7 @@ def stock_part_row(part_type, obj, quantity=0):
             facets[name] = [value]
     return {
         'id': obj.pk,
-        'row_id': f'stock-{part_type}-{obj.pk}',
+        'row_id': stock_part_row_id(part_type, obj),
         'type': part_type,
         'url_params': f'type={part_type}&id={obj.pk}',
         'name': part_name(obj),
@@ -512,7 +524,7 @@ def stock_prebuilt_row(kb, owned=False):
     ] or [const.WIRED]
     data = {
         'id': kb.pk,
-        'row_id': f'prebuilt-{kb.pk}',
+        'row_id': prebuilt_row_id(kb),
         'name': str(kb),
         'brand': (kb.kit.brand or '') if kb.kit else '',
         'owned': owned,
