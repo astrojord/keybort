@@ -19,11 +19,24 @@ from .managers import (
     KeyboardManager,
     ModalForms,
     PartManager,
-    RowBuilder,
     TypingManager,
+    delete_stock_keyboard,
+    delete_stock_part,
+    filter_facets,
+    keyboard_row,
+    keyboard_row_id,
     parse_quantity,
+    part_columns,
     part_name,
+    part_row,
     part_type_of,
+    promote_to_catalog,
+    save_stock_keyboard,
+    stock_part,
+    stock_part_row,
+    stock_part_specs,
+    stock_part_usage,
+    stock_prebuilt_row,
 )
 from .models import Inventory, StockKeyboard
 from .utils import (
@@ -120,7 +133,7 @@ def inventory_keyboards(request):
 def inventory_parts(request):
     context = {'page_title': 'Parts Inventory'}
     context['inventory'] = PartManager(request.user).part_rows()
-    context['part_columns'] = RowBuilder.part_columns()
+    context['part_columns'] = part_columns()
     context['filters'] = list(const.PART_PLURALS.items())
     add = request.GET.get('add')
     if add is not None:
@@ -159,7 +172,7 @@ def add_part(request):
         return render(request, 'partials/modals/part_add_modal.html', context)
 
     inv, stacked = part_manager.add_part(part_type, choice, quantity)
-    row = RowBuilder.part_row(inv)
+    row = part_row(inv)
     if stacked:
         messages.success(
             request, f'Updated quantity of {row["name"]} to {inv.quantity}.'
@@ -200,7 +213,7 @@ def edit_part(request):
 
     inv = part_manager.edit_part(inv, form, quantity)
 
-    row = RowBuilder.part_row(inv)
+    row = part_row(inv)
     messages.success(request, f'Saved {row["name"]}.')
     return swap_row(
         request, 'partials/rows/part_row.html', {'part': row}, f'#part-{inv.pk}'
@@ -227,9 +240,9 @@ def promote_part(request):
         }
         return render(request, 'partials/modals/part_promote_modal.html', context)
 
-    CatalogManager.promote_part(inv)
+    promote_to_catalog(inv)
     messages.success(request, f'Added {name} to the catalog.')
-    row = RowBuilder.part_row(part_manager.standalone_part(inv.pk))
+    row = part_row(part_manager.standalone_part(inv.pk))
     return swap_row(
         request, 'partials/rows/part_row.html', {'part': row}, f'#{row["row_id"]}'
     )
@@ -251,12 +264,10 @@ def part_quantity(request):
         inv.save(update_fields=['quantity'])
         messages.success(
             request,
-            f'Updated quantity of {RowBuilder.part_row(inv)["name"]} to {quantity}.',
+            f'Updated quantity of {part_row(inv)["name"]} to {quantity}.',
         )
 
-    return render(
-        request, 'partials/rows/part_row.html', {'part': RowBuilder.part_row(inv)}
-    )
+    return render(request, 'partials/rows/part_row.html', {'part': part_row(inv)})
 
 
 def delete_modal(request, context):
@@ -281,7 +292,7 @@ def delete_parts(request):
     if not invs:
         return HttpResponse(status=400)
 
-    rows = [RowBuilder.part_row(inv) for inv in invs]
+    rows = [part_row(inv) for inv in invs]
     names = [row['name'] for row in rows]
     if request.method != 'POST':
         return delete_modal(
@@ -315,7 +326,7 @@ def delete_keyboards(request):
         return HttpResponse(status=400)
 
     keyboards = [inventory.keyboard.obj for _, inventory in inventories]
-    names = [keyboard_name(RowBuilder.keyboard_row(kb)) for kb in keyboards]
+    names = [keyboard_name(keyboard_row(kb)) for kb in keyboards]
     single = len(keyboards) == 1
     if request.method != 'POST':
         context = {
@@ -338,7 +349,7 @@ def delete_keyboards(request):
     keep = request.POST.getlist('keep') if single else []
     row_ids = []
     for kb, (_, inventory) in zip(keyboards, inventories, strict=True):
-        row_ids.append(RowBuilder.row_id(kb))
+        row_ids.append(keyboard_row_id(kb))
         kb_manager.delete_keyboard(inventory, keep)
     label = deleted_label(names, 'keyboards')
     if keep:
@@ -427,7 +438,7 @@ def add_keyboard(request):
         case _:
             return HttpResponse(status=400)
 
-    row = RowBuilder.keyboard_row(kb)
+    row = keyboard_row(kb)
     messages.success(request, f'Added {keyboard_name(row)} to keyboards.')
     return swap_row(
         request,
@@ -468,13 +479,13 @@ def edit_keyboard(request):
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
     kb = kb_manager.edit_keyboard(inventory, submission)
-    row = RowBuilder.keyboard_row(kb)
+    row = keyboard_row(kb)
     messages.success(request, f'Saved {keyboard_name(row)}.')
     return swap_row(
         request,
         'partials/rows/keyboard_row.html',
         {'kb': row},
-        f'#{RowBuilder.row_id(current)}',
+        f'#{keyboard_row_id(current)}',
     )
 
 
@@ -502,9 +513,7 @@ def stock_prebuilts(request):
     context = {
         'page_title': 'Prebuilt Keyboards',
         'prebuilts': rows,
-        'facets': RowBuilder.filter_facets(
-            rows, request.GET, const.STOCK_PREBUILT_FACETS
-        ),
+        'facets': filter_facets(rows, request.GET, const.STOCK_PREBUILT_FACETS),
         'query': request.GET.get('q', ''),
     }
     return render(request, 'pages/stock_prebuilts.html', context)
@@ -527,8 +536,8 @@ def add_stock_prebuilt(request):
         context['step'] = submission.step
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
-    stock_kb = CatalogManager.save_stock_keyboard(submission)
-    row = RowBuilder.stock_prebuilt_row(stock_kb)
+    stock_kb = save_stock_keyboard(submission)
+    row = stock_prebuilt_row(stock_kb)
     messages.success(request, f'Added {row["name"]} to the catalog.')
     return swap_row(
         request,
@@ -567,8 +576,8 @@ def edit_stock_prebuilt(request):
         context['step'] = submission.step
         return render(request, 'partials/modals/stock_prebuilt_modal.html', context)
 
-    stock_kb = CatalogManager.save_stock_keyboard(submission)
-    row = RowBuilder.stock_prebuilt_row(
+    stock_kb = save_stock_keyboard(submission)
+    row = stock_prebuilt_row(
         stock_kb, stock_kb.pk in catalog_manager.owned_prebuilt_ids()
     )
     messages.success(request, f'Saved {row["name"]}.')
@@ -589,7 +598,7 @@ def delete_stock_prebuilts(request):
     if not stock_kbs:
         return HttpResponse(status=400)
 
-    rows = [RowBuilder.stock_prebuilt_row(kb) for kb in stock_kbs]
+    rows = [stock_prebuilt_row(kb) for kb in stock_kbs]
     if request.method != 'POST':
         owners = (
             Inventory.objects.filter(keyboard__stock__in=stock_kbs)
@@ -614,7 +623,7 @@ def delete_stock_prebuilts(request):
         )
 
     for stock_kb in stock_kbs:
-        CatalogManager.delete_stock_keyboard(stock_kb)
+        delete_stock_keyboard(stock_kb)
     label = deleted_label([row['name'] for row in rows], 'prebuilts')
     messages.success(request, f'Removed {label} from the catalog.')
     return bulk_deleted([row['row_id'] for row in rows])
@@ -633,7 +642,7 @@ def collect_stock_prebuilt(request):
 
     catalog_manager = CatalogManager(request.user)
     kb_manager = KeyboardManager(request.user)
-    row = RowBuilder.stock_prebuilt_row(stock_kb, owned=True)
+    row = stock_prebuilt_row(stock_kb, owned=True)
     if stock_kb.pk in catalog_manager.owned_prebuilt_ids():
         messages.info(request, f'{row["name"]} is already in your inventory.')
     else:
@@ -645,7 +654,7 @@ def collect_stock_prebuilt(request):
 def stock_parts(request, part_type):
     catalog_manager = CatalogManager(request.user)
     rows = catalog_manager.stock_part_rows(part_type)
-    columns, facet_specs = RowBuilder.stock_part_specs(part_type)
+    columns, facet_specs = stock_part_specs(part_type)
     context = {
         'page_title': const.PART_PLURALS[part_type],
         'part_type': part_type,
@@ -653,7 +662,7 @@ def stock_parts(request, part_type):
         'noun': const.PART_PLURALS[part_type].lower(),
         'parts': rows,
         'columns': columns,
-        'facets': RowBuilder.filter_facets(rows, request.GET, facet_specs),
+        'facets': filter_facets(rows, request.GET, facet_specs),
         'query': request.GET.get('q', ''),
     }
     return render(request, 'pages/stock_parts.html', context)
@@ -664,7 +673,7 @@ def stock_part_from_request(request):
     part_id = request.GET.get('id', '')
     if part_type not in PART_MODELS or not is_id(part_id):
         raise BadRequest
-    obj = CatalogManager.stock_part(part_type, part_id)
+    obj = stock_part(part_type, part_id)
     if obj is None:
         messages.error(request, 'That part is no longer in the catalog.')
         raise Http404
@@ -691,7 +700,7 @@ def add_stock_part(request):
     form = form_class(request.POST or None, prefix=part_type)
     action_url = f'{reverse("stock_part_add")}?type={part_type}'
     if request.method == 'POST' and form.is_valid():
-        row = RowBuilder.stock_part_row(part_type, form.save())
+        row = stock_part_row(part_type, form.save())
         messages.success(request, f'Added {row["name"]} to the catalog.')
         return swap_row(
             request,
@@ -775,7 +784,7 @@ def edit_stock_part(request):
     if request.method == 'POST' and form.is_valid():
         obj = form.save()
         quantity = catalog_manager.stock_part_quantities(part_type).get(obj.pk, 0)
-        row = RowBuilder.stock_part_row(part_type, obj, quantity)
+        row = stock_part_row(part_type, obj, quantity)
         messages.success(request, f'Saved {row["name"]}.')
         return swap_row(
             request,
@@ -804,7 +813,7 @@ def delete_stock_parts(request):
 
     deletable, blocked = [], []
     for obj in objs:
-        usage = CatalogManager.stock_part_usage(part_type, obj)
+        usage = stock_part_usage(part_type, obj)
         if usage['prebuilts']:
             blocked.append((part_name(obj), ', '.join(usage['prebuilts'])))
         else:
@@ -833,8 +842,8 @@ def delete_stock_parts(request):
 
     row_ids = []
     for obj in deletable:
-        row_ids.append(RowBuilder.stock_part_row(part_type, obj)['row_id'])
-        CatalogManager.delete_stock_part(part_type, obj)
+        row_ids.append(stock_part_row(part_type, obj)['row_id'])
+        delete_stock_part(part_type, obj)
     message = f'Removed {deleted_label(names, plural)} from the catalog.'
     if blocked:
         message += f' Kept {len(blocked)} used by prebuilts.'
@@ -869,7 +878,7 @@ def collect_stock_part(request):
         messages.success(request, f'Updated quantity of {name} to {inv.quantity}.')
     else:
         messages.success(request, f'Added {name} to parts.')
-    row = RowBuilder.stock_part_row(part_type, obj, inv.quantity)
+    row = stock_part_row(part_type, obj, inv.quantity)
     return swap_row(
         request,
         'partials/rows/stock_part_row.html',

@@ -3,12 +3,16 @@ from boards.managers import (
     KeyboardManager,
     ModalForms,
     PartManager,
-    RowBuilder,
     TypingManager,
     board_switch_count,
+    field_display,
     parse_quantity,
+    part_cells,
+    part_columns,
     part_in_use,
+    part_info,
     part_name,
+    part_row,
     stat_breakdown,
     stat_leader,
     switch_kind,
@@ -61,7 +65,7 @@ class PartDisplayTests(UserTestCase):
             notes='hand lubed',
         )
         self.assertEqual(
-            RowBuilder.part_info('switch', switch),
+            part_info('switch', switch),
             'Tactile, 62gf, Polycarbonate top, lubed, hand lubed',
         )
 
@@ -75,13 +79,13 @@ class PartDisplayTests(UserTestCase):
 
     def test_kit_info(self):
         kit = CustomKit(size='65%', pcb='Hotswap')
-        self.assertEqual(RowBuilder.part_info('kit', kit), '65%, Hotswap PCB')
+        self.assertEqual(part_info('kit', kit), '65%, Hotswap PCB')
 
     def test_part_row(self):
         inv = Inventory.objects.create(
             user=self.user, kit=custom_kit_wrapper(), quantity=2
         )
-        row = RowBuilder.part_row(inv)
+        row = part_row(inv)
         self.assertEqual(row['row_id'], f'part-{inv.pk}')
         self.assertEqual(row['type'], 'kit')
         self.assertEqual(row['name'], 'KBDfans Tofu65')
@@ -89,11 +93,11 @@ class PartDisplayTests(UserTestCase):
         self.assertFalse(row['stock'])
 
     def test_part_columns_have_unique_sort_keys(self):
-        keys = [column['key'] for column in RowBuilder.part_columns()]
+        keys = [column['key'] for column in part_columns()]
         self.assertEqual(len(keys), len(set(keys)))
 
     def test_part_columns_label_each_field(self):
-        columns = RowBuilder.part_columns()
+        columns = part_columns()
         labels = {column['key']: column['label'] for column in columns}
         self.assertEqual(labels['switch-stem'], 'Stem')
         self.assertEqual(labels['switch-category'], 'Type')
@@ -103,8 +107,8 @@ class PartDisplayTests(UserTestCase):
         switch = CustomSwitch(
             stem='mx', peak_force=45.0, lubed=True, notes='hand lubed'
         )
-        cells = RowBuilder.part_cells('switch', switch)
-        columns = RowBuilder.part_columns()
+        cells = part_cells('switch', switch)
+        columns = part_columns()
         self.assertEqual(
             [cell['type'] for cell in cells], [column['type'] for column in columns]
         )
@@ -120,8 +124,8 @@ class PartDisplayTests(UserTestCase):
 
     def test_part_cells_flag_only_icon_fields(self):
         switch = CustomSwitch(stem='mx', lubed=True)
-        cells = RowBuilder.part_cells('switch', switch)
-        columns = RowBuilder.part_columns()
+        cells = part_cells('switch', switch)
+        columns = part_columns()
         flags = {
             column['key']: cell['flag']
             for column, cell in zip(columns, cells, strict=True)
@@ -130,28 +134,26 @@ class PartDisplayTests(UserTestCase):
         self.assertEqual(flags, {'switch-lubed': True, 'switch-filmed': False})
 
     def test_travel_column_label(self):
-        labels = {c['key']: c['label'] for c in RowBuilder.part_columns()}
+        labels = {c['key']: c['label'] for c in part_columns()}
         self.assertEqual(labels['switch-travel_distance'], 'Travel')
 
     def test_force_combines_peak_then_bottom_out(self):
         switch = CustomSwitch(peak_force=55.0, bottom_out_force=65.0)
-        self.assertEqual(RowBuilder.field_display(switch, 'force'), '55gf / 65gf')
+        self.assertEqual(field_display(switch, 'force'), '55gf / 65gf')
 
     def test_housing_combines_top_and_bottom(self):
         switch = CustomSwitch(top_housing='pc', bottom_housing='nylon')
-        self.assertEqual(
-            RowBuilder.field_display(switch, 'housing'), 'Polycarbonate / Nylon'
-        )
+        self.assertEqual(field_display(switch, 'housing'), 'Polycarbonate / Nylon')
 
     def test_housing_marks_missing_side(self):
         switch = CustomSwitch(top_housing='pom')
-        self.assertEqual(RowBuilder.field_display(switch, 'housing'), 'POM / —')
+        self.assertEqual(field_display(switch, 'housing'), 'POM / —')
 
     def test_housing_blank_when_unset(self):
-        self.assertEqual(RowBuilder.field_display(CustomSwitch(), 'housing'), '')
+        self.assertEqual(field_display(CustomSwitch(), 'housing'), '')
 
     def test_part_cells_blank_for_other_types(self):
-        cells = RowBuilder.part_cells('switch', CustomSwitch(notes='hand lubed'))
+        cells = part_cells('switch', CustomSwitch(notes='hand lubed'))
         other_values = {cell['value'] for cell in cells if cell['type'] != 'switch'}
         self.assertEqual(other_values, {''})
 

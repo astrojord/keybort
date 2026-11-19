@@ -269,258 +269,249 @@ class UserScoped:
         return Profile.objects.get_or_create(user=self.user)[0]
 
 
-class RowBuilder:
-    @staticmethod
-    def row_id(kb):
-        return f'keyboard-{"stock" if kb.stock else "custom"}-{kb.pk}'
+def keyboard_row_id(kb):
+    return f'keyboard-{"stock" if kb.stock else "custom"}-{kb.pk}'
 
-    @staticmethod
-    def detail_params(part_type, obj, edit_url):
-        return urlencode(
-            {'type': part_type, 'id': obj.pk, 'stock': int(obj.stock), 'edit': edit_url}
+
+def detail_params(part_type, obj, edit_url):
+    return urlencode(
+        {'type': part_type, 'id': obj.pk, 'stock': int(obj.stock), 'edit': edit_url}
+    )
+
+
+def filter_facets(rows, selected, specs):
+    facets = []
+    for key, label, fixed in specs:
+        values = fixed or sorted(
+            {value for row in rows for value in row['facets'].get(key, [])},
+            key=str.lower,
+        )
+        chosen = selected.getlist(key)
+        facets.append(
+            {
+                'key': key,
+                'label': label,
+                'options': [(value, value in chosen) for value in values],
+            }
+        )
+    return facets
+
+
+def field_label(model, name):
+    if name in const.FIELD_LABELS:
+        return const.FIELD_LABELS[name]
+    return model._meta.get_field(name).verbose_name.capitalize()
+
+
+def field_display(obj, name):
+    if name in const.COMBINED_FIELDS:
+        values = [field_display(obj, part) for part in const.COMBINED_FIELDS[name]]
+        return ' / '.join(value or '—' for value in values) if any(values) else ''
+    field = obj._meta.get_field(name)
+    value = getattr(obj, name)
+    if value is None or value == '':
+        return ''
+    if field.choices:
+        return getattr(obj, f'get_{name}_display')()
+    if isinstance(value, bool):
+        return 'Yes' if value else 'No'
+    if isinstance(value, float):
+        return f'{value:g}{field.help_text}'
+    return str(value)
+
+
+def field_cell(obj, name):
+    return {
+        'value': field_display(obj, name),
+        'flag': getattr(obj, name) if name in const.ICON_FIELDS else None,
+        'switch_kind': switch_kind(obj) if name == 'category' else None,
+    }
+
+
+def part_info(part_type, obj):
+    match part_type:
+        case 'kit':
+            info = [
+                obj.size,
+                obj.layout,
+                obj.case_material,
+                obj.mount_type,
+                obj.pcb and f'{obj.pcb} PCB',
+            ]
+        case 'switch':
+            info = [
+                obj.get_category_display() if obj.category else None,
+                obj.bottom_out_force and f'{obj.bottom_out_force:g}gf',
+                obj.top_housing and f'{obj.get_top_housing_display()} top',
+                obj.bottom_housing and f'{obj.get_bottom_housing_display()} bottom',
+                obj.lubed and 'lubed',
+                obj.filmed and 'filmed',
+            ]
+        case 'keycaps':
+            info = [obj.material]
+        case _:
+            info = []
+    return ', '.join(str(item) for item in [*info, obj.notes] if item)
+
+
+def part_columns():
+    return [
+        {
+            'type': part_type,
+            'key': f'{part_type}-{name}',
+            'label': field_label(PART_MODELS[part_type].custom, name),
+        }
+        for part_type, names in const.INVENTORY_PART_COLUMNS.items()
+        for name in names
+    ]
+
+
+def part_cells(part_type, obj):
+    blank = {'value': '', 'flag': None}
+    return [
+        {
+            'type': column_type,
+            **(field_cell(obj, name) if column_type == part_type else blank),
+        }
+        for column_type, names in const.INVENTORY_PART_COLUMNS.items()
+        for name in names
+    ]
+
+
+def part_row(inv):
+    part_type = part_type_of(inv)
+    obj = getattr(inv, part_type).obj
+    return {
+        'id': inv.pk,
+        'row_id': f'part-{inv.pk}',
+        'type': part_type,
+        'type_label': const.PART_SINGULARS[part_type],
+        'name': part_name(obj),
+        'stock': obj.stock,
+        'quantity': inv.quantity,
+        'info': part_info(part_type, obj),
+        'cells': part_cells(part_type, obj),
+        'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
+        'detail_params': detail_params(
+            part_type, obj, f'{reverse("part_edit")}?id={inv.pk}'
+        ),
+    }
+
+
+def keyboard_row(kb):
+    url_params = f'id={kb.pk}&stock={int(kb.stock)}'
+    edit_url = f'{reverse("keyboard_edit")}?{url_params}&step='
+    data = {
+        'id': kb.pk,
+        'row_id': keyboard_row_id(kb),
+        'url_params': url_params,
+        'stock': kb.stock,
+        'notes': kb.notes,
+    }
+
+    if kb.kit:
+        kit = part_obj(kb.kit)
+        data.update(
+            {
+                'kit_url_params': detail_params('kit', kit, f'{edit_url}kit'),
+                'kit_str': f'{kit.brand} {kit.name}',
+                'pcb': kit.pcb,
+            }
         )
 
-    @staticmethod
-    def filter_facets(rows, selected, specs):
-        facets = []
-        for key, label, fixed in specs:
-            values = fixed or sorted(
-                {value for row in rows for value in row['facets'].get(key, [])},
-                key=str.lower,
-            )
-            chosen = selected.getlist(key)
-            facets.append(
-                {
-                    'key': key,
-                    'label': label,
-                    'options': [(value, value in chosen) for value in values],
-                }
-            )
-        return facets
-
-    @staticmethod
-    def field_label(model, name):
-        if name in const.FIELD_LABELS:
-            return const.FIELD_LABELS[name]
-        return model._meta.get_field(name).verbose_name.capitalize()
-
-    @classmethod
-    def field_display(cls, obj, name):
-        if name in const.COMBINED_FIELDS:
-            values = [
-                cls.field_display(obj, part) for part in const.COMBINED_FIELDS[name]
-            ]
-            return ' / '.join(value or '—' for value in values) if any(values) else ''
-        field = obj._meta.get_field(name)
-        value = getattr(obj, name)
-        if value is None or value == '':
-            return ''
-        if field.choices:
-            return getattr(obj, f'get_{name}_display')()
-        if isinstance(value, bool):
-            return 'Yes' if value else 'No'
-        if isinstance(value, float):
-            return f'{value:g}{field.help_text}'
-        return str(value)
-
-    @classmethod
-    def field_cell(cls, obj, name):
-        return {
-            'value': cls.field_display(obj, name),
-            'flag': getattr(obj, name) if name in const.ICON_FIELDS else None,
-            'switch_kind': switch_kind(obj) if name == 'category' else None,
-        }
-
-    @staticmethod
-    def part_info(part_type, obj):
-        match part_type:
-            case 'kit':
-                info = [
-                    obj.size,
-                    obj.layout,
-                    obj.case_material,
-                    obj.mount_type,
-                    obj.pcb and f'{obj.pcb} PCB',
-                ]
-            case 'switch':
-                info = [
-                    obj.get_category_display() if obj.category else None,
-                    obj.bottom_out_force and f'{obj.bottom_out_force:g}gf',
-                    obj.top_housing and f'{obj.get_top_housing_display()} top',
-                    obj.bottom_housing and f'{obj.get_bottom_housing_display()} bottom',
-                    obj.lubed and 'lubed',
-                    obj.filmed and 'filmed',
-                ]
-            case 'keycaps':
-                info = [obj.material]
-            case _:
-                info = []
-        return ', '.join(str(item) for item in [*info, obj.notes] if item)
-
-    @classmethod
-    def part_columns(cls):
-        return [
+    if kb.switch:
+        switch = part_obj(kb.switch)
+        data.update(
             {
-                'type': part_type,
-                'key': f'{part_type}-{name}',
-                'label': cls.field_label(PART_MODELS[part_type].custom, name),
+                'switches_url_params': detail_params(
+                    'switch', switch, f'{edit_url}switch'
+                ),
+                'switches_str': f'{switch.brand} {switch.name}',
+                'switch_kind': switch_kind(switch),
+                'switch_count': kb.switch_count,
             }
-            for part_type, names in const.INVENTORY_PART_COLUMNS.items()
-            for name in names
-        ]
+        )
 
-    @classmethod
-    def part_cells(cls, part_type, obj):
-        blank = {'value': '', 'flag': None}
-        return [
+    for part_type in ('keycaps', 'plate', 'stabilizer'):
+        part = getattr(kb, part_type)
+        if part:
+            obj = part_obj(part)
+            data[f'{part_type}_url_params'] = detail_params(
+                part_type, obj, f'{edit_url}{part_type}'
+            )
+            data[f'{part_type}_str'] = str(obj)
+
+    return data
+
+
+def stock_part_specs(part_type):
+    stock_model = PART_MODELS[part_type].stock
+    fields = const.STOCK_PART_FIELDS[part_type]
+    columns = [(name, field_label(stock_model, name)) for name in fields['columns']]
+    facets = [(name, field_label(stock_model, name), None) for name in fields['facets']]
+    return columns, facets
+
+
+def stock_part_row(part_type, obj, quantity=0):
+    fields = const.STOCK_PART_FIELDS[part_type]
+    facets = {}
+    for name in fields['facets']:
+        value = field_display(obj, name)
+        if value:
+            facets[name] = [value]
+    return {
+        'id': obj.pk,
+        'row_id': f'stock-{part_type}-{obj.pk}',
+        'type': part_type,
+        'url_params': f'type={part_type}&id={obj.pk}',
+        'name': part_name(obj),
+        'detail_params': detail_params(part_type, obj, ''),
+        'columns': [field_cell(obj, name) for name in fields['columns']],
+        'facets': facets,
+        'notes': obj.notes,
+        'quantity': quantity,
+        'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
+    }
+
+
+def stock_prebuilt_row(kb, owned=False):
+    connectivity = [
+        label
+        for label, enabled in (
+            ('Wireless', kb.wireless),
+            ('Bluetooth', kb.bluetooth),
+        )
+        if enabled
+    ]
+    data = {
+        'id': kb.pk,
+        'row_id': f'prebuilt-{kb.pk}',
+        'name': str(kb) if kb.kit else 'Unnamed prebuilt',
+        'brand': (kb.kit.brand or '') if kb.kit else '',
+        'owned': owned,
+        'connectivity': ', '.join(connectivity) or 'Wired',
+        'facets': {'connectivity': connectivity or ['Wired']},
+        'notes': kb.notes,
+    }
+    if kb.kit:
+        for key in ('brand', 'size', 'layout'):
+            if getattr(kb.kit, key):
+                data['facets'][key] = [getattr(kb.kit, key)]
+        data.update(
             {
-                'type': column_type,
-                **(cls.field_cell(obj, name) if column_type == part_type else blank),
+                'kit_params': detail_params('kit', kb.kit, ''),
+                'size': kb.kit.size,
+                'layout': kb.kit.layout,
+                'pcb': kb.kit.pcb,
             }
-            for column_type, names in const.INVENTORY_PART_COLUMNS.items()
-            for name in names
-        ]
-
-    @classmethod
-    def part_row(cls, inv):
-        part_type = part_type_of(inv)
-        obj = getattr(inv, part_type).obj
-        return {
-            'id': inv.pk,
-            'row_id': f'part-{inv.pk}',
-            'type': part_type,
-            'type_label': const.PART_SINGULARS[part_type],
-            'name': part_name(obj),
-            'stock': obj.stock,
-            'quantity': inv.quantity,
-            'info': cls.part_info(part_type, obj),
-            'cells': cls.part_cells(part_type, obj),
-            'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
-            'detail_params': cls.detail_params(
-                part_type, obj, f'{reverse("part_edit")}?id={inv.pk}'
-            ),
-        }
-
-    @classmethod
-    def keyboard_row(cls, kb):
-        url_params = f'id={kb.pk}&stock={int(kb.stock)}'
-        edit_url = f'{reverse("keyboard_edit")}?{url_params}&step='
-        data = {
-            'id': kb.pk,
-            'row_id': cls.row_id(kb),
-            'url_params': url_params,
-            'stock': kb.stock,
-            'notes': kb.notes,
-        }
-
-        if kb.kit:
-            kit = part_obj(kb.kit)
-            data.update(
-                {
-                    'kit_url_params': cls.detail_params('kit', kit, f'{edit_url}kit'),
-                    'kit_str': f'{kit.brand} {kit.name}',
-                    'pcb': kit.pcb,
-                }
-            )
-
-        if kb.switch:
-            switch = part_obj(kb.switch)
-            data.update(
-                {
-                    'switches_url_params': cls.detail_params(
-                        'switch', switch, f'{edit_url}switch'
-                    ),
-                    'switches_str': f'{switch.brand} {switch.name}',
-                    'switch_kind': switch_kind(switch),
-                    'switch_count': kb.switch_count,
-                }
-            )
-
-        for part_type in ('keycaps', 'plate', 'stabilizer'):
-            part = getattr(kb, part_type)
-            if part:
-                obj = part_obj(part)
-                data[f'{part_type}_url_params'] = cls.detail_params(
-                    part_type, obj, f'{edit_url}{part_type}'
-                )
-                data[f'{part_type}_str'] = str(obj)
-
-        return data
-
-    @classmethod
-    def stock_part_specs(cls, part_type):
-        stock_model = PART_MODELS[part_type].stock
-        fields = const.STOCK_PART_FIELDS[part_type]
-        columns = [
-            (name, cls.field_label(stock_model, name)) for name in fields['columns']
-        ]
-        facets = [
-            (name, cls.field_label(stock_model, name), None)
-            for name in fields['facets']
-        ]
-        return columns, facets
-
-    @classmethod
-    def stock_part_row(cls, part_type, obj, quantity=0):
-        fields = const.STOCK_PART_FIELDS[part_type]
-        facets = {}
-        for name in fields['facets']:
-            value = cls.field_display(obj, name)
-            if value:
-                facets[name] = [value]
-        return {
-            'id': obj.pk,
-            'row_id': f'stock-{part_type}-{obj.pk}',
-            'type': part_type,
-            'url_params': f'type={part_type}&id={obj.pk}',
-            'name': part_name(obj),
-            'detail_params': cls.detail_params(part_type, obj, ''),
-            'columns': [cls.field_cell(obj, name) for name in fields['columns']],
-            'facets': facets,
-            'notes': obj.notes,
-            'quantity': quantity,
-            'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
-        }
-
-    @classmethod
-    def stock_prebuilt_row(cls, kb, owned=False):
-        connectivity = [
-            label
-            for label, enabled in (
-                ('Wireless', kb.wireless),
-                ('Bluetooth', kb.bluetooth),
-            )
-            if enabled
-        ]
-        data = {
-            'id': kb.pk,
-            'row_id': f'prebuilt-{kb.pk}',
-            'name': str(kb) if kb.kit else 'Unnamed prebuilt',
-            'brand': (kb.kit.brand or '') if kb.kit else '',
-            'owned': owned,
-            'connectivity': ', '.join(connectivity) or 'Wired',
-            'facets': {'connectivity': connectivity or ['Wired']},
-            'notes': kb.notes,
-        }
-        if kb.kit:
-            for key in ('brand', 'size', 'layout'):
-                if getattr(kb.kit, key):
-                    data['facets'][key] = [getattr(kb.kit, key)]
-            data.update(
-                {
-                    'kit_params': cls.detail_params('kit', kb.kit, ''),
-                    'size': kb.kit.size,
-                    'layout': kb.kit.layout,
-                    'pcb': kb.kit.pcb,
-                }
-            )
-        for part_type in ('switch', 'keycaps', 'plate', 'stabilizer'):
-            part = getattr(kb, part_type)
-            if part:
-                data[f'{part_type}_str'] = part_name(part)
-                data[f'{part_type}_params'] = cls.detail_params(part_type, part, '')
-        data['switch_kind'] = switch_kind(kb.switch)
-        return data
+        )
+    for part_type in ('switch', 'keycaps', 'plate', 'stabilizer'):
+        part = getattr(kb, part_type)
+        if part:
+            data[f'{part_type}_str'] = part_name(part)
+            data[f'{part_type}_params'] = detail_params(part_type, part, '')
+    data['switch_kind'] = switch_kind(kb.switch)
+    return data
 
 
 class ModalForms(UserScoped):
@@ -787,7 +778,7 @@ class PartManager(UserScoped):
         return obj if owned else None
 
     def part_rows(self):
-        rows = [RowBuilder.part_row(inv) for inv in self.standalone_parts()]
+        rows = [part_row(inv) for inv in self.standalone_parts()]
         order = list(PART_MODELS)
         rows.sort(key=lambda row: (order.index(row['type']), row['name'].lower()))
         return rows
@@ -889,7 +880,7 @@ class KeyboardManager(UserScoped):
         ).select_related(*related)
 
     def keyboard_rows(self):
-        return [RowBuilder.keyboard_row(inv.obj) for inv in self.owned_keyboards()]
+        return [keyboard_row(inv.obj) for inv in self.owned_keyboards()]
 
     def inventory_counts(self):
         standalone = Q(keyboard__isnull=True)
@@ -912,7 +903,7 @@ class KeyboardManager(UserScoped):
             'switches_on_boards': sum(
                 board_switch_count(kb) for kb in keyboards if kb.switch
             ),
-            'recent_keyboards': [RowBuilder.keyboard_row(kb) for kb in keyboards[:5]],
+            'recent_keyboards': [keyboard_row(kb) for kb in keyboards[:5]],
             'owned_keyboards': owned,
         }
 
@@ -1211,9 +1202,7 @@ class CatalogManager(UserScoped):
         stock_keyboards = StockKeyboard.objects.select_related(
             'kit', 'switch', 'keycaps', 'plate', 'stabilizer'
         )
-        rows = [
-            RowBuilder.stock_prebuilt_row(kb, kb.pk in owned) for kb in stock_keyboards
-        ]
+        rows = [stock_prebuilt_row(kb, kb.pk in owned) for kb in stock_keyboards]
         rows.sort(key=lambda row: row['name'].lower())
         return rows
 
@@ -1231,93 +1220,93 @@ class CatalogManager(UserScoped):
     def stock_part_rows(self, part_type):
         quantities = self.stock_part_quantities(part_type)
         rows = [
-            RowBuilder.stock_part_row(part_type, obj, quantities.get(obj.pk, 0))
+            stock_part_row(part_type, obj, quantities.get(obj.pk, 0))
             for obj in PART_MODELS[part_type].stock.objects.all()
         ]
         rows.sort(key=lambda row: row['name'].lower())
         return rows
 
-    @staticmethod
-    def stock_part(part_type, part_id):
-        return PART_MODELS[part_type].stock.objects.filter(pk=part_id).first()
 
-    @staticmethod
-    def stock_part_usage(part_type, obj):
-        return {
-            'owner_count': Inventory.objects.filter(
-                Q(**{f'{part_type}__stock': obj})
-                | Q(**{f'keyboard__custom__{part_type}__stock': obj})
+def stock_part(part_type, part_id):
+    return PART_MODELS[part_type].stock.objects.filter(pk=part_id).first()
+
+
+def stock_part_usage(part_type, obj):
+    return {
+        'owner_count': Inventory.objects.filter(
+            Q(**{f'{part_type}__stock': obj})
+            | Q(**{f'keyboard__custom__{part_type}__stock': obj})
+        )
+        .values('user')
+        .distinct()
+        .count(),
+        'prebuilts': [
+            str(kb) if kb.kit else 'Unnamed prebuilt'
+            for kb in StockKeyboard.objects.filter(**{part_type: obj}).select_related(
+                'kit'
             )
-            .values('user')
-            .distinct()
-            .count(),
-            'prebuilts': [
-                str(kb) if kb.kit else 'Unnamed prebuilt'
-                for kb in StockKeyboard.objects.filter(
-                    **{part_type: obj}
-                ).select_related('kit')
-            ],
-        }
+        ],
+    }
 
-    @staticmethod
-    def promote_part(inv):
-        part_type = part_type_of(inv)
-        wrapper = getattr(inv, part_type)
-        spec = PART_MODELS[part_type]
-        custom = wrapper.custom
-        with transaction.atomic():
-            stock = spec.stock.objects.create(**part_fields(custom, spec.custom))
-            wrapper.custom, wrapper.stock = None, stock
-            wrapper.save()
-            custom.delete()
-        return stock
 
-    @staticmethod
-    def delete_stock_part(part_type, obj):
-        spec = PART_MODELS[part_type]
-        fields = part_fields(obj, spec.custom)
-        with transaction.atomic():
-            for wrapper in spec.wrapper.objects.filter(stock=obj):
-                for rel in wrapper._meta.related_objects:
-                    rows = rel.related_model._base_manager.filter(
-                        **{rel.field.name: wrapper}
-                    )
-                    for row in rows:
-                        copy = spec.wrapper.objects.create(
-                            custom=spec.custom.objects.create(**fields)
-                        )
-                        setattr(row, rel.field.name, copy)
-                        row.save(update_fields=[rel.field.name])
-            obj.delete()
+def promote_to_catalog(inv):
+    part_type = part_type_of(inv)
+    wrapper = getattr(inv, part_type)
+    spec = PART_MODELS[part_type]
+    custom = wrapper.custom
+    with transaction.atomic():
+        stock = spec.stock.objects.create(**part_fields(custom, spec.custom))
+        wrapper.custom, wrapper.stock = None, stock
+        wrapper.save()
+        custom.delete()
+    return stock
 
-    @staticmethod
-    def save_stock_keyboard(submission):
-        with transaction.atomic():
-            stock_kb = submission.details_form.save(commit=False)
-            for part_type in PART_MODELS:
-                source, value = submission.chosen.get(part_type, ('none', None))
-                if source == 'custom':
-                    value = value.save()
-                setattr(stock_kb, part_type, value)
-            stock_kb.save()
-        return stock_kb
 
-    @staticmethod
-    def delete_stock_keyboard(stock_kb):
-        with transaction.atomic():
-            for inventory in Inventory.objects.filter(keyboard__stock=stock_kb):
-                custom_kb = CustomKeyboard(
-                    bluetooth=stock_kb.bluetooth,
-                    wireless=stock_kb.wireless,
-                    notes=stock_kb.notes,
-                    references=stock_kb.references,
+def delete_stock_part(part_type, obj):
+    spec = PART_MODELS[part_type]
+    fields = part_fields(obj, spec.custom)
+    with transaction.atomic():
+        for wrapper in spec.wrapper.objects.filter(stock=obj):
+            for rel in wrapper._meta.related_objects:
+                rows = rel.related_model._base_manager.filter(
+                    **{rel.field.name: wrapper}
                 )
-                for part_type, spec in PART_MODELS.items():
-                    part = getattr(stock_kb, part_type)
-                    if part is not None:
-                        wrapper, _ = spec.wrapper.objects.get_or_create(stock=part)
-                        setattr(custom_kb, part_type, wrapper)
-                custom_kb.save()
-                inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
-                inventory.save(update_fields=['keyboard'])
-            stock_kb.delete()
+                for row in rows:
+                    copy = spec.wrapper.objects.create(
+                        custom=spec.custom.objects.create(**fields)
+                    )
+                    setattr(row, rel.field.name, copy)
+                    row.save(update_fields=[rel.field.name])
+        obj.delete()
+
+
+def save_stock_keyboard(submission):
+    with transaction.atomic():
+        stock_kb = submission.details_form.save(commit=False)
+        for part_type in PART_MODELS:
+            source, value = submission.chosen.get(part_type, ('none', None))
+            if source == 'custom':
+                value = value.save()
+            setattr(stock_kb, part_type, value)
+        stock_kb.save()
+    return stock_kb
+
+
+def delete_stock_keyboard(stock_kb):
+    with transaction.atomic():
+        for inventory in Inventory.objects.filter(keyboard__stock=stock_kb):
+            custom_kb = CustomKeyboard(
+                bluetooth=stock_kb.bluetooth,
+                wireless=stock_kb.wireless,
+                notes=stock_kb.notes,
+                references=stock_kb.references,
+            )
+            for part_type, spec in PART_MODELS.items():
+                part = getattr(stock_kb, part_type)
+                if part is not None:
+                    wrapper, _ = spec.wrapper.objects.get_or_create(stock=part)
+                    setattr(custom_kb, part_type, wrapper)
+            custom_kb.save()
+            inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
+            inventory.save(update_fields=['keyboard'])
+        stock_kb.delete()

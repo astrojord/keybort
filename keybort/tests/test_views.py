@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from boards import const
-from boards.managers import PartManager, RowBuilder
+from boards.managers import PartManager, stock_prebuilt_row
 from boards.models import (
     CustomKit,
     CustomPlate,
@@ -796,9 +796,7 @@ class StockPrebuiltsPageTests(ClientTestCase):
         self.assertContains(response, 'data-facet-connectivity="Wired"')
 
     def test_connectivity_facet_lists_each_mode(self):
-        row = RowBuilder.stock_prebuilt_row(
-            stock_keyboard(wireless=True, bluetooth=True)
-        )
+        row = stock_prebuilt_row(stock_keyboard(wireless=True, bluetooth=True))
         self.assertEqual(row['facets']['connectivity'], ['Wireless', 'Bluetooth'])
         self.assertEqual(row['connectivity'], 'Wireless, Bluetooth')
 
