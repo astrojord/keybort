@@ -8,8 +8,10 @@ from boards.managers import (
     TypingManager,
     board_switch_count,
     field_display,
+    keyboard_ref,
     keyboard_row,
     model_to_dict_verbose,
+    parse_keyboard_ref,
     parse_quantity,
     part_cells,
     part_columns,
@@ -177,11 +179,27 @@ class PartDisplayTests(UserTestCase):
         self.assertEqual(self.part_manager.part_rows(), [])
 
 
+class KeyboardRefTests(UserTestCase):
+    def test_round_trips(self):
+        stock_kb = stock_keyboard()
+        kb = custom_keyboard(self.user)
+        self.assertEqual(
+            parse_keyboard_ref(keyboard_ref(stock_kb)), (str(stock_kb.pk), True)
+        )
+        self.assertEqual(parse_keyboard_ref(keyboard_ref(kb)), (str(kb.pk), False))
+
+    def test_rejects_malformed(self):
+        for ref in ('', '4', 'stock-', 'stock-x', 'prebuilt-4', '-4', 'custom-4-5'):
+            with self.subTest(ref=ref):
+                self.assertIsNone(parse_keyboard_ref(ref))
+
+
 class KeyboardRowTests(UserTestCase):
     def test_prebuilt_row(self):
         stock_kb = prebuilt_in_inventory(self.user)
         row = self.kb_manager.keyboard_rows()[0]
         self.assertEqual(row['row_id'], f'keyboard-stock-{stock_kb.pk}')
+        self.assertEqual(row['ref'], f'stock-{stock_kb.pk}')
         self.assertEqual(row['url_params'], f'id={stock_kb.pk}&stock=1')
         self.assertTrue(row['stock'])
         self.assertEqual(row['kit_str'], 'Keychron Q1')
@@ -191,6 +209,7 @@ class KeyboardRowTests(UserTestCase):
         kb = custom_keyboard(self.user, switch=custom_switch_wrapper(), switch_count=68)
         row = self.kb_manager.keyboard_rows()[0]
         self.assertEqual(row['row_id'], f'keyboard-custom-{kb.pk}')
+        self.assertEqual(row['ref'], f'custom-{kb.pk}')
         self.assertFalse(row['stock'])
         self.assertEqual(row['kit_str'], 'KBDfans Tofu65')
         self.assertEqual(row['switch_count'], 68)

@@ -25,9 +25,11 @@ from .managers import (
     delete_stock_keyboard,
     delete_stock_part,
     filter_facets,
+    keyboard_ref,
     keyboard_row,
     keyboard_row_id,
     model_to_dict_verbose,
+    parse_keyboard_ref,
     parse_quantity,
     part_columns,
     part_row,
@@ -317,9 +319,9 @@ def delete_keyboards(request):
     kb_manager = KeyboardManager(request.user)
     inventories = []
     for value in bulk_ids(request):
-        kind, _, kb_id = value.partition('-')
-        if kind in ('stock', 'custom') and is_id(kb_id):
-            inventory = kb_manager.keyboard_inventory(kb_id, kind == 'stock')
+        params = parse_keyboard_ref(value)
+        if params is not None:
+            inventory = kb_manager.keyboard_inventory(*params)
             if inventory is not None:
                 inventories.append((value, inventory))
     if not inventories:
@@ -455,7 +457,7 @@ def edit_keyboard(request):
 
     current = inventory.keyboard.obj
     action_url = f'{reverse("keyboard_edit")}?id={params[0]}&stock={int(params[1])}'
-    delete_url = f'{reverse("keyboard_delete")}?ids={"stock" if params[1] else "custom"}-{params[0]}'
+    delete_url = f'{reverse("keyboard_delete")}?ids={keyboard_ref(current)}'
     post = request.POST if request.method == 'POST' else None
     context = modal_forms.keyboard_form_context(action_url, post, current=current)
     context['delete_url'] = delete_url

@@ -263,8 +263,19 @@ class UserScoped:
         return Profile.objects.get_or_create(user=self.user)[0]
 
 
+def keyboard_ref(kb):
+    return f'{"stock" if kb.stock else "custom"}-{kb.pk}'
+
+
+def parse_keyboard_ref(ref):
+    kind, _, kb_id = ref.partition('-')
+    if kind not in ('stock', 'custom') or not is_id(kb_id):
+        return None
+    return kb_id, kind == 'stock'
+
+
 def keyboard_row_id(kb):
-    return f'keyboard-{"stock" if kb.stock else "custom"}-{kb.pk}'
+    return f'keyboard-{keyboard_ref(kb)}'
 
 
 def detail_params(part_type, obj, edit_url):
@@ -419,6 +430,7 @@ def keyboard_row(kb):
     data = {
         'id': kb.pk,
         'row_id': keyboard_row_id(kb),
+        'ref': keyboard_ref(kb),
         'url_params': url_params,
         'stock': kb.stock,
         'notes': kb.notes,

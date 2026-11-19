@@ -1,5 +1,5 @@
 <tr id="{{kb.row_id}}" data-type="{% if kb.stock %}prebuilt{% else %}custom{% endif %}">
-    <td data-role="select"><input type="checkbox" class="input" data-bulk value="{% if kb.stock %}stock{% else %}custom{% endif %}-{{kb.id}}" aria-label="Select {{kb.kit_str|default:"keyboard"}}"></td>
+    <td data-role="select"><input type="checkbox" class="input" data-bulk value="{{kb.ref}}" aria-label="Select {{kb.kit_str|default:"keyboard"}}"></td>
     <td data-role="actions">
         <div class="flex items-center gap-1">
             <button
