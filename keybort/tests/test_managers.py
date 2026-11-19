@@ -1,3 +1,5 @@
+from django.test import SimpleTestCase
+
 from boards import const
 from boards.managers import (
     KeyboardManager,
@@ -6,6 +8,7 @@ from boards.managers import (
     TypingManager,
     board_switch_count,
     field_display,
+    model_to_dict_verbose,
     parse_quantity,
     part_cells,
     part_columns,
@@ -1050,3 +1053,19 @@ class DeleteKeyboardTests(UserTestCase):
         }
         self.assertEqual(set(parts), {'kit', 'switch', 'plate'})
         self.assertTrue(parts['switch']['name'].endswith('×82'))
+
+
+class ModelToDictVerboseTests(SimpleTestCase):
+    def test_uses_verbose_names_and_choice_labels(self):
+        switch = CustomSwitch(brand='JWK', name='Alpaca', category='t', lubed=True)
+        data = model_to_dict_verbose(switch, fields=['brand', 'category', 'lubed'])
+        self.assertEqual(data, {'Brand': 'JWK', 'Category': 'Tactile', 'Lubed': True})
+
+    def test_exclude(self):
+        data = model_to_dict_verbose(CustomSwitch(brand='JWK'), exclude=['brand'])
+        self.assertNotIn('Brand', data)
+        self.assertIn('Name', data)
+
+    def test_skips_unset_choice_fields(self):
+        data = model_to_dict_verbose(CustomSwitch(), fields=['category'])
+        self.assertEqual(data, {})

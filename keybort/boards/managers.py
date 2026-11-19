@@ -47,7 +47,7 @@ from .models import (
     Switch,
     TypingResult,
 )
-from .utils import is_id
+from .request_params import is_id
 
 
 class PartModels(NamedTuple):
@@ -318,6 +318,27 @@ def field_display(obj, name):
     if isinstance(value, float):
         return f'{value:g}{field.help_text}'
     return str(value)
+
+
+def model_to_dict_verbose(instance, fields=None, exclude=None):
+    data = {}
+    for f in instance._meta.concrete_fields:
+        if not f.editable:
+            continue
+        if fields is not None and f.name not in fields:
+            continue
+        if exclude and f.name in exclude:
+            continue
+
+        value = f.value_from_object(instance)
+        if f.choices:
+            labels = dict(f.choices)
+            if value not in labels:
+                continue
+            value = labels[value]
+
+        data[f.verbose_name.capitalize()] = value
+    return data
 
 
 def field_cell(obj, name):

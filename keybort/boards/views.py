@@ -13,6 +13,7 @@ from .handlers import (
     stock_csv_columns,
     stock_csv_template,
 )
+from .htmx import bulk_deleted, htmx_swap
 from .managers import (
     PART_MODELS,
     CatalogManager,
@@ -25,6 +26,7 @@ from .managers import (
     filter_facets,
     keyboard_row,
     keyboard_row_id,
+    model_to_dict_verbose,
     parse_quantity,
     part_columns,
     part_name,
@@ -39,14 +41,7 @@ from .managers import (
     stock_prebuilt_row,
 )
 from .models import Inventory, StockKeyboard
-from .utils import (
-    bulk_deleted,
-    bulk_ids,
-    htmx_swap,
-    is_id,
-    keyboard_params,
-    model_to_dict_verbose,
-)
+from .request_params import bulk_ids, is_id, keyboard_params
 
 
 def keyboard_name(row):
