@@ -499,19 +499,19 @@ def stock_prebuilt_row(kb, owned=False):
     connectivity = [
         label
         for label, enabled in (
-            ('Wireless', kb.wireless),
-            ('Bluetooth', kb.bluetooth),
+            (const.WIRELESS, kb.wireless),
+            (const.BLUETOOTH, kb.bluetooth),
         )
         if enabled
-    ]
+    ] or [const.WIRED]
     data = {
         'id': kb.pk,
         'row_id': f'prebuilt-{kb.pk}',
         'name': str(kb) if kb.kit else 'Unnamed prebuilt',
         'brand': (kb.kit.brand or '') if kb.kit else '',
         'owned': owned,
-        'connectivity': ', '.join(connectivity) or 'Wired',
-        'facets': {'connectivity': connectivity or ['Wired']},
+        'connectivity': ', '.join(connectivity),
+        'facets': {'connectivity': connectivity},
         'notes': kb.notes,
     }
     if kb.kit:
@@ -657,7 +657,7 @@ class ModalForms(UserScoped):
         current=None,
         required=False,
         owned=None,
-        preferred='smart',
+        preferred=const.DEFAULT_PART_SOURCE,
         catalog=False,
     ):
         spec = PART_MODELS[part_type]
@@ -1117,7 +1117,9 @@ class KeyboardManager(UserScoped):
 
 
 def typing_sparkline(results):
-    width, height, inset = 120, 32, 4
+    width = const.TYPING_SPARKLINE_WIDTH
+    height = const.TYPING_SPARKLINE_HEIGHT
+    inset = const.TYPING_SPARKLINE_INSET
     values = [result.wpm for result in results]
     low, high = min(values), max(values)
     wpm_range = max(high - low, const.TYPING_SPARKLINE_MIN_WPM_RANGE)

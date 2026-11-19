@@ -21,7 +21,7 @@
         word: part("word"),
     };
 
-    const CHARS_PER_WORD = 5;
+    const CHARS_PER_WORD = Number(root.dataset.charsPerWord);
     const RUNNING_WINDOW_MS = 500;
     const STUMBLE_MS = 180;
     const SPRITE_SCALE = 3;

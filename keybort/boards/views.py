@@ -77,6 +77,7 @@ def index(request):
         context['quick_actions'] = const.QUICK_ACTIONS
         context['race_words'] = const.TYPING_RACE_WORDS
         context['race_word_choices'] = const.TYPING_RACE_WORD_CHOICES
+        context['race_chars_per_word'] = const.TYPING_CHARS_PER_WORD
     return render(request, 'pages/index.html', context)
 
 

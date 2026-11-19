@@ -1,5 +1,5 @@
 {% load static %}
-<div class="mt-4 card" data-typing-race data-word-count="{{ race_words }}" data-words="{% static 'words/words.txt' %}" data-save-url="{% url 'typing_result_save' %}" data-csrf="{{ csrf_token }}">
+<div class="mt-4 card" data-typing-race data-word-count="{{ race_words }}" data-chars-per-word="{{ race_chars_per_word }}" data-words="{% static 'words/words.txt' %}" data-save-url="{% url 'typing_result_save' %}" data-csrf="{{ csrf_token }}">
     <header class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold">WPM test :)</h2>
         <div class="flex flex-wrap items-center gap-2">

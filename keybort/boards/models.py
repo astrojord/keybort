@@ -581,7 +581,7 @@ class Profile(models.Model):
         choices=[
             (source, label) for source, (label, _) in const.PART_SOURCE_DEFAULTS.items()
         ],
-        default='smart',
+        default=const.DEFAULT_PART_SOURCE,
     )
     keep_parts_on_delete = models.BooleanField(default=True)
     show_carpet = models.BooleanField(default=True)
