@@ -1,11 +1,12 @@
 from collections import Counter
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, NamedTuple
+from typing import NamedTuple
 from urllib.parse import urlencode
 
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, QuerySet, Sum
+from django.forms import ModelForm
 from django.forms.models import model_to_dict
 from django.urls import reverse
 
@@ -188,18 +189,18 @@ class PartChoice:
     required: bool
     catalog: bool
     source: str
-    stock_options: Any
+    stock_options: QuerySet
     stock_id: str
-    owned_rows: Any
+    owned_rows: QuerySet[Inventory] | None
     owned_options: list[dict] | None
     owned_id: str
     # stock + custom, plus "from my parts" and skip when they apply
     source_cards: int
-    form: Any
+    form: ModelForm
     current: dict | None
     removal: str
     # switch count, filled in by keyboard_form_context for the switch step
-    count: Any = None
+    count: int | str | None = None
     error: str | None = None
 
     def validate(self, data):
@@ -246,7 +247,7 @@ class PartChoice:
 
 @dataclass
 class KeyboardSubmission:
-    details_form: Any
+    details_form: ModelForm
     chosen: dict[str, tuple]
     removal: dict[str, str]
     switch_count: int | None = None

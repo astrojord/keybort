@@ -706,11 +706,11 @@ def add_stock_part(request):
 
 def upload_summary(result):
     added = []
-    for part_type, count in result['created'].items():
+    for part_type, count in result.created.items():
         if count:
             nouns = f'{const.PART_SINGULARS[part_type]},{const.PART_PLURALS[part_type]}'
             added.append(f'{count} {pluralize(count, nouns).lower()}')
-    skipped = result['skipped']
+    skipped = result.skipped
     skipped_note = f'{skipped} already in the catalog' if skipped else ''
     if not added:
         return (
@@ -739,7 +739,7 @@ def upload_stock_parts(request):
         context['errors'] = [(0, 'That file is too big, split it up and try again.')]
     else:
         result = handle_canned_parts_upload(file)
-        context['errors'] = result['errors']
+        context['errors'] = result.errors
     if context['errors']:
         return render(request, 'partials/modals/stock_upload_modal.html', context)
 

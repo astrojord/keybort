@@ -1,5 +1,7 @@
 import csv
+import dataclasses
 import io
+from typing import NamedTuple
 
 from django import forms
 from django.db import transaction
@@ -10,6 +12,23 @@ from .managers import PART_MODELS, part_fields
 
 TRUE_VALUES = {'1', 'true', 't', 'yes', 'y', 'x'}
 FALSE_VALUES = {'', '0', 'false', 'f', 'no', 'n'}
+
+type RowError = tuple[int, str]
+
+
+class RowResult(NamedTuple):
+    part_type: str | None
+    form: forms.ModelForm | None
+    errors: list[RowError]
+
+
+@dataclasses.dataclass
+class UploadResult:
+    created: dict[str, int] = dataclasses.field(
+        default_factory=lambda: dict.fromkeys(PART_MODELS, 0)
+    )
+    skipped: int = 0
+    errors: list[RowError] = dataclasses.field(default_factory=list)
 
 
 def part_type_aliases():
@@ -39,8 +58,7 @@ def stock_csv_template():
     return out.getvalue()
 
 
-# return value, error
-def normalize_value(field, raw):
+def normalize_value(field, raw) -> tuple[str | None, str | None]:
     value = raw.strip()
     if isinstance(field, forms.BooleanField):
         if value.lower() in TRUE_VALUES:
@@ -65,12 +83,13 @@ def read_rows(file):
     return headers, reader
 
 
-# return part type, form, and errors for a row
-def validate_row(line, row, aliases):
+def validate_row(line, row, aliases) -> RowResult:
     errors = []
     part_type = aliases.get((row.get('type') or '').strip().lower())
     if part_type is None:
-        return None, None, [(line, f'unknown type "{row.get("type") or ""}"')]
+        return RowResult(
+            None, None, [(line, f'unknown type "{row.get("type") or ""}"')]
+        )
 
     form_class = PART_MODELS[part_type].stock_form
     data = {}
@@ -92,7 +111,7 @@ def validate_row(line, row, aliases):
     if not form.is_valid():
         for name, messages in form.errors.items():
             errors.extend((line, f'{name}: {message}') for message in messages)
-    return part_type, form, errors
+    return RowResult(part_type, form, errors)
 
 
 def matching_fields(model, fields):
@@ -105,41 +124,37 @@ def matching_fields(model, fields):
     return q
 
 
-def handle_canned_parts_upload(file):
-    result = {
-        'created': dict.fromkeys(PART_MODELS, 0),
-        'skipped': 0,
-        'errors': [],
-    }
+def handle_canned_parts_upload(file) -> UploadResult:
+    result = UploadResult()
     try:
         headers, reader = read_rows(file)
     except UnicodeDecodeError:
-        result['errors'].append((0, 'file must be UTF-8 encoded CSV'))
+        result.errors.append((0, 'file must be UTF-8 encoded CSV'))
         return result
 
     columns = stock_csv_columns()
     unknown = [h for h in headers if h and h not in columns]
     if 'type' not in headers:
-        result['errors'].append((1, 'missing a type column'))
+        result.errors.append((1, 'missing a type column'))
     if unknown:
-        result['errors'].append((1, f'unknown columns: {", ".join(unknown)}'))
-    if result['errors']:
+        result.errors.append((1, f'unknown columns: {", ".join(unknown)}'))
+    if result.errors:
         return result
 
     aliases = part_type_aliases()
     valid = []
     for line, row in enumerate(reader, start=2):
         if None in row:
-            result['errors'].append((line, 'more values than columns'))
+            result.errors.append((line, 'more values than columns'))
             continue
         if not any((value or '').strip() for value in row.values()):
             continue
         part_type, form, errors = validate_row(line, row, aliases)
-        result['errors'].extend(errors)
+        result.errors.extend(errors)
         if not errors:
             valid.append((part_type, form))
 
-    if result['errors']:
+    if result.errors:
         return result
 
     seen = set()
@@ -157,9 +172,9 @@ def handle_canned_parts_upload(file):
                     matching_fields(spec.stock, fields)
                 ).exists()
             ):
-                result['skipped'] += 1
+                result.skipped += 1
                 continue
             seen.add(key)
             form.save()
-            result['created'][part_type] += 1
+            result.created[part_type] += 1
     return result
