@@ -1405,7 +1405,12 @@ class MultiDeleteViewTests(ClientTestCase):
         response = self.client.get(f'{url}&ids={used.pk}')
         self.assertContains(response, 'Nothing can be deleted')
         self.assertNotContains(response, 'type="submit"')
-        self.assertEqual(self.client.post(url, {'ids': [used.pk]}).status_code, 400)
+        response = self.client.post(
+            url, {'ids': [used.pk]}, headers={'HX-Request': 'true'}
+        )
+        self.assertEqual(response.status_code, 400)
+        trigger = json.loads(response['HX-Trigger'])
+        self.assertEqual(trigger['messages'][0]['level'], 'error')
         self.assertTrue(StockSwitch.objects.filter(pk=used.pk).exists())
 
     def test_nothing_selected(self):

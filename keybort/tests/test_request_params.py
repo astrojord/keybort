@@ -1,6 +1,11 @@
+from django.core.exceptions import BadRequest
 from django.test import RequestFactory, SimpleTestCase
 
-from boards.request_params import is_id, keyboard_params
+from boards.request_params import is_id, keyboard_params, require_id
+
+
+def get(**query):
+    return RequestFactory().get('/', query)
 
 
 class IsIdTests(SimpleTestCase):
@@ -16,15 +21,30 @@ class IsIdTests(SimpleTestCase):
 
 class KeyboardParamsTests(SimpleTestCase):
     def params(self, **query):
-        return keyboard_params(RequestFactory().get('/', query))
+        return keyboard_params(get(**query))
 
     def test_parses_id_and_stock(self):
         self.assertEqual(self.params(id='4', stock='1'), ('4', True))
         self.assertEqual(self.params(id='4', stock='0'), ('4', False))
 
     def test_rejects_missing_or_malformed(self):
-        self.assertIsNone(self.params())
-        self.assertIsNone(self.params(id='4'))
-        self.assertIsNone(self.params(id='abc', stock='1'))
-        self.assertIsNone(self.params(id='²', stock='1'))
-        self.assertIsNone(self.params(id='4', stock='yes'))
+        for query in (
+            {},
+            {'id': '4'},
+            {'id': 'abc', 'stock': '1'},
+            {'id': '²', 'stock': '1'},
+            {'id': '4', 'stock': 'yes'},
+        ):
+            with self.subTest(query=query), self.assertRaises(BadRequest):
+                self.params(**query)
+
+
+class RequireIdTests(SimpleTestCase):
+    def test_returns_valid_id(self):
+        self.assertEqual(require_id(get(id='12')), '12')
+        self.assertEqual(require_id(get(kb='3'), name='kb'), '3')
+
+    def test_rejects_missing_or_malformed(self):
+        for query in ({}, {'id': ''}, {'id': 'x'}, {'id': '9' * 19}):
+            with self.subTest(query=query), self.assertRaises(BadRequest):
+                require_id(get(**query))

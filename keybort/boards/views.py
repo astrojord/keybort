@@ -34,14 +34,19 @@ from .managers import (
     part_type_of,
     promote_to_catalog,
     save_stock_keyboard,
-    stock_part,
     stock_part_row,
     stock_part_specs,
     stock_part_usage,
     stock_prebuilt_row,
 )
 from .models import Inventory, StockKeyboard, part_name
-from .request_params import bulk_ids, is_id, keyboard_params
+from .request_params import (
+    bulk_ids,
+    is_id,
+    keyboard_params,
+    require_id,
+    require_stock_flag,
+)
 
 
 def swap_row(request, template, context, target, swap='outerHTML'):
@@ -49,15 +54,23 @@ def swap_row(request, template, context, target, swap='outerHTML'):
     return htmx_swap(response, target, swap, const.CLOSE_DIALOG_EVENT)
 
 
-def standalone_part_or_404(request, part_manager):
-    part_id = request.GET.get('id', '')
-    if not is_id(part_id):
+def require_part_type(request):
+    part_type = request.GET.get('type')
+    if part_type not in PART_MODELS:
         raise BadRequest
-    inv = part_manager.standalone_part(part_id)
-    if inv is None:
-        messages.error(request, 'That part no longer exists.')
+    return part_type
+
+
+def found_or_404(request, obj, message):
+    if obj is None:
+        messages.error(request, message)
         raise Http404
-    return inv
+    return obj
+
+
+def standalone_part_or_404(request, part_manager):
+    inv = part_manager.standalone_part(require_id(request))
+    return found_or_404(request, inv, 'That part no longer exists.')
 
 
 def index(request):
@@ -146,7 +159,7 @@ def add_part(request):
 
     context = modal_forms.add_part_context(request.POST)
     if context['part_type'] not in PART_MODELS:
-        return HttpResponse(status=400)
+        raise BadRequest
 
     part_type = context['part_type']
     part = next(p for p in context['parts'] if p.type == part_type)
@@ -215,7 +228,7 @@ def promote_part(request):
     part_type = part_type_of(inv)
     wrapper = getattr(inv, part_type)
     if not wrapper.custom_id:
-        return HttpResponse(status=400)
+        raise BadRequest
 
     name = part_name(wrapper.obj)
     if request.method != 'POST':
@@ -238,7 +251,7 @@ def promote_part(request):
 @login_required
 def part_quantity(request):
     if request.method != 'POST':
-        return HttpResponse(status=400)
+        raise BadRequest
 
     part_manager = PartManager(request.user)
     inv = standalone_part_or_404(request, part_manager)
@@ -277,7 +290,7 @@ def delete_parts(request):
     part_manager = PartManager(request.user)
     invs = list(part_manager.standalone_parts().filter(pk__in=ids).order_by('pk'))
     if not invs:
-        return HttpResponse(status=400)
+        raise BadRequest
 
     rows = [part_row(inv) for inv in invs]
     names = [row['name'] for row in rows]
@@ -310,7 +323,7 @@ def delete_keyboards(request):
             if inventory is not None:
                 inventories.append((value, inventory))
     if not inventories:
-        return HttpResponse(status=400)
+        raise BadRequest
 
     keyboards = [inventory.keyboard.obj for _, inventory in inventories]
     names = [str(kb) for kb in keyboards]
@@ -359,22 +372,19 @@ def edit_url(url):
 
 
 def part_detail(request):
-    part_type = request.GET.get('type')
-    part_id = request.GET.get('id', '')
-    stock = request.GET.get('stock')
-
-    if part_type not in PART_MODELS or not is_id(part_id) or stock not in ('0', '1'):
-        return HttpResponse(status=400)
+    part_type = require_part_type(request)
+    part_id = require_id(request)
+    stock = require_stock_flag(request)
 
     # 404 for someone else's custom part too, so ids aren't confirmed
-    obj = PartManager(request.user).visible_part(part_type, part_id, stock == '1')
+    obj = PartManager(request.user).visible_part(part_type, part_id, stock)
     if obj is None:
         raise Http404
 
     context = {
         'name': part_name(obj),
         'type_label': const.PART_SINGULARS[part_type],
-        'stock': stock == '1',
+        'stock': stock,
         'edit_url': edit_url(request.GET.get('edit', '')),
         'fields': model_to_dict_verbose(
             obj,
@@ -419,7 +429,7 @@ def add_keyboard(request):
                 return render(request, 'partials/modals/keyboard_modal.html', context)
             kb = kb_manager.add_custom(submission)
         case _:
-            return HttpResponse(status=400)
+            raise BadRequest
 
     row = keyboard_row(kb)
     messages.success(request, f'Added {kb} to keyboards.')
@@ -435,15 +445,13 @@ def add_keyboard(request):
 @login_required
 def edit_keyboard(request):
     params = keyboard_params(request)
-    if params is None:
-        return HttpResponse(status=400)
-
     kb_manager = KeyboardManager(request.user)
     modal_forms = ModalForms(request.user)
-    inventory = kb_manager.keyboard_inventory(*params)
-    if inventory is None:
-        messages.error(request, 'That keyboard no longer exists.')
-        raise Http404
+    inventory = found_or_404(
+        request,
+        kb_manager.keyboard_inventory(*params),
+        'That keyboard no longer exists.',
+    )
 
     current = inventory.keyboard.obj
     action_url = f'{reverse("keyboard_edit")}?id={params[0]}&stock={int(params[1])}'
@@ -533,14 +541,11 @@ def add_stock_prebuilt(request):
 
 @permission_required('boards.can_edit_stock_data', raise_exception=True)
 def edit_stock_prebuilt(request):
-    kb_id = request.GET.get('id', '')
-    if not is_id(kb_id):
-        return HttpResponse(status=400)
-
-    current = StockKeyboard.objects.filter(pk=kb_id).first()
-    if current is None:
-        messages.error(request, 'That prebuilt is no longer in the catalog.')
-        raise Http404
+    current = found_or_404(
+        request,
+        StockKeyboard.objects.filter(pk=require_id(request)).first(),
+        'That prebuilt is no longer in the catalog.',
+    )
 
     modal_forms = ModalForms(request.user)
     catalog_manager = CatalogManager(request.user)
@@ -579,7 +584,7 @@ def delete_stock_prebuilts(request):
         StockKeyboard.objects.filter(pk__in=ids).select_related('kit').order_by('pk')
     )
     if not stock_kbs:
-        return HttpResponse(status=400)
+        raise BadRequest
 
     rows = [stock_prebuilt_row(kb) for kb in stock_kbs]
     if request.method != 'POST':
@@ -618,14 +623,15 @@ def delete_stock_prebuilts(request):
 
 @login_required
 def collect_stock_prebuilt(request):
-    kb_id = request.GET.get('id', '')
-    if request.method != 'POST' or not is_id(kb_id):
-        return HttpResponse(status=400)
-
-    stock_kb = StockKeyboard.objects.filter(pk=kb_id).select_related('kit').first()
-    if stock_kb is None:
-        messages.error(request, 'That prebuilt is no longer in the catalog.')
-        raise Http404
+    if request.method != 'POST':
+        raise BadRequest
+    stock_kb = found_or_404(
+        request,
+        StockKeyboard.objects.filter(pk=require_id(request))
+        .select_related('kit')
+        .first(),
+        'That prebuilt is no longer in the catalog.',
+    )
 
     catalog_manager = CatalogManager(request.user)
     kb_manager = KeyboardManager(request.user)
@@ -656,15 +662,12 @@ def stock_parts(request, part_type):
 
 
 def stock_part_from_request(request):
-    part_type = request.GET.get('type')
-    part_id = request.GET.get('id', '')
-    if part_type not in PART_MODELS or not is_id(part_id):
-        raise BadRequest
-    obj = stock_part(part_type, part_id)
-    if obj is None:
-        messages.error(request, 'That part is no longer in the catalog.')
-        raise Http404
-    return part_type, obj
+    part_type = require_part_type(request)
+    stock_model = PART_MODELS[part_type].stock
+    obj = stock_model.objects.filter(pk=require_id(request)).first()
+    return part_type, found_or_404(
+        request, obj, 'That part is no longer in the catalog.'
+    )
 
 
 def stock_part_modal_context(part_type, form, action_url, delete_url=None):
@@ -679,9 +682,7 @@ def stock_part_modal_context(part_type, form, action_url, delete_url=None):
 
 @permission_required('boards.can_upload_stock_data', raise_exception=True)
 def add_stock_part(request):
-    part_type = request.GET.get('type')
-    if part_type not in PART_MODELS:
-        return HttpResponse(status=400)
+    part_type = require_part_type(request)
 
     form_class = PART_MODELS[part_type].stock_form
     form = form_class(request.POST or None, prefix=part_type)
@@ -789,14 +790,12 @@ def edit_stock_part(request):
 
 @permission_required('boards.can_delete_stock_data', raise_exception=True)
 def delete_stock_parts(request):
-    part_type = request.GET.get('type')
-    if part_type not in PART_MODELS:
-        return HttpResponse(status=400)
+    part_type = require_part_type(request)
 
     ids = [value for value in bulk_ids(request) if is_id(value)]
     objs = list(PART_MODELS[part_type].stock.objects.filter(pk__in=ids).order_by('pk'))
     if not objs:
-        return HttpResponse(status=400)
+        raise BadRequest
 
     deletable, blocked = [], []
     for obj in objs:
@@ -825,7 +824,7 @@ def delete_stock_parts(request):
         messages.error(
             request, 'Those are all used by catalog prebuilts, so they stay.'
         )
-        return HttpResponse(status=400)
+        raise BadRequest
 
     row_ids = []
     for obj in deletable:

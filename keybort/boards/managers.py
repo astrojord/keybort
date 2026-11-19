@@ -1240,10 +1240,6 @@ class CatalogManager(UserScoped):
         return rows
 
 
-def stock_part(part_type, part_id):
-    return PART_MODELS[part_type].stock.objects.filter(pk=part_id).first()
-
-
 def stock_part_usage(part_type, obj):
     return {
         'owner_count': Inventory.objects.filter(
