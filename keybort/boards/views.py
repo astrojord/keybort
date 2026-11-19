@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
 from django.shortcuts import render
+from django.template.defaultfilters import pluralize
 from django.urls import Resolver404, resolve, reverse
 from django.views.decorators.http import require_POST
 
@@ -603,7 +604,11 @@ def delete_stock_prebuilts(request):
         )
         description = "These are removed for everyone and can't be undone."
         if owners:
-            description += f' {owners} user{" has" if owners == 1 else "s have"} {"it" if len(rows) == 1 else "some of them"} in their inventory. Their copies will become custom builds with the same parts.'
+            description += (
+                f' {owners} user{pluralize(owners, " has,s have")}'
+                f' {pluralize(len(rows), "it,some of them")} in their inventory.'
+                ' Their copies will become custom builds with the same parts.'
+            )
         return delete_modal(
             request,
             {
@@ -713,11 +718,11 @@ def add_stock_part(request):
 
 
 def upload_summary(result):
-    added = [
-        f'{count} {(const.PART_SINGULARS if count == 1 else const.PART_PLURALS)[part_type].lower()}'
-        for part_type, count in result['created'].items()
-        if count
-    ]
+    added = []
+    for part_type, count in result['created'].items():
+        if count:
+            nouns = f'{const.PART_SINGULARS[part_type]},{const.PART_PLURALS[part_type]}'
+            added.append(f'{count} {pluralize(count, nouns).lower()}')
     skipped = result['skipped']
     skipped_note = f'{skipped} already in the catalog' if skipped else ''
     if not added:

@@ -1015,6 +1015,17 @@ class DeleteStockPrebuiltViewTests(ClientTestCase):
         self.assertTemplateUsed(response, 'partials/modals/delete_modal.html')
         self.assertIn('1 user has it', response.context['description'])
 
+    def test_get_counts_owners_plural(self):
+        other_kb = stock_keyboard()
+        prebuilt_in_inventory(self.user, self.stock_kb)
+        prebuilt_in_inventory(self.other, other_kb)
+        url = reverse('stock_prebuilt_delete')
+        response = self.client.get(url, {'ids': [self.stock_kb.pk, other_kb.pk]})
+        self.assertIn(
+            '2 users have some of them in their inventory.',
+            response.context['description'],
+        )
+
     def test_post_removes_row(self):
         response = self.client.post(self.url)
         triggers = json.loads(response['HX-Trigger'])
