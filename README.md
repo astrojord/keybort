@@ -11,10 +11,11 @@ Track personal mechanical keyboard collection and parts inventory. Users can wri
 
 #### Local setup
 1. `cp sample.env env/local.env`, fill in accordingly (`POSTGRES_HOST` should be `db`, the compose service name)
-2. `docker compose up --build`
-3. `just migrate` or without just, `docker compose exec app python manage.py migrate` - other helpful functions are in the justfile
+2. `just build-css` and `just build-js` or without just, `npm --prefix keybort run build:css` and `npm --prefix keybort run build:js` - other helpful functions are in the justfile
+3. `docker compose up --build`
+4. `just migrate` or without just, `docker compose exec app python manage.py migrate`
 
-Test with the Django runner, `just test` or `docker compose exec app python manage.py test`. GitHub Actions runs ruff and testing with coverage output.
+Test with the Django runner, `just test` or `docker compose exec app python manage.py test`. GitHub Actions runs ruff, djlint, and testing with coverage output.
 
 #### To do
 - [ ] Overall, just needs more juice/visual interest
