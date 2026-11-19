@@ -20,6 +20,7 @@ Test with the Django runner, `just test` or `docker compose exec app python mana
 - [ ] Overall, just needs more juice/visual interest
 - [ ] allauth social account stuff
 - [ ] Set up [Resend](https://resend.com/home) for email stuff on the deployed version
+- [ ] Truncate long part names (~50 chars) and longer mod/notes text in the keyboards table
 
 #### Credits
 - The typing race word list (`keybort/static/words/words.txt`) combines the no-swears short and medium lists from [google-10000-english](https://github.com/first20hours/google-10000-english), filtered against the [ENABLE](https://github.com/dolph/dictionary) dictionary and the [naughty-words](https://www.npmjs.com/package/naughty-words) list (CC-BY-4.0), then reviewed by hand

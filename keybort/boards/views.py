@@ -60,7 +60,6 @@ def standalone_part_or_404(request, part_manager):
     return inv
 
 
-# home/dashboard
 def index(request):
     context = {'page_title': 'Home'}
     if request.user.is_authenticated:
@@ -116,8 +115,6 @@ def inventory_keyboards(request):
     context['filters'] = list(const.KEYBOARD_KINDS.items())
     add = request.GET.get('add')
     context['open_add'] = add if add in const.KEYBOARD_KINDS else None
-    # cut off text for part names after maybe 50 characters?
-    # cut off text for mods + notes after some longer amount of characters
     return render(request, 'pages/inventory_keyboards.html', context)
 
 
@@ -133,8 +130,6 @@ def inventory_parts(request):
     return render(request, 'pages/inventory_parts.html', context)
 
 
-# GET: modal body, pick a part type then stock or custom
-# POST: add it to the parts inventory, or bump quantity if exists
 @login_required
 def add_part(request):
     modal_forms = ModalForms(request.user)
@@ -363,7 +358,6 @@ def edit_url(url):
     return url if match.url_name in ('part_edit', 'keyboard_edit') else None
 
 
-# view-only modal body
 def part_detail(request):
     part_type = request.GET.get('type')
     part_id = request.GET.get('id', '')
@@ -395,9 +389,6 @@ def part_detail(request):
     return render(request, 'partials/modals/detail_modal.html', context)
 
 
-# GET: modal body
-# POST: validate + create, if error, re-render the modal on the first broken step
-#       if success, put new row on table and close dialog
 @login_required
 def add_keyboard(request):
     modal_forms = ModalForms(request.user)

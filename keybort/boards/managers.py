@@ -531,7 +531,6 @@ def stock_prebuilt_row(kb, owned=False):
 class ModalForms(UserScoped):
     def keyboard_form_context(self, action_url, data=None, current=None, kind=None):
         data = data or {}
-        # kit is required (CustomKeyboard.__str__ depends on it)
         parts = [
             self.part_choice(
                 part_type,

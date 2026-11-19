@@ -65,7 +65,7 @@ def read_rows(file):
     return headers, reader
 
 
-# return part type, form class, and errors for a row
+# return part type, form, and errors for a row
 def validate_row(line, row, aliases):
     errors = []
     part_type = aliases.get((row.get('type') or '').strip().lower())
@@ -88,7 +88,6 @@ def validate_row(line, row, aliases):
         elif value:
             data[name] = value
 
-    # fill a Django form with the data from the row and use those validators
     form = form_class(data)
     if not form.is_valid():
         for name, messages in form.errors.items():
@@ -143,8 +142,6 @@ def handle_canned_parts_upload(file):
     if result['errors']:
         return result
 
-    # loop through the forms read out of the csv
-    # and save any that are actually new
     seen = set()
     with transaction.atomic():
         for part_type, form in valid:

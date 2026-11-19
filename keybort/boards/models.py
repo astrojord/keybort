@@ -141,23 +141,15 @@ class Keyboard(CustomOrStock, models.Model):
 
 
 class CustomKeyboard(models.Model):
-    # can go to CustomKit or StockKit
+    # part FKs point at wrappers, so each one can be custom or stock
     kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
-
-    # can go to CustomPlate or StockPlate
     plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
-
-    # can go to CustomSwitch or StockSwitch
     switch = models.ForeignKey(
         'Switch', null=True, blank=True, on_delete=models.SET_NULL
     )
-
-    # can go to CustomStabilizer or StockStabilizer
     stabilizer = models.ForeignKey(
         'Stabilizer', null=True, blank=True, on_delete=models.SET_NULL
     )
-
-    # can go to CustomKeycaps or StockKeycaps
     keycaps = models.ForeignKey(
         'Keycaps', null=True, blank=True, on_delete=models.SET_NULL
     )
@@ -520,23 +512,15 @@ class CustomMod(models.Model):
     represents foams, lube/film, tape mod, etc.
     """
 
-    # can go to CustomKit or StockKit
+    # part FKs point at wrappers, so each one can be custom or stock
     kit = models.ForeignKey('Kit', null=True, blank=True, on_delete=models.SET_NULL)
-
-    # can go to CustomPlate or StockPlate
     plate = models.ForeignKey('Plate', null=True, blank=True, on_delete=models.SET_NULL)
-
-    # can go to CustomSwitch or StockSwitch
     switch = models.ForeignKey(
         'Switch', null=True, blank=True, on_delete=models.SET_NULL
     )
-
-    # can go to CustomStabilizer or StockStabilizer
     stabilizer = models.ForeignKey(
         'Stabilizer', null=True, blank=True, on_delete=models.SET_NULL
     )
-
-    # can go to CustomKeycaps or StockKeycaps
     keycaps = models.ForeignKey(
         'Keycaps', null=True, blank=True, on_delete=models.SET_NULL
     )
