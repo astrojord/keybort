@@ -46,6 +46,7 @@ from .models import (
     StockSwitch,
     Switch,
     TypingResult,
+    part_name,
 )
 from .request_params import is_id
 
@@ -88,14 +89,6 @@ def part_type_of(inv):
     return next(
         part_type for part_type in PART_MODELS if getattr(inv, f'{part_type}_id')
     )
-
-
-def part_name(obj):
-    # plates have no brand/name, their __str__ describes them
-    name = ' '.join(
-        filter(None, [getattr(obj, 'brand', None), getattr(obj, 'name', None)])
-    )
-    return name or str(obj)
 
 
 def part_fields(obj, custom_model):
@@ -435,7 +428,7 @@ def keyboard_row(kb):
         data.update(
             {
                 'kit_url_params': detail_params('kit', kit, f'{edit_url}kit'),
-                'kit_str': f'{kit.brand} {kit.name}',
+                'kit_str': part_name(kit),
                 'pcb': kit.pcb,
             }
         )
@@ -447,7 +440,7 @@ def keyboard_row(kb):
                 'switches_url_params': detail_params(
                     'switch', switch, f'{edit_url}switch'
                 ),
-                'switches_str': f'{switch.brand} {switch.name}',
+                'switches_str': part_name(switch),
                 'switch_kind': switch_kind(switch),
                 'switch_count': kb.switch_count,
             }
@@ -460,7 +453,7 @@ def keyboard_row(kb):
             data[f'{part_type}_url_params'] = detail_params(
                 part_type, obj, f'{edit_url}{part_type}'
             )
-            data[f'{part_type}_str'] = str(obj)
+            data[f'{part_type}_str'] = part_name(obj)
 
     return data
 
@@ -507,7 +500,7 @@ def stock_prebuilt_row(kb, owned=False):
     data = {
         'id': kb.pk,
         'row_id': f'prebuilt-{kb.pk}',
-        'name': str(kb) if kb.kit else 'Unnamed prebuilt',
+        'name': str(kb),
         'brand': (kb.kit.brand or '') if kb.kit else '',
         'owned': owned,
         'connectivity': ', '.join(connectivity),
@@ -573,8 +566,11 @@ class ModalForms(UserScoped):
                 data or None, prefix='details', initial=initial
             )
 
-        stock_keyboards = StockKeyboard.objects.select_related('kit')
-        if kind == 'prebuilt' and not stock_keyboards:
+        prebuilt_options = [
+            {'id': kb.pk, 'name': str(kb)}
+            for kb in StockKeyboard.objects.select_related('kit')
+        ]
+        if kind == 'prebuilt' and not prebuilt_options:
             kind = None
         step = {'prebuilt': 'prebuilt', 'custom': parts[0].type}.get(kind)
 
@@ -584,7 +580,7 @@ class ModalForms(UserScoped):
             'from_prebuilt': current is not None and current.stock,
             'kind': data.get('kind', kind or 'custom'),
             'step': step,
-            'stock_keyboards': stock_keyboards,
+            'prebuilt_options': prebuilt_options,
             'prebuilt_id': data.get('prebuilt', ''),
             'prebuilt_error': None,
             'parts': parts,
@@ -940,10 +936,7 @@ class KeyboardManager(UserScoped):
         def field(part_type, name):
             return [getattr(obj, name, None) for obj in parts(part_type)]
 
-        switch_names = [
-            ' '.join(filter(None, (obj.brand, obj.name))) if obj else None
-            for obj in parts('switch')
-        ]
+        switch_names = [part_name(obj) if obj else None for obj in parts('switch')]
         switch_kinds = [switch_kind(obj) for obj in parts('switch')]
         switch_types = [kind and kind['label'] for kind in switch_kinds]
         slugs_by_label = {
@@ -1148,10 +1141,7 @@ class TypingManager(UserScoped):
     def board_names(owned):
         names = {}
         for inv in owned:
-            kit = inv.obj.kit
-            obj = part_obj(kit) if kit else None
-            name = ' '.join(filter(None, (obj.brand, obj.name))) if obj else ''
-            names.setdefault(inv.keyboard_id, name or 'Untitled keyboard')
+            names.setdefault(inv.keyboard_id, str(inv.obj))
         return names
 
     @staticmethod
@@ -1264,7 +1254,7 @@ def stock_part_usage(part_type, obj):
         .distinct()
         .count(),
         'prebuilts': [
-            str(kb) if kb.kit else 'Unnamed prebuilt'
+            str(kb)
             for kb in StockKeyboard.objects.filter(**{part_type: obj}).select_related(
                 'kit'
             )

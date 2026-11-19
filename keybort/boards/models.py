@@ -13,6 +13,13 @@ def exactly_one_set(*fields):
     return q
 
 
+def part_name(obj):
+    # plates have no brand/name, their __str__ describes them
+    if isinstance(obj, CustomPlate):
+        return str(obj)
+    return ' '.join(filter(None, [obj.brand, obj.name]))
+
+
 # ruff: noqa: RUF012
 # check constraint convention is to instantiate in Meta class, ignore for this file only
 
@@ -169,7 +176,7 @@ class CustomKeyboard(models.Model):
     stock = False
 
     def __str__(self):
-        return f'{self.kit.obj.brand} {self.kit.obj.name}'
+        return (part_name(self.kit.obj) if self.kit else '') or 'Untitled keyboard'
 
 
 class StockKeyboard(models.Model):
@@ -201,7 +208,7 @@ class StockKeyboard(models.Model):
     switch_count = None
 
     def __str__(self):
-        return f'{self.kit.brand} {self.kit.name}'
+        return (part_name(self.kit) if self.kit else '') or 'Unnamed prebuilt'
 
 
 class Kit(CustomOrStock, models.Model):

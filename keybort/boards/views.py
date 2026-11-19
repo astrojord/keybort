@@ -30,7 +30,6 @@ from .managers import (
     model_to_dict_verbose,
     parse_quantity,
     part_columns,
-    part_name,
     part_row,
     part_type_of,
     promote_to_catalog,
@@ -41,12 +40,8 @@ from .managers import (
     stock_part_usage,
     stock_prebuilt_row,
 )
-from .models import Inventory, StockKeyboard
+from .models import Inventory, StockKeyboard, part_name
 from .request_params import bulk_ids, is_id, keyboard_params
-
-
-def keyboard_name(row):
-    return row.get('kit_str', 'keyboard')
 
 
 def swap_row(request, template, context, target, swap='outerHTML'):
@@ -323,7 +318,7 @@ def delete_keyboards(request):
         return HttpResponse(status=400)
 
     keyboards = [inventory.keyboard.obj for _, inventory in inventories]
-    names = [keyboard_name(keyboard_row(kb)) for kb in keyboards]
+    names = [str(kb) for kb in keyboards]
     single = len(keyboards) == 1
     if request.method != 'POST':
         context = {
@@ -436,7 +431,7 @@ def add_keyboard(request):
             return HttpResponse(status=400)
 
     row = keyboard_row(kb)
-    messages.success(request, f'Added {keyboard_name(row)} to keyboards.')
+    messages.success(request, f'Added {kb} to keyboards.')
     return swap_row(
         request,
         'partials/rows/keyboard_row.html',
@@ -477,7 +472,7 @@ def edit_keyboard(request):
 
     kb = kb_manager.edit_keyboard(inventory, submission)
     row = keyboard_row(kb)
-    messages.success(request, f'Saved {keyboard_name(row)}.')
+    messages.success(request, f'Saved {kb}.')
     return swap_row(
         request,
         'partials/rows/keyboard_row.html',

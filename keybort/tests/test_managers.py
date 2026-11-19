@@ -8,13 +8,13 @@ from boards.managers import (
     TypingManager,
     board_switch_count,
     field_display,
+    keyboard_row,
     model_to_dict_verbose,
     parse_quantity,
     part_cells,
     part_columns,
     part_in_use,
     part_info,
-    part_name,
     part_row,
     stat_breakdown,
     stat_leader,
@@ -53,11 +53,9 @@ from .base import (
 
 
 class PartDisplayTests(UserTestCase):
-    def test_part_name_joins_brand_and_name(self):
-        self.assertEqual(part_name(stock_kit()), 'Keychron Q1')
-
-    def test_part_name_falls_back_to_str(self):
-        self.assertEqual(part_name(CustomPlate(material='Brass')), 'Brass')
+    def test_keyboard_row_names_skip_blank_brand(self):
+        kb = custom_keyboard(self.user, kit=custom_kit_wrapper(brand=None))
+        self.assertEqual(keyboard_row(kb)['kit_str'], 'Tofu65')
 
     def test_switch_info(self):
         switch = CustomSwitch(

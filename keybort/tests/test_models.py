@@ -1,6 +1,7 @@
 from django.db import IntegrityError, transaction
 
 from boards.models import (
+    CustomKeyboard,
     CustomKit,
     CustomMod,
     CustomPlate,
@@ -8,12 +9,15 @@ from boards.models import (
     Keyboard,
     Kit,
     Plate,
+    StockKeyboard,
     StockKit,
     Switch,
+    part_name,
 )
 
 from .base import (
     UserTestCase,
+    custom_keyboard,
     custom_kit_wrapper,
     stock_keyboard,
     stock_kit,
@@ -120,3 +124,29 @@ class ConstraintTests(UserTestCase):
         self.assertRejected(
             lambda: CustomMod.objects.create(mod='foam', kit=kit, switch=switch)
         )
+
+
+class NameTests(UserTestCase):
+    def test_part_name_joins_brand_and_name(self):
+        self.assertEqual(part_name(stock_kit()), 'Keychron Q1')
+
+    def test_part_name_falls_back_to_str(self):
+        self.assertEqual(part_name(CustomPlate(material='Brass')), 'Brass')
+
+    def test_part_name_skips_blank_brand(self):
+        self.assertEqual(part_name(CustomKit(name='Tofu65')), 'Tofu65')
+        self.assertEqual(part_name(CustomKit()), '')
+
+    def test_stock_keyboard_str_falls_back_when_unnamed(self):
+        self.assertEqual(str(stock_keyboard()), 'Keychron Q1')
+        self.assertEqual(str(StockKeyboard()), 'Unnamed prebuilt')
+        unnamed_kit = stock_keyboard(kit=stock_kit(brand=None, name=None))
+        self.assertEqual(str(unnamed_kit), 'Unnamed prebuilt')
+
+    def test_custom_keyboard_str_falls_back_when_unnamed(self):
+        self.assertEqual(str(custom_keyboard(self.user)), 'KBDfans Tofu65')
+        self.assertEqual(str(CustomKeyboard()), 'Untitled keyboard')
+        blank = custom_keyboard(
+            self.user, kit=custom_kit_wrapper(brand=None, name=None)
+        )
+        self.assertEqual(str(blank), 'Untitled keyboard')

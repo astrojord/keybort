@@ -39,19 +39,19 @@
     <section class="-mx-6 min-h-0 overflow-y-auto px-6">
         {% if not editing %}
         <fieldset data-step="kind" class="grid min-w-0 gap-3" role="radiogroup" aria-label="Keyboard type">
-            <label{% if not stock_keyboards %} data-disabled="true"{% endif %}>
+            <label{% if not prebuilt_options %} data-disabled="true"{% endif %}>
                 <div class="field" data-orientation="horizontal">
                     <section>
                         <h3>Prebuilt</h3>
                         <p>
-                            {% if stock_keyboards %}
-                            Select from the catalog ({{ stock_keyboards|length }} available).
+                            {% if prebuilt_options %}
+                            Select from the catalog ({{ prebuilt_options|length }} available).
                             {% else %}
                             No prebuilts in the catalog yet.
                             {% endif %}
                         </p>
                     </section>
-                    <input type="radio" name="kind" value="prebuilt" required{% if kind == "prebuilt" %} checked{% endif %}{% if not stock_keyboards %} disabled{% endif %}>
+                    <input type="radio" name="kind" value="prebuilt" required{% if kind == "prebuilt" %} checked{% endif %}{% if not prebuilt_options %} disabled{% endif %}>
                 </div>
             </label>
             <label>
@@ -70,8 +70,8 @@
                 <label for="id_prebuilt">Prebuilt keyboard</label>
                 <select id="id_prebuilt" name="prebuilt" required{% if prebuilt_error %} aria-invalid="true" aria-describedby="id_prebuilt-error"{% endif %}>
                     <option value="">Choose a keyboard…</option>
-                    {% for stock_kb in stock_keyboards %}
-                    <option value="{{ stock_kb.pk }}"{% if prebuilt_id == stock_kb.pk|stringformat:"s" %} selected{% endif %}>{{ stock_kb.kit.brand }} {{ stock_kb.kit.name }}</option>
+                    {% for option in prebuilt_options %}
+                    <option value="{{ option.id }}"{% if prebuilt_id == option.id|stringformat:"s" %} selected{% endif %}>{{ option.name }}</option>
                     {% endfor %}
                 </select>
                 {% if prebuilt_error %}
