@@ -45,7 +45,7 @@ class PartRowsTests(UserTestCase):
         Inventory.objects.create(
             user=self.user, kit=custom_kit_wrapper(brand='Akko', name='Aa')
         )
-        names = [row['name'] for row in self.part_service.part_rows()]
+        names = [row.name for row in self.part_service.part_rows()]
         self.assertEqual(names, ['Akko Aa', 'Zeal Zz', 'Gateron Yellow'])
 
     def test_part_rows_skip_other_users_and_keyboards(self):
@@ -58,21 +58,21 @@ class KeyboardRowTests(UserTestCase):
     def test_prebuilt_row(self):
         stock_kb = prebuilt_in_inventory(self.user)
         row = self.kb_service.keyboard_rows()[0]
-        self.assertEqual(row['row_id'], f'keyboard-stock-{stock_kb.pk}')
-        self.assertEqual(row['ref'], f'stock-{stock_kb.pk}')
-        self.assertEqual(row['url_params'], f'id={stock_kb.pk}&stock=1')
-        self.assertTrue(row['is_stock'])
-        self.assertEqual(row['kit_str'], 'Keychron Q1')
-        self.assertEqual(row['switches_str'], 'Gateron Yellow')
+        self.assertEqual(row.row_id, f'keyboard-stock-{stock_kb.pk}')
+        self.assertEqual(row.ref, f'stock-{stock_kb.pk}')
+        self.assertEqual(row.url_params, f'id={stock_kb.pk}&stock=1')
+        self.assertTrue(row.is_stock)
+        self.assertEqual(row.kit.name, 'Keychron Q1')
+        self.assertEqual(row.switch.name, 'Gateron Yellow')
 
     def test_custom_row(self):
         kb = custom_keyboard(self.user, switch=custom_switch_wrapper(), switch_count=68)
         row = self.kb_service.keyboard_rows()[0]
-        self.assertEqual(row['row_id'], f'keyboard-custom-{kb.pk}')
-        self.assertEqual(row['ref'], f'custom-{kb.pk}')
-        self.assertFalse(row['is_stock'])
-        self.assertEqual(row['kit_str'], 'KBDfans Tofu65')
-        self.assertEqual(row['switch_count'], 68)
+        self.assertEqual(row.row_id, f'keyboard-custom-{kb.pk}')
+        self.assertEqual(row.ref, f'custom-{kb.pk}')
+        self.assertFalse(row.is_stock)
+        self.assertEqual(row.kit.name, 'KBDfans Tofu65')
+        self.assertEqual(row.switch_count, 68)
 
     def test_only_own_keyboards(self):
         custom_keyboard(self.other)
@@ -113,7 +113,7 @@ class KeyboardQueryTests(UserTestCase):
         with self.assertNumQueries(1):
             rows = self.kb_service.keyboard_rows()
         self.assertEqual(
-            sorted(row['kit_str'] for row in rows),
+            sorted(row.kit.name for row in rows),
             ['KBDfans Tofu65', 'Keychron Q1', 'Keychron Q2'],
         )
 

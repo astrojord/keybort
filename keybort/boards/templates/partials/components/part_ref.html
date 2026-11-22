@@ -1,0 +1,1 @@
+{% comment %}one part slot on a keyboard row; ref is a helpers.rows.PartRef, label overrides its name{% endcomment %}{% include "partials/components/switch_dot.html" with kind=ref.switch_kind %}{% include "partials/components/part_link.html" with label=label|default:ref.name params=ref.detail_params %}

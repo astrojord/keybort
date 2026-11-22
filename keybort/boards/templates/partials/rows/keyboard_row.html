@@ -5,7 +5,7 @@
                class="input"
                data-bulk
                value="{{ kb.ref }}"
-               aria-label="Select {{ kb.kit_str|default:"keyboard" }}">
+               aria-label="Select {{ kb.kit.name|default:"keyboard" }}">
     </td>
     <td data-role="actions">
         <div class="flex items-center gap-1">
@@ -13,7 +13,7 @@
                     class="btn"
                     data-variant="ghost"
                     data-size="icon-sm"
-                    aria-label="Edit {{ kb.kit_str }}"
+                    aria-label="Edit {{ kb.kit.name|default:"keyboard" }}"
                     data-tooltip="Edit"
                     hx-get="{% url 'keyboard_edit' %}?{{ kb.url_params }}"
                     hx-target="#page-dialog">
@@ -23,28 +23,28 @@
     </td>
     <td data-role="title"
         class="font-medium"
-        data-sort-value="{{ kb.kit_str|default:'' }}">
-        {% if kb.kit_str %}
-            {% include "partials/components/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}
+        data-sort-value="{{ kb.kit.name|default:'' }}">
+        {% if kb.kit %}
+            {% include "partials/components/part_ref.html" with ref=kb.kit only %}
         {% endif %}
         <div class="md:hidden mt-1"><span class="badge"
                                           data-variant="secondary">{% if kb.is_stock %}Prebuilt{% else %}Custom{% endif %}</span></div>
     </td>
     <td data-secondary>{{ kb.pcb }}</td>
-    <td data-secondary>{% if kb.switches_str %}{% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}{% include "partials/components/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}{% endif %}</td>
+    <td data-secondary>{% if kb.switch %}{% include "partials/components/part_ref.html" with ref=kb.switch only %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}{% endif %}</td>
     <td data-secondary>
-        {% if kb.keycaps_str %}
-            {% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_url_params %}
+        {% if kb.keycaps %}
+            {% include "partials/components/part_ref.html" with ref=kb.keycaps only %}
         {% endif %}
     </td>
     <td data-secondary>
-        {% if kb.plate_str %}
-            {% include "partials/components/part_link.html" with label=kb.plate_str params=kb.plate_url_params %}
+        {% if kb.plate %}
+            {% include "partials/components/part_ref.html" with ref=kb.plate only %}
         {% endif %}
     </td>
     <td data-secondary>
-        {% if kb.stabilizer_str %}
-            {% include "partials/components/part_link.html" with label=kb.stabilizer_str params=kb.stabilizer_url_params %}
+        {% if kb.stabilizer %}
+            {% include "partials/components/part_ref.html" with ref=kb.stabilizer only %}
         {% endif %}
     </td>
     <td data-secondary>

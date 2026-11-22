@@ -52,9 +52,9 @@
                             {% for kb in recent_keyboards %}
                                 <tr>
                                     <td class="font-medium"><a href="{% url 'inventory_keyboards' %}#{{ kb.row_id }}"
-                                                               class="underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 hover:decoration-solid">{{ kb.kit_str|default:"Untitled keyboard" }}</a></td>
-                                    <td>{% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}{{ kb.switches_str|default:"—" }}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}</td>
-                                    <td>{{ kb.keycaps_str|default:"—" }}</td>
+                                                               class="underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 hover:decoration-solid">{{ kb.kit.name|default:"Untitled keyboard" }}</a></td>
+                                    <td>{% include "partials/components/switch_dot.html" with kind=kb.switch.switch_kind %}{{ kb.switch.name|default:"—" }}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}</td>
+                                    <td>{{ kb.keycaps.name|default:"—" }}</td>
                                     <td class="text-right">
                                         <span class="badge"
                                               data-variant="{% if kb.is_stock %}secondary{% else %}outline{% endif %}">{% if kb.is_stock %}Prebuilt{% else %}Custom{% endif %}</span>

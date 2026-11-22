@@ -23,7 +23,7 @@ class CatalogService(UserScoped):
             'kit', 'switch', 'keycaps', 'plate', 'stabilizer'
         )
         rows = [stock_prebuilt_row(kb, kb.pk in owned) for kb in stock_keyboards]
-        rows.sort(key=lambda row: row['name'].lower())
+        rows.sort(key=lambda row: row.name.lower())
         return rows
 
     def stock_part_quantities(self, part_type):
@@ -43,7 +43,7 @@ class CatalogService(UserScoped):
             stock_part_row(part_type, obj, quantities.get(obj.pk, 0))
             for obj in PART_TYPES[part_type].stock.objects.all()
         ]
-        rows.sort(key=lambda row: row['name'].lower())
+        rows.sort(key=lambda row: row.name.lower())
         return rows
 
 

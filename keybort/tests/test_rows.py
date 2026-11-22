@@ -29,7 +29,7 @@ from .base import (
 class PartDisplayTests(UserTestCase):
     def test_keyboard_row_names_skip_blank_brand(self):
         kb = custom_keyboard(self.user, kit=custom_kit_wrapper(brand=None))
-        self.assertEqual(keyboard_row(kb)['kit_str'], 'Tofu65')
+        self.assertEqual(keyboard_row(kb).kit.name, 'Tofu65')
 
     def test_switch_info(self):
         switch = CustomSwitch(
@@ -61,11 +61,11 @@ class PartDisplayTests(UserTestCase):
             user=self.user, kit=custom_kit_wrapper(), quantity=2
         )
         row = part_row(inv)
-        self.assertEqual(row['row_id'], f'part-{inv.pk}')
-        self.assertEqual(row['type'], 'kit')
-        self.assertEqual(row['name'], 'KBDfans Tofu65')
-        self.assertEqual(row['quantity'], 2)
-        self.assertFalse(row['is_stock'])
+        self.assertEqual(row.row_id, f'part-{inv.pk}')
+        self.assertEqual(row.type, 'kit')
+        self.assertEqual(row.name, 'KBDfans Tofu65')
+        self.assertEqual(row.quantity, 2)
+        self.assertFalse(row.is_stock)
 
     def test_part_columns_have_unique_sort_keys(self):
         keys = [column['key'] for column in part_columns()]

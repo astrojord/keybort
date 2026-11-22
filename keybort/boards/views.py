@@ -180,11 +180,9 @@ def add_part(request):
     inv, stacked = part_service.add_part(part_type, choice, quantity)
     row = part_row(inv)
     if stacked:
-        messages.success(
-            request, f'Updated quantity of {row["name"]} to {inv.quantity}.'
-        )
+        messages.success(request, f'Updated quantity of {row.name} to {inv.quantity}.')
     else:
-        messages.success(request, f'Added {row["name"]} to parts.')
+        messages.success(request, f'Added {row.name} to parts.')
     target, swap = (
         (f'#{part_row_id(inv)}', 'outerHTML')
         if stacked
@@ -220,7 +218,7 @@ def edit_part(request):
     inv = part_service.edit_part(inv, form, quantity)
 
     row = part_row(inv)
-    messages.success(request, f'Saved {row["name"]}.')
+    messages.success(request, f'Saved {row.name}.')
     return swap_row(
         request, 'partials/rows/part_row.html', {'part': row}, f'#{part_row_id(inv)}'
     )
@@ -250,7 +248,7 @@ def promote_part(request):
     messages.success(request, f'Added {name} to the catalog.')
     row = part_row(part_service.standalone_part(inv.pk))
     return swap_row(
-        request, 'partials/rows/part_row.html', {'part': row}, f'#{row["row_id"]}'
+        request, 'partials/rows/part_row.html', {'part': row}, f'#{row.row_id}'
     )
 
 
@@ -534,7 +532,7 @@ def add_stock_prebuilt(request):
 
     stock_kb = save_stock_keyboard(submission)
     row = stock_prebuilt_row(stock_kb)
-    messages.success(request, f'Added {row["name"]} to the catalog.')
+    messages.success(request, f'Added {row.name} to the catalog.')
     return swap_row(
         request,
         'partials/rows/stock_prebuilt_row.html',
@@ -573,12 +571,12 @@ def edit_stock_prebuilt(request):
     row = stock_prebuilt_row(
         stock_kb, stock_kb.pk in catalog_service.owned_prebuilt_ids()
     )
-    messages.success(request, f'Saved {row["name"]}.')
+    messages.success(request, f'Saved {row.name}.')
     return swap_row(
         request,
         'partials/rows/stock_prebuilt_row.html',
         {'kb': row},
-        f'#{row["row_id"]}',
+        f'#{row.row_id}',
     )
 
 
@@ -641,10 +639,10 @@ def collect_stock_prebuilt(request):
     kb_service = KeyboardService(request.user)
     row = stock_prebuilt_row(stock_kb, owned=True)
     if stock_kb.pk in catalog_service.owned_prebuilt_ids():
-        messages.info(request, f'{row["name"]} is already in your inventory.')
+        messages.info(request, f'{row.name} is already in your inventory.')
     else:
         kb_service.collect_prebuilt(stock_kb)
-        messages.success(request, f'Added {row["name"]} to keyboards.')
+        messages.success(request, f'Added {row.name} to keyboards.')
     return render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
 
 
@@ -693,7 +691,7 @@ def add_stock_part(request):
     action_url = f'{reverse("stock_part_add")}?type={part_type}'
     if request.method == 'POST' and form.is_valid():
         row = stock_part_row(part_type, form.save())
-        messages.success(request, f'Added {row["name"]} to the catalog.')
+        messages.success(request, f'Added {row.name} to the catalog.')
         return swap_row(
             request,
             'partials/rows/stock_part_row.html',
@@ -778,12 +776,12 @@ def edit_stock_part(request):
         obj = form.save()
         quantity = catalog_service.stock_part_quantities(part_type).get(obj.pk, 0)
         row = stock_part_row(part_type, obj, quantity)
-        messages.success(request, f'Saved {row["name"]}.')
+        messages.success(request, f'Saved {row.name}.')
         return swap_row(
             request,
             'partials/rows/stock_part_row.html',
             {'part': row},
-            f'#{row["row_id"]}',
+            f'#{row.row_id}',
         )
 
     return render(
@@ -873,5 +871,5 @@ def collect_stock_part(request):
         request,
         'partials/rows/stock_part_row.html',
         {'part': row},
-        f'#{row["row_id"]}',
+        f'#{row.row_id}',
     )

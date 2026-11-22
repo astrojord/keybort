@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from urllib.parse import urlencode
 
 from django.urls import reverse
@@ -52,7 +53,7 @@ def filter_facets(rows, selected, specs):
     facets = []
     for key, label, fixed in specs:
         values = fixed or sorted(
-            {value for row in rows for value in row['facets'].get(key, [])},
+            {value for row in rows for value in row.facets.get(key, [])},
             key=str.lower,
         )
         chosen = selected.getlist(key)
@@ -168,71 +169,94 @@ def part_cells(part_type, obj):
     ]
 
 
+@dataclass(frozen=True)
+class PartRef:
+    name: str
+    detail_params: str
+    switch_kind: dict | None = None
+
+
+def part_ref(part_type, part, edit_url):
+    if part is None:
+        return None
+    obj = part_obj(part)
+    return PartRef(
+        name=part_name(obj),
+        detail_params=detail_params(part_type, obj, edit_url),
+        switch_kind=switch_kind(obj) if part_type == 'switch' else None,
+    )
+
+
+@dataclass(frozen=True)
+class PartRow:
+    id: int
+    row_id: str
+    type: str
+    type_label: str
+    name: str
+    is_stock: bool
+    quantity: int
+    info: str
+    cells: list[dict]
+    switch_kind: dict | None
+    detail_params: str
+
+
 def part_row(inv):
     part_type = part_type_of(inv)
     obj = getattr(inv, part_type).obj
-    return {
-        'id': inv.pk,
-        'row_id': part_row_id(inv),
-        'type': part_type,
-        'type_label': PART_TYPES[part_type].singular,
-        'name': part_name(obj),
-        'is_stock': obj.is_stock,
-        'quantity': inv.quantity,
-        'info': part_info(part_type, obj),
-        'cells': part_cells(part_type, obj),
-        'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
-        'detail_params': detail_params(
+    return PartRow(
+        id=inv.pk,
+        row_id=part_row_id(inv),
+        type=part_type,
+        type_label=PART_TYPES[part_type].singular,
+        name=part_name(obj),
+        is_stock=obj.is_stock,
+        quantity=inv.quantity,
+        info=part_info(part_type, obj),
+        cells=part_cells(part_type, obj),
+        switch_kind=switch_kind(obj) if part_type == 'switch' else None,
+        detail_params=detail_params(
             part_type, obj, f'{reverse("part_edit")}?id={inv.pk}'
         ),
-    }
+    )
+
+
+@dataclass(frozen=True)
+class KeyboardRow:
+    id: int
+    row_id: str
+    ref: str
+    url_params: str
+    is_stock: bool
+    notes: str | None
+    kit: PartRef | None
+    pcb: str | None
+    switch: PartRef | None
+    switch_count: int | None
+    keycaps: PartRef | None
+    plate: PartRef | None
+    stabilizer: PartRef | None
 
 
 def keyboard_row(kb):
     url_params = f'id={kb.pk}&stock={int(kb.is_stock)}'
     edit_url = f'{reverse("keyboard_edit")}?{url_params}&step='
-    data = {
-        'id': kb.pk,
-        'row_id': keyboard_row_id(kb),
-        'ref': keyboard_ref(kb),
-        'url_params': url_params,
-        'is_stock': kb.is_stock,
-        'notes': kb.notes,
+    refs = {
+        part_type: part_ref(part_type, getattr(kb, part_type), f'{edit_url}{part_type}')
+        for part_type in PART_TYPES
     }
-
-    if kb.kit:
-        kit = part_obj(kb.kit)
-        data.update(
-            {
-                'kit_url_params': detail_params('kit', kit, f'{edit_url}kit'),
-                'kit_str': part_name(kit),
-                'pcb': kit.pcb,
-            }
-        )
-
-    if kb.switch:
-        switch = part_obj(kb.switch)
-        data.update(
-            {
-                'switches_url_params': detail_params(
-                    'switch', switch, f'{edit_url}switch'
-                ),
-                'switches_str': part_name(switch),
-                'switch_kind': switch_kind(switch),
-                'switch_count': kb.switch_count,
-            }
-        )
-
-    for part_type in ('keycaps', 'plate', 'stabilizer'):
-        part = getattr(kb, part_type)
-        if part:
-            obj = part_obj(part)
-            data[f'{part_type}_url_params'] = detail_params(
-                part_type, obj, f'{edit_url}{part_type}'
-            )
-            data[f'{part_type}_str'] = part_name(obj)
-
-    return data
+    return KeyboardRow(
+        id=kb.pk,
+        row_id=keyboard_row_id(kb),
+        ref=keyboard_ref(kb),
+        url_params=url_params,
+        is_stock=kb.is_stock,
+        notes=kb.notes,
+        pcb=part_obj(kb.kit).pcb if kb.kit else None,
+        switch_count=kb.switch_count if kb.switch else None,
+        **refs,
+    )
 
 
 def stock_part_specs(part_type):
@@ -242,6 +266,21 @@ def stock_part_specs(part_type):
     return columns, facets
 
 
+@dataclass(frozen=True)
+class StockPartRow:
+    id: int
+    row_id: str
+    type: str
+    url_params: str
+    name: str
+    detail_params: str
+    columns: list[dict]
+    facets: dict[str, list[str]]
+    notes: str | None
+    quantity: int
+    switch_kind: dict | None
+
+
 def stock_part_row(part_type, obj, quantity=0):
     spec = PART_TYPES[part_type]
     facets = {}
@@ -249,19 +288,37 @@ def stock_part_row(part_type, obj, quantity=0):
         value = field_display(obj, name)
         if value:
             facets[name] = [value]
-    return {
-        'id': obj.pk,
-        'row_id': stock_part_row_id(part_type, obj),
-        'type': part_type,
-        'url_params': f'type={part_type}&id={obj.pk}',
-        'name': part_name(obj),
-        'detail_params': detail_params(part_type, obj, ''),
-        'columns': [field_cell(obj, name) for name in spec.stock_columns],
-        'facets': facets,
-        'notes': obj.notes,
-        'quantity': quantity,
-        'switch_kind': switch_kind(obj) if part_type == 'switch' else None,
-    }
+    return StockPartRow(
+        id=obj.pk,
+        row_id=stock_part_row_id(part_type, obj),
+        type=part_type,
+        url_params=f'type={part_type}&id={obj.pk}',
+        name=part_name(obj),
+        detail_params=detail_params(part_type, obj, ''),
+        columns=[field_cell(obj, name) for name in spec.stock_columns],
+        facets=facets,
+        notes=obj.notes,
+        quantity=quantity,
+        switch_kind=switch_kind(obj) if part_type == 'switch' else None,
+    )
+
+
+@dataclass(frozen=True)
+class PrebuiltRow:
+    id: int
+    row_id: str
+    name: str
+    owned: bool
+    connectivity: str
+    facets: dict[str, list[str]]
+    notes: str | None
+    size: str | None
+    layout: str | None
+    kit: PartRef | None
+    switch: PartRef | None
+    keycaps: PartRef | None
+    plate: PartRef | None
+    stabilizer: PartRef | None
 
 
 def stock_prebuilt_row(kb, owned=False):
@@ -273,32 +330,23 @@ def stock_prebuilt_row(kb, owned=False):
         )
         if enabled
     ] or [const.WIRED]
-    data = {
-        'id': kb.pk,
-        'row_id': prebuilt_row_id(kb),
-        'name': str(kb),
-        'brand': (kb.kit.brand or '') if kb.kit else '',
-        'owned': owned,
-        'connectivity': ', '.join(connectivity),
-        'facets': {'connectivity': connectivity},
-        'notes': kb.notes,
-    }
+    facets = {'connectivity': connectivity}
     if kb.kit:
         for key in ('brand', 'size', 'layout'):
             if getattr(kb.kit, key):
-                data['facets'][key] = [getattr(kb.kit, key)]
-        data.update(
-            {
-                'kit_params': detail_params('kit', kb.kit, ''),
-                'size': kb.kit.size,
-                'layout': kb.kit.layout,
-                'pcb': kb.kit.pcb,
-            }
-        )
-    for part_type in ('switch', 'keycaps', 'plate', 'stabilizer'):
-        part = getattr(kb, part_type)
-        if part:
-            data[f'{part_type}_str'] = part_name(part)
-            data[f'{part_type}_params'] = detail_params(part_type, part, '')
-    data['switch_kind'] = switch_kind(kb.switch)
-    return data
+                facets[key] = [getattr(kb.kit, key)]
+    return PrebuiltRow(
+        id=kb.pk,
+        row_id=prebuilt_row_id(kb),
+        name=str(kb),
+        owned=owned,
+        connectivity=', '.join(connectivity),
+        facets=facets,
+        notes=kb.notes,
+        size=kb.kit.size if kb.kit else None,
+        layout=kb.kit.layout if kb.kit else None,
+        **{
+            part_type: part_ref(part_type, getattr(kb, part_type), '')
+            for part_type in PART_TYPES
+        },
+    )

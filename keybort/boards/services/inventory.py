@@ -55,7 +55,7 @@ class PartService(UserScoped):
     def part_rows(self):
         rows = [part_row(inv) for inv in self.standalone_parts()]
         order = list(PART_TYPES)
-        rows.sort(key=lambda row: (order.index(row['type']), row['name'].lower()))
+        rows.sort(key=lambda row: (order.index(row.type), row.name.lower()))
         return rows
 
     def collect_stock_part(self, part_type, obj, quantity):

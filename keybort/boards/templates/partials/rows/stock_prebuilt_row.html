@@ -43,18 +43,17 @@
             </div>
         </td>
     {% endif %}
-    <td data-role="title" class="font-medium" data-sort-value="{{ kb.name }}">{% if kb.kit_params %}{% include "partials/components/part_link.html" with label=kb.name params=kb.kit_params %}{% else %}{{ kb.name }}{% endif %}</td>
+    <td data-role="title" class="font-medium" data-sort-value="{{ kb.name }}">{% if kb.kit %}{% include "partials/components/part_ref.html" with ref=kb.kit label=kb.name only %}{% else %}{{ kb.name }}{% endif %}</td>
     <td data-secondary>{{ kb.size|default:'' }}</td>
     <td data-secondary>{{ kb.layout|default:'' }}</td>
     <td data-secondary>
-        {% if kb.switch_str %}
-            {% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}
-            {% include "partials/components/part_link.html" with label=kb.switch_str params=kb.switch_params %}
+        {% if kb.switch %}
+            {% include "partials/components/part_ref.html" with ref=kb.switch only %}
         {% endif %}
     </td>
     <td data-secondary>
-        {% if kb.keycaps_str %}
-            {% include "partials/components/part_link.html" with label=kb.keycaps_str params=kb.keycaps_params %}
+        {% if kb.keycaps %}
+            {% include "partials/components/part_ref.html" with ref=kb.keycaps only %}
         {% endif %}
     </td>
     <td data-secondary>{{ kb.connectivity }}</td>

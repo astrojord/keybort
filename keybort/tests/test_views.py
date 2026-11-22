@@ -106,8 +106,9 @@ class AddKeyboardViewTests(ClientTestCase):
         self.assertEqual(response['HX-Retarget'], '#table-keyboards tbody')
         self.assertEqual(response['HX-Reswap'], 'beforeend')
         self.assertEqual(response['HX-Trigger'], const.CLOSE_DIALOG_EVENT)
-        self.assertContains(response, f'id="keyboard-stock-{stock_kb.pk}"')
-        self.assertContains(response, 'data-type="prebuilt"')
+        row = response.context['kb']
+        self.assertEqual(row.row_id, f'keyboard-stock-{stock_kb.pk}')
+        self.assertTrue(row.is_stock)
 
     def test_post_custom_appends_row(self):
         data = {
@@ -118,8 +119,9 @@ class AddKeyboardViewTests(ClientTestCase):
         }
         response = self.client.post(reverse('keyboard_add'), data)
         self.assertEqual(response['HX-Retarget'], '#table-keyboards tbody')
-        self.assertContains(response, 'data-type="custom"')
-        self.assertContains(response, 'KBDfans Tofu65')
+        row = response.context['kb']
+        self.assertFalse(row.is_stock)
+        self.assertEqual(row.kit.name, 'KBDfans Tofu65')
 
     def test_post_invalid_rerenders_modal(self):
         response = self.client.post(
@@ -181,7 +183,7 @@ class EditKeyboardViewTests(ClientTestCase):
         response = self.client.post(url, data)
         self.assertEqual(response['HX-Retarget'], f'#keyboard-stock-{stock_kb.pk}')
         self.assertEqual(response['HX-Reswap'], 'outerHTML')
-        self.assertContains(response, 'data-type="custom"')
+        self.assertFalse(response.context['kb'].is_stock)
 
 
 class DeleteKeyboardViewTests(ClientTestCase):
@@ -271,7 +273,21 @@ class PartsPageTests(ClientTestCase):
                 ('stabilizer', 'Stabilizers'),
             ],
         )
-        self.assertContains(response, 'data-type="kit"', count=1)
+        self.assertEqual([row.type for row in response.context['inventory']], ['kit'])
+
+    def assert_switch_columns(self, row, value):
+        # a switch row only fills the switch columns, the rest stay blank
+        switch_values = [
+            cell['value'] for cell in row.cells if cell['type'] == 'switch'
+        ]
+        self.assertIn(value, switch_values)
+        self.assertFalse(
+            [
+                cell['value']
+                for cell in row.cells
+                if cell['type'] != 'switch' and cell['value']
+            ]
+        )
 
     def test_renders_part_specific_columns(self):
         Inventory.objects.create(
@@ -280,7 +296,7 @@ class PartsPageTests(ClientTestCase):
         response = self.client.get(reverse('inventory_parts'))
         self.assertContains(response, 'data-sort="switch-stem"', count=1)
         self.assertContains(response, 'data-sort="kit-mount_type"', count=1)
-        self.assertContains(response, '>Topre</p>', count=1)
+        self.assert_switch_columns(response.context['inventory'][0], 'Topre')
 
     def test_lube_and_film_render_as_icons(self):
         Inventory.objects.create(
@@ -303,7 +319,7 @@ class PartsPageTests(ClientTestCase):
         Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
         response = self.client.get(reverse('inventory_parts'))
         column_count = len(response.context['part_columns'])
-        self.assertEqual(len(response.context['inventory'][0]['cells']), column_count)
+        self.assertEqual(len(response.context['inventory'][0].cells), column_count)
         self.assertContains(
             response, '<td data-secondary data-filter-column="kit" hidden>', count=6
         )
@@ -315,7 +331,7 @@ class PartsPageTests(ClientTestCase):
         response = self.client.post(
             f'{reverse("part_quantity")}?id={inv.pk}', {'quantity': '5'}
         )
-        self.assertContains(response, '>Topre</p>', count=1)
+        self.assert_switch_columns(response.context['part'], 'Topre')
 
 
 class AddPartViewTests(ClientTestCase):
@@ -455,8 +471,9 @@ class PartQuantityViewTests(ClientTestCase):
         response = self.post('90')
         self.inv.refresh_from_db()
         self.assertEqual(self.inv.quantity, 90)
-        self.assertContains(response, f'id="part-{self.inv.pk}"')
-        self.assertContains(response, 'value="90"')
+        row = response.context['part']
+        self.assertEqual(row.row_id, f'part-{self.inv.pk}')
+        self.assertEqual(row.quantity, 90)
         trigger = json.loads(response['HX-Trigger'])
         self.assertEqual(trigger['messages'][0]['level'], 'success')
 
@@ -466,7 +483,7 @@ class PartQuantityViewTests(ClientTestCase):
                 response = self.post(quantity)
                 self.inv.refresh_from_db()
                 self.assertEqual(self.inv.quantity, 70)
-                self.assertContains(response, 'value="70"')
+                self.assertEqual(response.context['part'].quantity, 70)
                 trigger = json.loads(response['HX-Trigger'])
                 self.assertEqual(
                     trigger['messages'][0]['message'], const.QUANTITY_ERROR
@@ -780,9 +797,9 @@ class StockPrebuiltsPageTests(ClientTestCase):
         other = stock_keyboard(kit=stock_kit(brand='Logitech', name='G915'))
         response = self.client.get(reverse('stock_prebuilts'))
 
-        rows = {row['id']: row for row in response.context['prebuilts']}
-        self.assertTrue(rows[owned.pk]['owned'])
-        self.assertFalse(rows[other.pk]['owned'])
+        rows = {row.id: row for row in response.context['prebuilts']}
+        self.assertTrue(rows[owned.pk].owned)
+        self.assertFalse(rows[other.pk].owned)
         self.assertContains(response, 'In inventory', count=1)
         self.assertContains(response, reverse('stock_prebuilt_collect'), count=1)
         self.assertNotContains(response, reverse('stock_prebuilt_add'))
@@ -811,8 +828,8 @@ class StockPrebuiltsPageTests(ClientTestCase):
 
     def test_connectivity_facet_lists_each_mode(self):
         row = stock_prebuilt_row(stock_keyboard(wireless=True, bluetooth=True))
-        self.assertEqual(row['facets']['connectivity'], ['Wireless', 'Bluetooth'])
-        self.assertEqual(row['connectivity'], 'Wireless, Bluetooth')
+        self.assertEqual(row.facets['connectivity'], ['Wireless', 'Bluetooth'])
+        self.assertEqual(row.connectivity, 'Wireless, Bluetooth')
 
     def test_public_without_actions(self):
         self.client.logout()
@@ -848,7 +865,7 @@ class CollectStockPrebuiltViewTests(ClientTestCase):
         for _ in range(2):
             response = self.client.post(url)
             self.assertTemplateUsed(response, 'partials/rows/stock_prebuilt_row.html')
-            self.assertTrue(response.context['kb']['owned'])
+            self.assertTrue(response.context['kb'].owned)
         self.assertEqual(
             Inventory.objects.filter(user=self.user, keyboard__stock=stock_kb).count(),
             1,
@@ -1088,7 +1105,7 @@ class StockPartsPageTests(ClientTestCase):
                 self.assertTemplateUsed(response, 'pages/stock_parts.html')
                 self.assertEqual(response.context['part_type'], part_type)
                 self.assertEqual(
-                    [row['id'] for row in response.context['parts']], [obj.pk]
+                    [row.id for row in response.context['parts']], [obj.pk]
                 )
 
     def test_switch_columns_and_facets(self):
@@ -1113,10 +1130,10 @@ class StockPartsPageTests(ClientTestCase):
         self.assertEqual(facets['category'], [('Linear', False), ('Tactile', True)])
         self.assertEqual(facets['top_housing'], [('Polycarbonate', False)])
         gateron = next(
-            row for row in response.context['parts'] if row['name'] == 'Gateron Yellow'
+            row for row in response.context['parts'] if row.name == 'Gateron Yellow'
         )
         self.assertEqual(
-            [cell['value'] for cell in gateron['columns']],
+            [cell['value'] for cell in gateron.columns],
             ['Linear', 'MX', '— / 50gf', '4mm', 'Polycarbonate / —'],
         )
 
@@ -1138,7 +1155,7 @@ class StockPartsPageTests(ClientTestCase):
         switch = stock_switch()
         self.part_service.collect_stock_part('switch', switch, 70)
         response = self.client.get(reverse('stock_switches'))
-        self.assertEqual(response.context['parts'][0]['quantity'], 70)
+        self.assertEqual(response.context['parts'][0].quantity, 70)
         self.assertContains(response, '70 in parts')
 
     def test_public_without_actions(self):
@@ -1183,9 +1200,9 @@ class CollectStockPartViewTests(ClientTestCase):
     def test_post_adds_then_stacks(self):
         response = self.client.post(self.url, {'quantity': '70'})
         self.assertEqual(response['HX-Retarget'], f'#stock-switch-{self.switch.pk}')
-        self.assertEqual(response.context['part']['quantity'], 70)
+        self.assertEqual(response.context['part'].quantity, 70)
         response = self.client.post(self.url, {'quantity': '20'})
-        self.assertEqual(response.context['part']['quantity'], 90)
+        self.assertEqual(response.context['part'].quantity, 90)
         self.assertEqual(
             Inventory.objects.get(user=self.user, switch__stock=self.switch).quantity,
             90,
@@ -1483,7 +1500,7 @@ class PromotePartViewTests(ClientTestCase):
         custom_id = self.wrapper.custom_id
         response = self.client.post(self.url)
         self.assertEqual(response['HX-Retarget'], f'#part-{self.inv.pk}')
-        self.assertTrue(response.context['part']['is_stock'])
+        self.assertTrue(response.context['part'].is_stock)
 
         stock = StockKit.objects.get()
         self.assertEqual(
