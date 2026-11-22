@@ -116,6 +116,16 @@ class StockCsvUploadTests(UserTestCase):
         self.assertEqual(result.created['plate'], 1)
         self.assertEqual(StockSwitch.objects.count(), 1)
 
+    def test_blank_cell_matches_null_and_empty_string(self):
+        StockPlate.objects.create(material='Brass', notes=None)
+        StockPlate.objects.create(material='Steel', notes='')
+        result = upload(
+            row(type='plate', material='Brass'),
+            row(type='plate', material='Steel'),
+        )
+        self.assertEqual(result.skipped, 2)
+        self.assertEqual(StockPlate.objects.count(), 2)
+
     def test_reuploading_same_file_creates_nothing(self):
         line = row(type='switch', brand='Akko', name='Lavender', category='t')
         upload(line)

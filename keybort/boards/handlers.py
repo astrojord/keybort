@@ -114,10 +114,15 @@ def validate_row(line, row, aliases) -> RowResult:
     return RowResult(part_type, form, errors)
 
 
+def blanks_as_none(fields):
+    # a blank CSV cell and an unset field both mean "not set", so compare them as None
+    return {name: None if value == '' else value for name, value in fields.items()}
+
+
 def matching_fields(model, fields):
     q = Q()
-    for name, value in fields.items():
-        if value in (None, '') and model._meta.get_field(name).empty_strings_allowed:
+    for name, value in blanks_as_none(fields).items():
+        if value is None and model._meta.get_field(name).empty_strings_allowed:
             q &= Q(**{f'{name}__isnull': True}) | Q(**{name: ''})
         else:
             q &= Q(**{name: value})
@@ -162,10 +167,7 @@ def handle_canned_parts_upload(file) -> UploadResult:
         for part_type, form in valid:
             spec = PART_MODELS[part_type]
             fields = part_fields(form.instance, spec.custom)
-            key = (
-                part_type,
-                tuple(sorted((k, None if v == '' else v) for k, v in fields.items())),
-            )
+            key = (part_type, tuple(sorted(blanks_as_none(fields).items())))
             if (
                 key in seen
                 or spec.stock.objects.filter(
