@@ -10,8 +10,8 @@ format-templates:
     docker compose exec app djlint boards/templates --reformat
 lint-templates:
     docker compose exec app djlint boards/templates --lint
-test:
-    docker compose exec app python manage.py test
+test *LABELS:
+    docker compose exec app python manage.py test {{LABELS}}
 empty-migration APP:
     docker compose exec app python manage.py makemigrations {{APP}} --empty
 makemigrations *APPS:
