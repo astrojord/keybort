@@ -154,7 +154,7 @@ class ModalForms(UserScoped):
         return {
             'action_url': action_url,
             'editing': current is not None,
-            'from_prebuilt': current is not None and current.stock,
+            'from_prebuilt': current is not None and current.is_stock,
             'kind': data.get('kind', kind or 'custom'),
             'step': step,
             'prebuilt_options': prebuilt_options,
@@ -246,7 +246,7 @@ class ModalForms(UserScoped):
                     {
                         'id': row.pk,
                         'name': part_name(obj),
-                        'stock': obj.stock,
+                        'is_stock': obj.is_stock,
                         'quantity': row.quantity,
                         'total_keys': getattr(obj, 'total_keys', None),
                     }

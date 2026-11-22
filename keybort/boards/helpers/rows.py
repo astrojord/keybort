@@ -16,7 +16,7 @@ from .parts import (
 
 
 def keyboard_ref(kb):
-    return f'{"stock" if kb.stock else "custom"}-{kb.pk}'
+    return f'{"stock" if kb.is_stock else "custom"}-{kb.pk}'
 
 
 def parse_keyboard_ref(ref):
@@ -44,7 +44,7 @@ def prebuilt_row_id(kb):
 
 def detail_params(part_type, obj, edit_url):
     return urlencode(
-        {'type': part_type, 'id': obj.pk, 'stock': int(obj.stock), 'edit': edit_url}
+        {'type': part_type, 'id': obj.pk, 'stock': int(obj.is_stock), 'edit': edit_url}
     )
 
 
@@ -177,7 +177,7 @@ def part_row(inv):
         'type': part_type,
         'type_label': PART_TYPES[part_type].singular,
         'name': part_name(obj),
-        'stock': obj.stock,
+        'is_stock': obj.is_stock,
         'quantity': inv.quantity,
         'info': part_info(part_type, obj),
         'cells': part_cells(part_type, obj),
@@ -189,14 +189,14 @@ def part_row(inv):
 
 
 def keyboard_row(kb):
-    url_params = f'id={kb.pk}&stock={int(kb.stock)}'
+    url_params = f'id={kb.pk}&stock={int(kb.is_stock)}'
     edit_url = f'{reverse("keyboard_edit")}?{url_params}&step='
     data = {
         'id': kb.pk,
         'row_id': keyboard_row_id(kb),
         'ref': keyboard_ref(kb),
         'url_params': url_params,
-        'stock': kb.stock,
+        'is_stock': kb.is_stock,
         'notes': kb.notes,
     }
 

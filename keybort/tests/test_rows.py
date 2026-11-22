@@ -65,7 +65,7 @@ class PartDisplayTests(UserTestCase):
         self.assertEqual(row['type'], 'kit')
         self.assertEqual(row['name'], 'KBDfans Tofu65')
         self.assertEqual(row['quantity'], 2)
-        self.assertFalse(row['stock'])
+        self.assertFalse(row['is_stock'])
 
     def test_part_columns_have_unique_sort_keys(self):
         keys = [column['key'] for column in part_columns()]

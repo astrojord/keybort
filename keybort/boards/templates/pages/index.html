@@ -57,7 +57,7 @@
                                     <td>{{ kb.keycaps_str|default:"—" }}</td>
                                     <td class="text-right">
                                         <span class="badge"
-                                              data-variant="{% if kb.stock %}secondary{% else %}outline{% endif %}">{% if kb.stock %}Prebuilt{% else %}Custom{% endif %}</span>
+                                              data-variant="{% if kb.is_stock %}secondary{% else %}outline{% endif %}">{% if kb.is_stock %}Prebuilt{% else %}Custom{% endif %}</span>
                                     </td>
                                 </tr>
                             {% endfor %}

@@ -61,7 +61,7 @@ class KeyboardRowTests(UserTestCase):
         self.assertEqual(row['row_id'], f'keyboard-stock-{stock_kb.pk}')
         self.assertEqual(row['ref'], f'stock-{stock_kb.pk}')
         self.assertEqual(row['url_params'], f'id={stock_kb.pk}&stock=1')
-        self.assertTrue(row['stock'])
+        self.assertTrue(row['is_stock'])
         self.assertEqual(row['kit_str'], 'Keychron Q1')
         self.assertEqual(row['switches_str'], 'Gateron Yellow')
 
@@ -70,7 +70,7 @@ class KeyboardRowTests(UserTestCase):
         row = self.kb_service.keyboard_rows()[0]
         self.assertEqual(row['row_id'], f'keyboard-custom-{kb.pk}')
         self.assertEqual(row['ref'], f'custom-{kb.pk}')
-        self.assertFalse(row['stock'])
+        self.assertFalse(row['is_stock'])
         self.assertEqual(row['kit_str'], 'KBDfans Tofu65')
         self.assertEqual(row['switch_count'], 68)
 

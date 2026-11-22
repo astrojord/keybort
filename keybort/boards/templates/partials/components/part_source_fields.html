@@ -99,7 +99,7 @@
                 <option value="">Choose…</option>
                 {% for option in part.owned_options %}
                     <option value="{{ option.id }}"
-                            data-quantity="{{ option.quantity }}"{% if option.total_keys %} data-total-keys="{{ option.total_keys }}"{% endif %}{% if part.owned_id == option.id|stringformat:"s" %} selected{% endif %}>{{ option.name }}{% if option.stock %} (stock){% endif %} · {{ option.quantity }} on hand</option>
+                            data-quantity="{{ option.quantity }}"{% if option.total_keys %} data-total-keys="{{ option.total_keys }}"{% endif %}{% if part.owned_id == option.id|stringformat:"s" %} selected{% endif %}>{{ option.name }}{% if option.is_stock %} (stock){% endif %} · {{ option.quantity }} on hand</option>
                 {% endfor %}
             </select>
         </div>

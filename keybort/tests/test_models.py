@@ -30,13 +30,13 @@ class WrapperObjTests(UserTestCase):
     def test_custom_wrapper_resolves_to_custom_part(self):
         wrapper = custom_kit_wrapper()
         self.assertIsInstance(wrapper.obj, CustomKit)
-        self.assertFalse(wrapper.obj.stock)
+        self.assertFalse(wrapper.obj.is_stock)
 
     def test_stock_wrapper_resolves_to_stock_part(self):
         kit = stock_kit()
         wrapper = Kit.objects.create(stock=kit)
         self.assertEqual(wrapper.obj, kit)
-        self.assertTrue(wrapper.obj.stock)
+        self.assertTrue(wrapper.obj.is_stock)
 
     def test_inventory_obj_follows_whichever_fk_is_set(self):
         switch = Switch.objects.create(stock=stock_switch())

@@ -1060,7 +1060,7 @@ class DeleteStockPrebuiltViewTests(ClientTestCase):
         ]
         self.assertNotEqual(builds[0].pk, builds[1].pk)
         for kb in builds:
-            self.assertFalse(kb.stock)
+            self.assertFalse(kb.is_stock)
             self.assertEqual((kb.kit.stock, kb.switch.stock), (kit, switch))
             self.assertEqual(kb.notes, 'catalog notes')
             self.assertTrue(kb.wireless)
@@ -1385,7 +1385,7 @@ class MultiDeleteViewTests(ClientTestCase):
             response, [f'prebuilt-{owned.pk}', f'prebuilt-{other.pk}']
         )
         self.assertFalse(StockKeyboard.objects.exists())
-        self.assertFalse(Inventory.objects.get(user=self.user).keyboard.obj.stock)
+        self.assertFalse(Inventory.objects.get(user=self.user).keyboard.obj.is_stock)
 
     def test_stock_parts_skip_ones_prebuilts_use(self):
         deleter = make_user('deleter')
@@ -1483,7 +1483,7 @@ class PromotePartViewTests(ClientTestCase):
         custom_id = self.wrapper.custom_id
         response = self.client.post(self.url)
         self.assertEqual(response['HX-Retarget'], f'#part-{self.inv.pk}')
-        self.assertTrue(response.context['part']['stock'])
+        self.assertTrue(response.context['part']['is_stock'])
 
         stock = StockKit.objects.get()
         self.assertEqual(

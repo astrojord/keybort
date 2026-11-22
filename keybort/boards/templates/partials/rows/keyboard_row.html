@@ -1,5 +1,5 @@
 <tr id="{{ kb.row_id }}"
-    data-type="{% if kb.stock %}prebuilt{% else %}custom{% endif %}">
+    data-type="{% if kb.is_stock %}prebuilt{% else %}custom{% endif %}">
     <td data-role="select">
         <input type="checkbox"
                class="input"
@@ -28,7 +28,7 @@
             {% include "partials/components/part_link.html" with label=kb.kit_str params=kb.kit_url_params %}
         {% endif %}
         <div class="md:hidden mt-1"><span class="badge"
-                                          data-variant="secondary">{% if kb.stock %}Prebuilt{% else %}Custom{% endif %}</span></div>
+                                          data-variant="secondary">{% if kb.is_stock %}Prebuilt{% else %}Custom{% endif %}</span></div>
     </td>
     <td data-secondary>{{ kb.pcb }}</td>
     <td data-secondary>{% if kb.switches_str %}{% include "partials/components/switch_dot.html" with kind=kb.switch_kind %}{% include "partials/components/part_link.html" with label=kb.switches_str params=kb.switches_url_params %}{% if kb.switch_count %} <span class="text-muted-foreground">×{{ kb.switch_count }}</span>{% endif %}{% endif %}</td>

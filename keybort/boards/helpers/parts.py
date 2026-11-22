@@ -16,6 +16,7 @@ from ..forms import (
 from ..models import (
     CustomKeycaps,
     CustomKit,
+    CustomOrStock,
     CustomPlate,
     CustomStabilizer,
     CustomSwitch,
@@ -36,8 +37,8 @@ from ..models import (
 class PartType:
     singular: str
     plural: str
-    step_label: str # heading for this step in the keyboard/part edit modals
-    slug: str # path segment
+    step_label: str  # heading for this step in the keyboard/part edit modals
+    slug: str  # path segment
     wrapper: type
     custom: type
     stock: type
@@ -144,7 +145,7 @@ PART_TYPES = {
 
 def part_obj(part):
     # custom keyboards point at wrappers (Kit, Switch, ...), stock keyboards point straight at Stock* parts
-    return part.obj if hasattr(part, 'obj') else part
+    return part.obj if isinstance(part, CustomOrStock) else part
 
 
 def part_type_of(inv):

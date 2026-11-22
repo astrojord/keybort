@@ -15,7 +15,7 @@ from ..helpers.parts import (
 )
 from ..helpers.rows import keyboard_row, part_row
 from ..helpers.stats import stat_breakdown, stat_leader
-from ..models import Inventory, Keyboard, part_name
+from ..models import CustomOrStock, Inventory, Keyboard, part_name
 from .base import UserScoped
 
 
@@ -90,7 +90,7 @@ class PartService(UserScoped):
                 wrapper.custom.delete()
 
     def release_part(self, part_type, part, keep, quantity=1):
-        if not hasattr(part, 'obj'):
+        if not isinstance(part, CustomOrStock):
             if keep:
                 wrapper, _ = PART_TYPES[part_type].wrapper.objects.get_or_create(
                     stock=part
@@ -255,7 +255,7 @@ class KeyboardService(UserScoped):
                         'type': part_type,
                         'label': label,
                         'name': name,
-                        'stock': obj.stock,
+                        'is_stock': obj.is_stock,
                         'part': part,
                     }
                 )
@@ -280,7 +280,7 @@ class KeyboardService(UserScoped):
         with transaction.atomic():
             custom_kb = submission.details_form.save(commit=False)
             self._save_keyboard_parts(custom_kb, submission)
-            if current.stock:
+            if current.is_stock:
                 inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
                 inventory.save()
                 # the new build starts empty, so compare against the prebuilt's own parts
@@ -304,7 +304,7 @@ class KeyboardService(UserScoped):
         parts = self.keyboard_delete_parts(kb)
         with transaction.atomic():
             inventory.delete()
-            if not kb.stock:
+            if not kb.is_stock:
                 # Keyboard.custom cascades, the prebuilt itself is catalog data and stays
                 kb.delete()
             for part in parts:

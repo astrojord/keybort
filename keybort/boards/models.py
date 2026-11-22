@@ -35,7 +35,7 @@ class CustomOrStock:
         raise AssertionError(f'missing data for {self._meta.model_name} {self.pk}')
 
     def __str__(self):
-        kind = 'stock' if self.obj.stock else 'custom'
+        kind = 'stock' if self.obj.is_stock else 'custom'
         return f'{self.obj} ({kind})'
 
 
@@ -165,7 +165,7 @@ class CustomKeyboard(models.Model):
         blank=True, null=True, help_text='Documentation, QMK info, etc.'
     )
 
-    stock = False
+    is_stock = False
 
     def __str__(self):
         return (part_name(self.kit.obj) if self.kit else '') or 'Untitled keyboard'
@@ -196,7 +196,7 @@ class StockKeyboard(models.Model):
         blank=True, null=True, help_text='Documentation, QMK info, etc.'
     )
 
-    stock = True
+    is_stock = True
     switch_count = None
 
     def __str__(self):
@@ -246,7 +246,7 @@ class CustomKit(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
-    stock = False
+    is_stock = False
 
     def __str__(self):
         return f'{self.brand} {self.name} (kit)'
@@ -257,7 +257,7 @@ class StockKit(CustomKit):
     preconfigured kit to be selected by users instead of typing custom attributes
     """
 
-    stock = True
+    is_stock = True
 
 
 class Plate(CustomOrStock, models.Model):
@@ -292,7 +292,7 @@ class CustomPlate(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
-    stock = False
+    is_stock = False
 
     def __str__(self):
         s = self.material or 'Plate'
@@ -309,7 +309,7 @@ class StockPlate(CustomPlate):
     preconfigured plate to be selected by users instead of typing custom attributes
     """
 
-    stock = True
+    is_stock = True
 
 
 class Switch(CustomOrStock, models.Model):
@@ -363,7 +363,7 @@ class CustomSwitch(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
-    stock = False
+    is_stock = False
 
     def __str__(self):
         return f'{self.brand} {self.name} ({self.get_category_display()}, {self.bottom_out_force}g)'
@@ -377,7 +377,7 @@ class StockSwitch(CustomSwitch):
     preconfigured switch to be selected by users instead of typing custom attributes
     """
 
-    stock = True
+    is_stock = True
 
     class Meta:
         verbose_name_plural = 'Stock switches'
@@ -414,7 +414,7 @@ class CustomStabilizer(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
-    stock = False
+    is_stock = False
 
     def __str__(self):
         return f'{self.brand} {self.name}'
@@ -425,7 +425,7 @@ class StockStabilizer(CustomStabilizer):
     preconfigured stabilizer to be selected by users instead of typing custom attributes
     """
 
-    stock = True
+    is_stock = True
 
 
 class Keycaps(CustomOrStock, models.Model):
@@ -461,7 +461,7 @@ class CustomKeycaps(models.Model):
 
     notes = models.TextField(blank=True, null=True)
 
-    stock = False
+    is_stock = False
 
     def __str__(self):
         return f'{self.brand} {self.name}'
@@ -475,7 +475,7 @@ class StockKeycaps(CustomKeycaps):
     preconfigured keycaps to be selected by users instead of typing custom attributes
     """
 
-    stock = True
+    is_stock = True
 
     class Meta:
         verbose_name_plural = verbose_name = 'Stock keycaps'
@@ -543,7 +543,7 @@ class CustomMod(models.Model):
 
         raise AssertionError(f'missing data for mod {self.pk}')
 
-    stock = False
+    is_stock = False
 
     class Meta:
         constraints = [
@@ -561,7 +561,7 @@ class StockMod(CustomMod):
     preconfigured mod to be selected by users instead of typing custom attributes
     """
 
-    stock = True
+    is_stock = True
 
 
 class Profile(models.Model):

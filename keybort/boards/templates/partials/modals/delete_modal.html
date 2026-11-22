@@ -45,7 +45,7 @@
                                    id="id_keep-{{ part.type }}"
                                    name="keep"
                                    value="{{ part.type }}"{% if keep_default %} checked{% endif %}>
-                            <label for="id_keep-{{ part.type }}" class="sm:whitespace-nowrap"><span class="text-muted-foreground">{{ part.label }}:</span> {{ part.name }}{% if part.stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}</label>
+                            <label for="id_keep-{{ part.type }}" class="sm:whitespace-nowrap"><span class="text-muted-foreground">{{ part.label }}:</span> {{ part.name }}{% if part.is_stock %} <span class="badge" data-variant="secondary">stock</span>{% endif %}</label>
                         </div>
                     {% endfor %}
                 </fieldset>
