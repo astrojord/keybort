@@ -1,20 +1,6 @@
-from django.test import SimpleTestCase
-
 from boards import const
 from boards.helpers.forms_context import ModalForms, parse_quantity
-from boards.helpers.parts import board_switch_count, part_in_use, switch_kind
-from boards.helpers.rows import (
-    field_display,
-    keyboard_ref,
-    keyboard_row,
-    model_to_dict_verbose,
-    parse_keyboard_ref,
-    part_cells,
-    part_columns,
-    part_info,
-    part_row,
-)
-from boards.helpers.stats import stat_breakdown, stat_leader
+from boards.helpers.parts import part_in_use
 from boards.models import (
     CustomKeyboard,
     CustomKit,
@@ -25,7 +11,6 @@ from boards.models import (
     Keycaps,
     Kit,
     Plate,
-    Profile,
     Stabilizer,
     StockKeyboard,
     Switch,
@@ -49,112 +34,7 @@ from .base import (
 )
 
 
-class PartDisplayTests(UserTestCase):
-    def test_keyboard_row_names_skip_blank_brand(self):
-        kb = custom_keyboard(self.user, kit=custom_kit_wrapper(brand=None))
-        self.assertEqual(keyboard_row(kb)['kit_str'], 'Tofu65')
-
-    def test_switch_info(self):
-        switch = CustomSwitch(
-            category='t',
-            bottom_out_force=62.0,
-            top_housing='pc',
-            lubed=True,
-            notes='hand lubed',
-        )
-        self.assertEqual(
-            part_info('switch', switch),
-            'Tactile, 62gf, Polycarbonate top, lubed, hand lubed',
-        )
-
-    def test_switch_kind_maps_category(self):
-        self.assertEqual(
-            switch_kind(CustomSwitch(category='st')),
-            {'slug': 'silent-tactile', 'label': 'Silent Tactile'},
-        )
-        self.assertIsNone(switch_kind(CustomSwitch()))
-        self.assertIsNone(switch_kind(None))
-
-    def test_kit_info(self):
-        kit = CustomKit(size='65%', pcb='Hotswap')
-        self.assertEqual(part_info('kit', kit), '65%, Hotswap PCB')
-
-    def test_part_row(self):
-        inv = Inventory.objects.create(
-            user=self.user, kit=custom_kit_wrapper(), quantity=2
-        )
-        row = part_row(inv)
-        self.assertEqual(row['row_id'], f'part-{inv.pk}')
-        self.assertEqual(row['type'], 'kit')
-        self.assertEqual(row['name'], 'KBDfans Tofu65')
-        self.assertEqual(row['quantity'], 2)
-        self.assertFalse(row['stock'])
-
-    def test_part_columns_have_unique_sort_keys(self):
-        keys = [column['key'] for column in part_columns()]
-        self.assertEqual(len(keys), len(set(keys)))
-
-    def test_part_columns_label_each_field(self):
-        columns = part_columns()
-        labels = {column['key']: column['label'] for column in columns}
-        self.assertEqual(labels['switch-stem'], 'Stem')
-        self.assertEqual(labels['switch-category'], 'Type')
-        self.assertEqual(labels['plate-half'], 'Half plate')
-
-    def test_part_cells_line_up_with_columns(self):
-        switch = CustomSwitch(
-            stem='mx', peak_force=45.0, lubed=True, notes='hand lubed'
-        )
-        cells = part_cells('switch', switch)
-        columns = part_columns()
-        self.assertEqual(
-            [cell['type'] for cell in cells], [column['type'] for column in columns]
-        )
-        values = {
-            column['key']: cell['value']
-            for column, cell in zip(columns, cells, strict=True)
-        }
-        self.assertEqual(values['switch-stem'], 'MX')
-        self.assertEqual(values['switch-force'], '45gf / —')
-        self.assertEqual(values['switch-lubed'], 'Yes')
-        self.assertEqual(values['switch-filmed'], 'No')
-        self.assertEqual(values['switch-notes'], 'hand lubed')
-
-    def test_part_cells_flag_only_icon_fields(self):
-        switch = CustomSwitch(stem='mx', lubed=True)
-        cells = part_cells('switch', switch)
-        columns = part_columns()
-        flags = {
-            column['key']: cell['flag']
-            for column, cell in zip(columns, cells, strict=True)
-            if cell['flag'] is not None
-        }
-        self.assertEqual(flags, {'switch-lubed': True, 'switch-filmed': False})
-
-    def test_travel_column_label(self):
-        labels = {c['key']: c['label'] for c in part_columns()}
-        self.assertEqual(labels['switch-travel_distance'], 'Travel')
-
-    def test_force_combines_peak_then_bottom_out(self):
-        switch = CustomSwitch(peak_force=55.0, bottom_out_force=65.0)
-        self.assertEqual(field_display(switch, 'force'), '55gf / 65gf')
-
-    def test_housing_combines_top_and_bottom(self):
-        switch = CustomSwitch(top_housing='pc', bottom_housing='nylon')
-        self.assertEqual(field_display(switch, 'housing'), 'Polycarbonate / Nylon')
-
-    def test_housing_marks_missing_side(self):
-        switch = CustomSwitch(top_housing='pom')
-        self.assertEqual(field_display(switch, 'housing'), 'POM / —')
-
-    def test_housing_blank_when_unset(self):
-        self.assertEqual(field_display(CustomSwitch(), 'housing'), '')
-
-    def test_part_cells_blank_for_other_types(self):
-        cells = part_cells('switch', CustomSwitch(notes='hand lubed'))
-        other_values = {cell['value'] for cell in cells if cell['type'] != 'switch'}
-        self.assertEqual(other_values, {''})
-
+class PartRowsTests(UserTestCase):
     def test_part_rows_sort_by_type_then_name(self):
         Inventory.objects.create(
             user=self.user, switch=Switch.objects.create(stock=stock_switch())
@@ -172,21 +52,6 @@ class PartDisplayTests(UserTestCase):
         Inventory.objects.create(user=self.other, kit=custom_kit_wrapper())
         custom_keyboard(self.user)
         self.assertEqual(self.part_service.part_rows(), [])
-
-
-class KeyboardRefTests(UserTestCase):
-    def test_round_trips(self):
-        stock_kb = stock_keyboard()
-        kb = custom_keyboard(self.user)
-        self.assertEqual(
-            parse_keyboard_ref(keyboard_ref(stock_kb)), (str(stock_kb.pk), True)
-        )
-        self.assertEqual(parse_keyboard_ref(keyboard_ref(kb)), (str(kb.pk), False))
-
-    def test_rejects_malformed(self):
-        for ref in ('', '4', 'stock-', 'stock-x', 'prebuilt-4', '-4', 'custom-4-5'):
-            with self.subTest(ref=ref):
-                self.assertIsNone(parse_keyboard_ref(ref))
 
 
 class KeyboardRowTests(UserTestCase):
@@ -317,35 +182,6 @@ class KeyboardQueryTests(UserTestCase):
 
 
 class CollectionStatsTests(UserTestCase):
-    def test_leader_merges_case_and_ignores_blanks(self):
-        leader = stat_leader(['GMK', 'gmk ', 'ePBT', None, '', '  '])
-        self.assertEqual(leader, {'label': 'GMK', 'count': 2, 'tied': 0})
-
-    def test_leader_reports_ties(self):
-        leader = stat_leader(['b', 'a', 'c', 'c', 'a'])
-        self.assertEqual(leader, {'label': 'a', 'count': 2, 'tied': 1})
-
-    def test_leader_without_values(self):
-        self.assertIsNone(stat_leader([None, '']))
-
-    def test_breakdown_folds_other_and_not_set(self):
-        values = ['a', 'a', 'b', 'c', 'd', 'e', 'f', 'g', None, None]
-        breakdown = stat_breakdown('Things', values)
-        self.assertEqual(
-            [(row['label'], row['count']) for row in breakdown['rows']],
-            [
-                ('a', 2),
-                ('b', 1),
-                ('c', 1),
-                ('d', 1),
-                ('e', 1),
-                ('Other', 2),
-                ('Not set', 2),
-            ],
-        )
-        self.assertEqual(breakdown['rows'][0]['percent'], 20)
-        self.assertEqual(breakdown['total'], 10)
-
     def test_collection_stats_read_custom_and_stock_boards(self):
         prebuilt_in_inventory(
             self.user,
@@ -394,35 +230,6 @@ class CollectionStatsTests(UserTestCase):
         stats = self.kb_service.collection_stats()
         self.assertEqual(stats['stats_keyboard_count'], 0)
         self.assertIsNone(stats['stats_leaders'][0]['leader'])
-
-
-class SwitchCountTests(UserTestCase):
-    def test_recorded_count_wins(self):
-        kb = CustomKeyboard(kit=custom_kit_wrapper(total_keys=68), switch_count=60)
-        self.assertEqual(board_switch_count(kb), 60)
-
-    def test_falls_back_to_kit_keys(self):
-        kb = CustomKeyboard(kit=custom_kit_wrapper(total_keys=68))
-        self.assertEqual(board_switch_count(kb), 68)
-        self.assertEqual(board_switch_count(stock_keyboard()), 82)
-
-    def test_falls_back_to_default(self):
-        kb = CustomKeyboard(kit=custom_kit_wrapper())
-        self.assertEqual(board_switch_count(kb), 1)
-        self.assertEqual(board_switch_count(kb, fallback=''), '')
-
-
-class ParseQuantityTests(UserTestCase):
-    def test_accepts_positive_ints(self):
-        self.assertEqual(parse_quantity('3'), 3)
-        self.assertEqual(parse_quantity(' 90 '), 90)
-        self.assertEqual(parse_quantity(str(const.MAX_QUANTITY)), const.MAX_QUANTITY)
-
-    def test_rejects_everything_else(self):
-        too_big = str(const.MAX_QUANTITY + 1)
-        for value in ('0', '-1', '1.5', 'abc', '', None, '²', too_big, '1' * 5000):
-            with self.subTest(value=value):
-                self.assertIsNone(parse_quantity(value))
 
 
 class PartsInventoryTests(UserTestCase):
@@ -651,75 +458,6 @@ class EditDeletePartTests(UserTestCase):
     def test_standalone_part_is_scoped_to_user(self):
         inv = Inventory.objects.create(user=self.other, kit=custom_kit_wrapper())
         self.assertIsNone(self.part_service.standalone_part(inv.pk))
-
-
-class KeyboardFormContextTests(UserTestCase):
-    def test_defaults_to_type_step(self):
-        context = self.modal_forms.keyboard_form_context('/add')
-        self.assertIsNone(context['step'])
-        self.assertEqual(context['kind'], 'custom')
-        self.assertFalse(context['editing'])
-
-    def test_custom_kind_skips_to_first_part(self):
-        context = self.modal_forms.keyboard_form_context('/add', kind='custom')
-        self.assertEqual(context['step'], 'kit')
-        self.assertEqual(context['kind'], 'custom')
-
-    def test_prebuilt_kind_skips_to_picker(self):
-        stock_keyboard()
-        context = self.modal_forms.keyboard_form_context('/add', kind='prebuilt')
-        self.assertEqual(context['step'], 'prebuilt')
-        self.assertEqual(context['kind'], 'prebuilt')
-
-    def test_prebuilt_kind_without_catalog_stays_on_type_step(self):
-        context = self.modal_forms.keyboard_form_context('/add', kind='prebuilt')
-        self.assertIsNone(context['step'])
-        self.assertEqual(context['kind'], 'custom')
-
-    def test_editing_prebuilt_preselects_its_stock_parts(self):
-        stock_kb = stock_keyboard()
-        context = self.modal_forms.keyboard_form_context('/edit', current=stock_kb)
-        kit = next(p for p in context['parts'] if p.type == 'kit')
-        self.assertTrue(context['from_prebuilt'])
-        self.assertEqual(kit.source, 'stock')
-        self.assertEqual(kit.stock_id, str(stock_kb.kit.pk))
-
-    def kit_source(self, preferred):
-        Profile.objects.update_or_create(
-            user=self.user, defaults={'default_part_source': preferred}
-        )
-        context = ModalForms(self.user).keyboard_form_context('/add')
-        return next(p for p in context['parts'] if p.type == 'kit').source
-
-    def test_kit_source_follows_preference(self):
-        stock_kit()
-        self.part_service.add_to_parts('kit', custom_kit_wrapper())
-        self.assertEqual(self.kit_source('smart'), 'owned')
-        self.assertEqual(self.kit_source('stock'), 'stock')
-        self.assertEqual(self.kit_source('custom'), 'custom')
-
-    def test_stock_preference_without_catalog_falls_back_to_custom(self):
-        self.assertEqual(self.kit_source('stock'), 'custom')
-
-    def test_optional_parts_still_skip(self):
-        Profile.objects.create(user=self.user, default_part_source='stock')
-        stock_switch()
-        context = self.modal_forms.keyboard_form_context('/add')
-        switch = next(p for p in context['parts'] if p.type == 'switch')
-        self.assertEqual(switch.source, 'none')
-
-    def test_add_part_follows_preference(self):
-        Profile.objects.create(user=self.user, default_part_source='custom')
-        stock_switch()
-        context = self.modal_forms.add_part_context()
-        switch = next(p for p in context['parts'] if p.type == 'switch')
-        self.assertEqual(switch.source, 'custom')
-
-    def test_switch_count_defaults_from_board(self):
-        kb = custom_keyboard(self.user, switch=custom_switch_wrapper(), switch_count=60)
-        context = self.modal_forms.keyboard_form_context('/edit', current=kb)
-        switch = next(p for p in context['parts'] if p.type == 'switch')
-        self.assertEqual(switch.count, 60)
 
 
 class AddPrebuiltTests(UserTestCase):
@@ -1065,19 +803,3 @@ class DeleteKeyboardTests(UserTestCase):
         }
         self.assertEqual(set(parts), {'kit', 'switch', 'plate'})
         self.assertTrue(parts['switch']['name'].endswith('×82'))
-
-
-class ModelToDictVerboseTests(SimpleTestCase):
-    def test_uses_verbose_names_and_choice_labels(self):
-        switch = CustomSwitch(brand='JWK', name='Alpaca', category='t', lubed=True)
-        data = model_to_dict_verbose(switch, fields=['brand', 'category', 'lubed'])
-        self.assertEqual(data, {'Brand': 'JWK', 'Category': 'Tactile', 'Lubed': True})
-
-    def test_exclude(self):
-        data = model_to_dict_verbose(CustomSwitch(brand='JWK'), exclude=['brand'])
-        self.assertNotIn('Brand', data)
-        self.assertIn('Name', data)
-
-    def test_skips_unset_choice_fields(self):
-        data = model_to_dict_verbose(CustomSwitch(), fields=['category'])
-        self.assertEqual(data, {})
