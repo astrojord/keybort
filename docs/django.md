@@ -33,7 +33,7 @@ Classes here are supposed to be instantiated once per request, ie `SomeService(r
 - `base.py` - `UserScoped`, the shared `user`/`profile` base
 
 #### helpers/
-- `parts.py` - `PART_MODELS` maps each part type (`kit`, `switch`, `keycaps`, `plate`, `stabilizer`) to its wrapper model, custom model, stock model, and forms, plus small part helpers (`part_obj`, `part_in_use`, ...)
+- `parts.py` - dataclasses for each part type with relevant info/strings/classes, + contains small part helpers (`part_obj`, `part_in_use`, ...)
 - `rows.py` - turns models into the dicts the table row templates expect, plus row ids and keyboard refs
 - `forms_context.py` - `ModalForms` builds context dicts for the add/edit modals, `PartChoice` / `KeyboardSubmission` are dataclasses for user responses in them
 - `stats.py` - stats page breakdowns and the typing sparkline

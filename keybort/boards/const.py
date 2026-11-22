@@ -30,37 +30,10 @@ SWITCH_MATERIALS = [
 ]
 
 
-# part types in display order. the model/form behind each one lives on helpers.parts.PART_MODELS,
-# since models.py imports this file
-PART_SINGULARS = {
-    'kit': 'Kit',
-    'switch': 'Switch',
-    'keycaps': 'Keycaps',
-    'plate': 'Plate',
-    'stabilizer': 'Stabilizer',
-}
-
-PART_PLURALS = {
-    'kit': 'Kits',
-    'switch': 'Switches',
-    'keycaps': 'Keycaps',
-    'plate': 'Plates',
-    'stabilizer': 'Stabilizers',
-}
-
 # tabs on the keyboards page, keyed by the row's data-type
 KEYBOARD_KINDS = {
     'prebuilt': 'Prebuilts',
     'custom': 'Customs',
-}
-
-# headings for each part's step in the keyboard/part modals
-PART_STEP_LABELS = {
-    'kit': 'Kit',
-    'switch': 'Switches',
-    'keycaps': 'Keycaps',
-    'plate': 'Plate',
-    'stabilizer': 'Stabilizers',
 }
 
 WIRED = 'Wired'
@@ -74,52 +47,6 @@ STOCK_PREBUILT_FACETS = [
     ('layout', 'Layout', None),
     ('connectivity', 'Connectivity', CONNECTIVITY),
 ]
-
-STOCK_PART_FIELDS = {
-    'kit': {
-        'columns': ['size', 'layout', 'pcb', 'case_material', 'mount_type'],
-        'facets': ['brand', 'size', 'layout', 'mount_type'],
-    },
-    'switch': {
-        'columns': [
-            'category',
-            'stem',
-            'force',
-            'travel_distance',
-            'housing',
-        ],
-        'facets': ['brand', 'category', 'stem', 'top_housing', 'bottom_housing'],
-    },
-    'keycaps': {
-        'columns': ['material'],
-        'facets': ['brand', 'material'],
-    },
-    'plate': {
-        'columns': ['material', 'flex_cuts', 'half'],
-        'facets': ['material', 'flex_cuts', 'half'],
-    },
-    'stabilizer': {
-        'columns': [],
-        'facets': ['brand'],
-    },
-}
-
-INVENTORY_PART_COLUMNS = {
-    'kit': ['size', 'layout', 'pcb', 'case_material', 'mount_type', 'notes'],
-    'switch': [
-        'category',
-        'stem',
-        'force',
-        'travel_distance',
-        'housing',
-        'lubed',
-        'filmed',
-        'notes',
-    ],
-    'keycaps': ['material', 'notes'],
-    'plate': ['material', 'flex_cuts', 'half', 'notes'],
-    'stabilizer': ['notes'],
-}
 
 ICON_FIELDS = ['lubed', 'filmed', 'flex_cuts', 'half']
 

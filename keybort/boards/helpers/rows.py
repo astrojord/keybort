@@ -8,7 +8,7 @@ from ..models import (
 )
 from ..request_params import is_id
 from .parts import (
-    PART_MODELS,
+    PART_TYPES,
     part_obj,
     part_type_of,
     switch_kind,
@@ -149,10 +149,10 @@ def part_columns():
         {
             'type': part_type,
             'key': f'{part_type}-{name}',
-            'label': field_label(PART_MODELS[part_type].custom, name),
+            'label': field_label(spec.custom, name),
         }
-        for part_type, names in const.INVENTORY_PART_COLUMNS.items()
-        for name in names
+        for part_type, spec in PART_TYPES.items()
+        for name in spec.inventory_columns
     ]
 
 
@@ -163,8 +163,8 @@ def part_cells(part_type, obj):
             'type': column_type,
             **(field_cell(obj, name) if column_type == part_type else blank),
         }
-        for column_type, names in const.INVENTORY_PART_COLUMNS.items()
-        for name in names
+        for column_type, spec in PART_TYPES.items()
+        for name in spec.inventory_columns
     ]
 
 
@@ -175,7 +175,7 @@ def part_row(inv):
         'id': inv.pk,
         'row_id': part_row_id(inv),
         'type': part_type,
-        'type_label': const.PART_SINGULARS[part_type],
+        'type_label': PART_TYPES[part_type].singular,
         'name': part_name(obj),
         'stock': obj.stock,
         'quantity': inv.quantity,
@@ -236,17 +236,16 @@ def keyboard_row(kb):
 
 
 def stock_part_specs(part_type):
-    stock_model = PART_MODELS[part_type].stock
-    fields = const.STOCK_PART_FIELDS[part_type]
-    columns = [(name, field_label(stock_model, name)) for name in fields['columns']]
-    facets = [(name, field_label(stock_model, name), None) for name in fields['facets']]
+    spec = PART_TYPES[part_type]
+    columns = [(name, field_label(spec.stock, name)) for name in spec.stock_columns]
+    facets = [(name, field_label(spec.stock, name), None) for name in spec.stock_facets]
     return columns, facets
 
 
 def stock_part_row(part_type, obj, quantity=0):
-    fields = const.STOCK_PART_FIELDS[part_type]
+    spec = PART_TYPES[part_type]
     facets = {}
-    for name in fields['facets']:
+    for name in spec.stock_facets:
         value = field_display(obj, name)
         if value:
             facets[name] = [value]
@@ -257,7 +256,7 @@ def stock_part_row(part_type, obj, quantity=0):
         'url_params': f'type={part_type}&id={obj.pk}',
         'name': part_name(obj),
         'detail_params': detail_params(part_type, obj, ''),
-        'columns': [field_cell(obj, name) for name in fields['columns']],
+        'columns': [field_cell(obj, name) for name in spec.stock_columns],
         'facets': facets,
         'notes': obj.notes,
         'quantity': quantity,

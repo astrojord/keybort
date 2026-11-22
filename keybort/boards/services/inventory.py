@@ -5,7 +5,7 @@ from django.db.models import Count, Q, Sum
 
 from .. import const
 from ..helpers.parts import (
-    PART_MODELS,
+    PART_TYPES,
     board_quantity,
     board_switch_count,
     part_in_use,
@@ -23,7 +23,7 @@ class PartService(UserScoped):
     def standalone_parts(self):
         related = [
             f'{part_type}__{source}'
-            for part_type in PART_MODELS
+            for part_type in PART_TYPES
             for source in ('custom', 'stock')
         ]
         return Inventory.objects.filter(
@@ -37,7 +37,7 @@ class PartService(UserScoped):
         return self.standalone_parts().filter(**{f'{part_type}__isnull': False})
 
     def visible_part(self, part_type, part_id, stock):
-        spec = PART_MODELS[part_type]
+        spec = PART_TYPES[part_type]
         obj = (spec.stock if stock else spec.custom).objects.filter(pk=part_id).first()
         if obj is None or stock:
             return obj
@@ -54,17 +54,17 @@ class PartService(UserScoped):
 
     def part_rows(self):
         rows = [part_row(inv) for inv in self.standalone_parts()]
-        order = list(PART_MODELS)
+        order = list(PART_TYPES)
         rows.sort(key=lambda row: (order.index(row['type']), row['name'].lower()))
         return rows
 
     def collect_stock_part(self, part_type, obj, quantity):
-        wrapper, _ = PART_MODELS[part_type].wrapper.objects.get_or_create(stock=obj)
+        wrapper, _ = PART_TYPES[part_type].wrapper.objects.get_or_create(stock=obj)
         return self.add_to_parts(part_type, wrapper, quantity)
 
     def add_part(self, part_type, choice, quantity):
         source, value = choice
-        wrapper_model = PART_MODELS[part_type].wrapper
+        wrapper_model = PART_TYPES[part_type].wrapper
         with transaction.atomic():
             if source == 'stock':
                 wrapper, _ = wrapper_model.objects.get_or_create(stock=value)
@@ -92,7 +92,7 @@ class PartService(UserScoped):
     def release_part(self, part_type, part, keep, quantity=1):
         if not hasattr(part, 'obj'):
             if keep:
-                wrapper, _ = PART_MODELS[part_type].wrapper.objects.get_or_create(
+                wrapper, _ = PART_TYPES[part_type].wrapper.objects.get_or_create(
                     stock=part
                 )
                 self.add_to_parts(part_type, wrapper, quantity)
@@ -143,7 +143,7 @@ class KeyboardService(UserScoped):
     def owned_keyboards(self):
         related = [
             path
-            for part_type in PART_MODELS
+            for part_type in PART_TYPES
             for path in (
                 f'keyboard__custom__{part_type}__custom',
                 f'keyboard__custom__{part_type}__stock',
@@ -242,11 +242,11 @@ class KeyboardService(UserScoped):
     @staticmethod
     def keyboard_delete_parts(kb):
         parts = []
-        for part_type in PART_MODELS:
+        for part_type in PART_TYPES:
             part = getattr(kb, part_type)
             if part is not None:
                 obj = part_obj(part)
-                label = const.PART_STEP_LABELS[part_type]
+                label = PART_TYPES[part_type].step_label
                 name = str(obj)
                 if part_type == 'switch':
                     name = f'{name} ×{board_switch_count(kb)}'
@@ -284,7 +284,7 @@ class KeyboardService(UserScoped):
                 inventory.keyboard = Keyboard.objects.create(custom=custom_kb)
                 inventory.save()
                 # the new build starts empty, so compare against the prebuilt's own parts
-                for part_type in PART_MODELS:
+                for part_type in PART_TYPES:
                     old = getattr(current, part_type)
                     if old is not None and submission.chosen.get(part_type) != (
                         'stock',
@@ -321,7 +321,7 @@ class KeyboardService(UserScoped):
         custom_kb.switch_count = submission.switch_count if 'switch' in chosen else None
         dropped = []
         taken = []
-        for part_type, spec in PART_MODELS.items():
+        for part_type, spec in PART_TYPES.items():
             old = getattr(custom_kb, part_type)
             source, value = chosen.get(part_type, ('none', None))
 

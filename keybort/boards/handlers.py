@@ -7,8 +7,7 @@ from django import forms
 from django.db import transaction
 from django.db.models import Q
 
-from . import const
-from .helpers.parts import PART_MODELS, part_fields
+from .helpers.parts import PART_TYPES, part_fields
 
 TRUE_VALUES = {'1', 'true', 't', 'yes', 'y', 'x'}
 FALSE_VALUES = {'', '0', 'false', 'f', 'no', 'n'}
@@ -25,7 +24,7 @@ class RowResult(NamedTuple):
 @dataclasses.dataclass
 class UploadResult:
     created: dict[str, int] = dataclasses.field(
-        default_factory=lambda: dict.fromkeys(PART_MODELS, 0)
+        default_factory=lambda: dict.fromkeys(PART_TYPES, 0)
     )
     skipped: int = 0
     errors: list[RowError] = dataclasses.field(default_factory=list)
@@ -33,19 +32,15 @@ class UploadResult:
 
 def part_type_aliases():
     aliases = {}
-    for part_type in PART_MODELS:
-        for alias in (
-            part_type,
-            const.PART_SINGULARS[part_type],
-            const.PART_PLURALS[part_type],
-        ):
+    for part_type, spec in PART_TYPES.items():
+        for alias in (part_type, spec.singular, spec.plural):
             aliases[alias.lower()] = part_type
     return aliases
 
 
 def stock_csv_columns():
     columns = ['type']
-    for spec in PART_MODELS.values():
+    for spec in PART_TYPES.values():
         for name in spec.stock_form.base_fields:
             if name not in columns:
                 columns.append(name)
@@ -91,7 +86,7 @@ def validate_row(line, row, aliases) -> RowResult:
             None, None, [(line, f'unknown type "{row.get("type") or ""}"')]
         )
 
-    form_class = PART_MODELS[part_type].stock_form
+    form_class = PART_TYPES[part_type].stock_form
     data = {}
     for name, raw in row.items():
         if name in ('', 'type') or raw is None:
@@ -165,7 +160,7 @@ def handle_canned_parts_upload(file) -> UploadResult:
     seen = set()
     with transaction.atomic():
         for part_type, form in valid:
-            spec = PART_MODELS[part_type]
+            spec = PART_TYPES[part_type]
             fields = part_fields(form.instance, spec.custom)
             key = (part_type, tuple(sorted(blanks_as_none(fields).items())))
             if (

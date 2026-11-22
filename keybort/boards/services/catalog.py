@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.models import Q
 
-from ..helpers.parts import PART_MODELS, part_fields, part_type_of
+from ..helpers.parts import PART_TYPES, part_fields, part_type_of
 from ..helpers.rows import stock_part_row, stock_prebuilt_row
 from ..models import CustomKeyboard, Inventory, Keyboard, StockKeyboard
 from .base import UserScoped
@@ -41,7 +41,7 @@ class CatalogService(UserScoped):
         quantities = self.stock_part_quantities(part_type)
         rows = [
             stock_part_row(part_type, obj, quantities.get(obj.pk, 0))
-            for obj in PART_MODELS[part_type].stock.objects.all()
+            for obj in PART_TYPES[part_type].stock.objects.all()
         ]
         rows.sort(key=lambda row: row['name'].lower())
         return rows
@@ -68,7 +68,7 @@ def stock_part_usage(part_type, obj):
 def promote_to_catalog(inv):
     part_type = part_type_of(inv)
     wrapper = getattr(inv, part_type)
-    spec = PART_MODELS[part_type]
+    spec = PART_TYPES[part_type]
     custom = wrapper.custom
     with transaction.atomic():
         stock = spec.stock.objects.create(**part_fields(custom, spec.custom))
@@ -79,7 +79,7 @@ def promote_to_catalog(inv):
 
 
 def delete_stock_part(part_type, obj):
-    spec = PART_MODELS[part_type]
+    spec = PART_TYPES[part_type]
     fields = part_fields(obj, spec.custom)
     with transaction.atomic():
         for wrapper in spec.wrapper.objects.filter(stock=obj):
@@ -99,7 +99,7 @@ def delete_stock_part(part_type, obj):
 def save_stock_keyboard(submission):
     with transaction.atomic():
         stock_kb = submission.details_form.save(commit=False)
-        for part_type in PART_MODELS:
+        for part_type in PART_TYPES:
             source, value = submission.chosen.get(part_type, ('none', None))
             if source == 'custom':
                 value = value.save()
@@ -117,7 +117,7 @@ def delete_stock_keyboard(stock_kb):
                 notes=stock_kb.notes,
                 references=stock_kb.references,
             )
-            for part_type, spec in PART_MODELS.items():
+            for part_type, spec in PART_TYPES.items():
                 part = getattr(stock_kb, part_type)
                 if part is not None:
                     wrapper, _ = spec.wrapper.objects.get_or_create(stock=part)

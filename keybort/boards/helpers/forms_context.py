@@ -19,7 +19,7 @@ from ..request_params import is_id
 from ..services.base import UserScoped
 from ..services.inventory import PartService
 from .parts import (
-    PART_MODELS,
+    PART_TYPES,
     board_switch_count,
     part_obj,
     part_type_of,
@@ -118,14 +118,14 @@ class ModalForms(UserScoped):
                 owned=PartService(self.user).owned_parts(part_type),
                 preferred=self.profile.default_part_source,
             )
-            for part_type in PART_MODELS
+            for part_type in PART_TYPES
         ]
         switch_default = (
             board_switch_count(current, fallback='')
             if current and current.switch
             else ''
         )
-        parts[list(PART_MODELS).index('switch')].count = data.get(
+        parts[list(PART_TYPES).index('switch')].count = data.get(
             'switch-count', switch_default
         )
 
@@ -178,7 +178,7 @@ class ModalForms(UserScoped):
                     preferred='stock',
                     catalog=True,
                 )
-                for part_type in PART_MODELS
+                for part_type in PART_TYPES
             ],
             'details_form': StockKeyboardDetailsForm(
                 data or None, prefix='details', instance=current
@@ -197,7 +197,7 @@ class ModalForms(UserScoped):
                     required=True,
                     preferred=self.profile.default_part_source,
                 )
-                for t in PART_MODELS
+                for t in PART_TYPES
             ],
             'quantity': data.get('quantity', '1'),
             'quantity_error': None,
@@ -209,13 +209,13 @@ class ModalForms(UserScoped):
         wrapper = getattr(inv, part_type)
         form = None
         if wrapper.custom_id:
-            form = PART_MODELS[part_type].form(
+            form = PART_TYPES[part_type].form(
                 data, prefix=part_type, instance=wrapper.custom
             )
         return {
             'inv': inv,
             'name': part_name(wrapper.obj),
-            'type_label': const.PART_SINGULARS[part_type],
+            'type_label': PART_TYPES[part_type].singular,
             'form': form,
             'quantity': data.get('quantity', '') if data else inv.quantity,
             'quantity_error': None,
@@ -233,9 +233,9 @@ class ModalForms(UserScoped):
         preferred=const.DEFAULT_PART_SOURCE,
         catalog=False,
     ):
-        spec = PART_MODELS[part_type]
+        spec = PART_TYPES[part_type]
         form_class = spec.stock_form if catalog else spec.form
-        label = const.PART_STEP_LABELS[part_type]
+        label = spec.step_label
         stock_options = spec.stock.objects.all()
         owned_options = None
         if owned is not None:

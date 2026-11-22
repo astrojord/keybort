@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from dataclasses import dataclass
 
 from .. import const
 from ..forms import (
@@ -32,31 +32,112 @@ from ..models import (
 )
 
 
-class PartModels(NamedTuple):
+@dataclass(frozen=True)
+class PartType:
+    singular: str
+    plural: str
+    step_label: str # heading for this step in the keyboard/part edit modals
+    slug: str # path segment
     wrapper: type
     custom: type
     stock: type
     form: type
     stock_form: type
+    inventory_columns: list[str]
+    stock_columns: list[str]
+    stock_facets: list[str]
+
+    @property
+    def catalog_url_name(self):
+        return f'stock_{self.slug}'
 
 
-PART_MODELS: dict[str, PartModels] = {
-    'kit': PartModels(Kit, CustomKit, StockKit, CustomKitForm, StockKitForm),
-    'switch': PartModels(
-        Switch, CustomSwitch, StockSwitch, CustomSwitchForm, StockSwitchForm
+PART_TYPES = {
+    'kit': PartType(
+        singular='Kit',
+        plural='Kits',
+        step_label='Kit',
+        slug='kits',
+        wrapper=Kit,
+        custom=CustomKit,
+        stock=StockKit,
+        form=CustomKitForm,
+        stock_form=StockKitForm,
+        inventory_columns=[
+            'size',
+            'layout',
+            'pcb',
+            'case_material',
+            'mount_type',
+            'notes',
+        ],
+        stock_columns=['size', 'layout', 'pcb', 'case_material', 'mount_type'],
+        stock_facets=['brand', 'size', 'layout', 'mount_type'],
     ),
-    'keycaps': PartModels(
-        Keycaps, CustomKeycaps, StockKeycaps, CustomKeycapsForm, StockKeycapsForm
+    'switch': PartType(
+        singular='Switch',
+        plural='Switches',
+        step_label='Switches',
+        slug='switches',
+        wrapper=Switch,
+        custom=CustomSwitch,
+        stock=StockSwitch,
+        form=CustomSwitchForm,
+        stock_form=StockSwitchForm,
+        inventory_columns=[
+            'category',
+            'stem',
+            'force',
+            'travel_distance',
+            'housing',
+            'lubed',
+            'filmed',
+            'notes',
+        ],
+        stock_columns=['category', 'stem', 'force', 'travel_distance', 'housing'],
+        stock_facets=['brand', 'category', 'stem', 'top_housing', 'bottom_housing'],
     ),
-    'plate': PartModels(
-        Plate, CustomPlate, StockPlate, CustomPlateForm, StockPlateForm
+    'keycaps': PartType(
+        singular='Keycaps',
+        plural='Keycaps',
+        step_label='Keycaps',
+        slug='keycaps',
+        wrapper=Keycaps,
+        custom=CustomKeycaps,
+        stock=StockKeycaps,
+        form=CustomKeycapsForm,
+        stock_form=StockKeycapsForm,
+        inventory_columns=['material', 'notes'],
+        stock_columns=['material'],
+        stock_facets=['brand', 'material'],
     ),
-    'stabilizer': PartModels(
-        Stabilizer,
-        CustomStabilizer,
-        StockStabilizer,
-        CustomStabilizerForm,
-        StockStabilizerForm,
+    'plate': PartType(
+        singular='Plate',
+        plural='Plates',
+        step_label='Plate',
+        slug='plates',
+        wrapper=Plate,
+        custom=CustomPlate,
+        stock=StockPlate,
+        form=CustomPlateForm,
+        stock_form=StockPlateForm,
+        inventory_columns=['material', 'flex_cuts', 'half', 'notes'],
+        stock_columns=['material', 'flex_cuts', 'half'],
+        stock_facets=['material', 'flex_cuts', 'half'],
+    ),
+    'stabilizer': PartType(
+        singular='Stabilizer',
+        plural='Stabilizers',
+        step_label='Stabilizers',
+        slug='stabilizers',
+        wrapper=Stabilizer,
+        custom=CustomStabilizer,
+        stock=StockStabilizer,
+        form=CustomStabilizerForm,
+        stock_form=StockStabilizerForm,
+        inventory_columns=['notes'],
+        stock_columns=[],
+        stock_facets=['brand'],
     ),
 }
 
@@ -68,7 +149,7 @@ def part_obj(part):
 
 def part_type_of(inv):
     return next(
-        part_type for part_type in PART_MODELS if getattr(inv, f'{part_type}_id')
+        part_type for part_type in PART_TYPES if getattr(inv, f'{part_type}_id')
     )
 
 
@@ -93,7 +174,6 @@ def part_in_use(wrapper, ignore=None):
 
 
 def board_switch_count(kb, fallback=1):
-    """switches on a board: what it recorded, else one per key on its kit"""
     count = kb.switch_count
     if not count and kb.kit:
         count = part_obj(kb.kit).total_keys

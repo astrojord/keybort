@@ -261,7 +261,16 @@ class PartsPageTests(ClientTestCase):
     def test_lists_parts_with_type_filters(self):
         Inventory.objects.create(user=self.user, kit=custom_kit_wrapper())
         response = self.client.get(reverse('inventory_parts'))
-        self.assertEqual(response.context['filters'], list(const.PART_PLURALS.items()))
+        self.assertEqual(
+            response.context['filters'],
+            [
+                ('kit', 'Kits'),
+                ('switch', 'Switches'),
+                ('keycaps', 'Keycaps'),
+                ('plate', 'Plates'),
+                ('stabilizer', 'Stabilizers'),
+            ],
+        )
         self.assertContains(response, 'data-type="kit"', count=1)
 
     def test_renders_part_specific_columns(self):

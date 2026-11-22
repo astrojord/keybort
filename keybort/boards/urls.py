@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from .helpers.parts import PART_TYPES
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -31,28 +32,6 @@ urlpatterns = [
         views.collect_stock_prebuilt,
         name='stock_prebuilt_collect',
     ),
-    path('stock/kits', views.stock_parts, {'part_type': 'kit'}, name='stock_kits'),
-    path(
-        'stock/keycaps',
-        views.stock_parts,
-        {'part_type': 'keycaps'},
-        name='stock_keycaps',
-    ),
-    path(
-        'stock/switches',
-        views.stock_parts,
-        {'part_type': 'switch'},
-        name='stock_switches',
-    ),
-    path(
-        'stock/plates', views.stock_parts, {'part_type': 'plate'}, name='stock_plates'
-    ),
-    path(
-        'stock/stabilizers',
-        views.stock_parts,
-        {'part_type': 'stabilizer'},
-        name='stock_stabilizers',
-    ),
     path('stock/parts/add', views.add_stock_part, name='stock_part_add'),
     path('stock/parts/upload', views.upload_stock_parts, name='stock_part_upload'),
     path(
@@ -68,4 +47,15 @@ urlpatterns = [
         name='stock_part_collect',
     ),
     path('get_part_detail', views.part_detail, name='part_detail'),
+]
+
+# one catalog page per part type
+urlpatterns += [
+    path(
+        f'stock/{spec.slug}',
+        views.stock_parts,
+        {'part_type': part_type},
+        name=spec.catalog_url_name,
+    )
+    for part_type, spec in PART_TYPES.items()
 ]

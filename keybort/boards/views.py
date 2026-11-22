@@ -15,7 +15,7 @@ from .handlers import (
     stock_csv_template,
 )
 from .helpers.forms_context import ModalForms, parse_quantity
-from .helpers.parts import PART_MODELS, part_type_of
+from .helpers.parts import PART_TYPES, part_type_of
 from .helpers.rows import (
     filter_facets,
     keyboard_ref,
@@ -60,7 +60,7 @@ def swap_row(request, template, context, target, swap='outerHTML'):
 
 def require_part_type(request):
     part_type = request.GET.get('type')
-    if part_type not in PART_MODELS:
+    if part_type not in PART_TYPES:
         raise BadRequest
     return part_type
 
@@ -142,10 +142,10 @@ def inventory_parts(request):
     context = {'page_title': 'Parts Inventory'}
     context['inventory'] = PartService(request.user).part_rows()
     context['part_columns'] = part_columns()
-    context['filters'] = list(const.PART_PLURALS.items())
+    context['filters'] = [(key, spec.plural) for key, spec in PART_TYPES.items()]
     add = request.GET.get('add')
     if add is not None:
-        context['open_add'] = add if add in PART_MODELS else ''
+        context['open_add'] = add if add in PART_TYPES else ''
     return render(request, 'pages/inventory_parts.html', context)
 
 
@@ -155,7 +155,7 @@ def add_part(request):
     part_service = PartService(request.user)
     if request.method != 'POST':
         part_type = request.GET.get('type')
-        if part_type not in PART_MODELS:
+        if part_type not in PART_TYPES:
             part_type = None
         return render(
             request,
@@ -164,7 +164,7 @@ def add_part(request):
         )
 
     context = modal_forms.add_part_context(request.POST)
-    if context['part_type'] not in PART_MODELS:
+    if context['part_type'] not in PART_TYPES:
         raise BadRequest
 
     part_type = context['part_type']
@@ -240,8 +240,8 @@ def promote_part(request):
     if request.method != 'POST':
         context = {
             'name': name,
-            'type_label': const.PART_SINGULARS[part_type],
-            'catalog_url': reverse(f'stock_{const.PART_PLURALS[part_type].lower()}'),
+            'type_label': PART_TYPES[part_type].singular,
+            'catalog_url': reverse(PART_TYPES[part_type].catalog_url_name),
             'action_url': f'{reverse("part_promote")}?id={inv.pk}',
         }
         return render(request, 'partials/modals/part_promote_modal.html', context)
@@ -388,7 +388,7 @@ def part_detail(request):
 
     context = {
         'name': part_name(obj),
-        'type_label': const.PART_SINGULARS[part_type],
+        'type_label': PART_TYPES[part_type].singular,
         'stock': stock,
         'edit_url': edit_url(request.GET.get('edit', '')),
         'fields': model_to_dict_verbose(
@@ -465,7 +465,7 @@ def edit_keyboard(request):
     context = modal_forms.keyboard_form_context(action_url, post, current=current)
     context['delete_url'] = delete_url
     if post is None:
-        if request.GET.get('step') in PART_MODELS:
+        if request.GET.get('step') in PART_TYPES:
             context['step'] = request.GET['step']
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
@@ -653,10 +653,10 @@ def stock_parts(request, part_type):
     rows = catalog_service.stock_part_rows(part_type)
     columns, facet_specs = stock_part_specs(part_type)
     context = {
-        'page_title': const.PART_PLURALS[part_type],
+        'page_title': PART_TYPES[part_type].plural,
         'part_type': part_type,
-        'type_label': const.PART_SINGULARS[part_type],
-        'noun': const.PART_PLURALS[part_type].lower(),
+        'type_label': PART_TYPES[part_type].singular,
+        'noun': PART_TYPES[part_type].plural.lower(),
         'parts': rows,
         'columns': columns,
         'facets': filter_facets(rows, request.GET, facet_specs),
@@ -667,7 +667,7 @@ def stock_parts(request, part_type):
 
 def stock_part_from_request(request):
     part_type = require_part_type(request)
-    stock_model = PART_MODELS[part_type].stock
+    stock_model = PART_TYPES[part_type].stock
     obj = stock_model.objects.filter(pk=require_id(request)).first()
     return part_type, found_or_404(
         request, obj, 'That part is no longer in the catalog.'
@@ -677,7 +677,7 @@ def stock_part_from_request(request):
 def stock_part_modal_context(part_type, form, action_url, delete_url=None):
     return {
         'form': form,
-        'type_label': const.PART_SINGULARS[part_type],
+        'type_label': PART_TYPES[part_type].singular,
         'action_url': action_url,
         'editing': form.instance.pk is not None,
         'delete_url': delete_url,
@@ -688,7 +688,7 @@ def stock_part_modal_context(part_type, form, action_url, delete_url=None):
 def add_stock_part(request):
     part_type = require_part_type(request)
 
-    form_class = PART_MODELS[part_type].stock_form
+    form_class = PART_TYPES[part_type].stock_form
     form = form_class(request.POST or None, prefix=part_type)
     action_url = f'{reverse("stock_part_add")}?type={part_type}'
     if request.method == 'POST' and form.is_valid():
@@ -713,7 +713,8 @@ def upload_summary(result):
     added = []
     for part_type, count in result.created.items():
         if count:
-            nouns = f'{const.PART_SINGULARS[part_type]},{const.PART_PLURALS[part_type]}'
+            spec = PART_TYPES[part_type]
+            nouns = f'{spec.singular},{spec.plural}'
             added.append(f'{count} {pluralize(count, nouns).lower()}')
     skipped = result.skipped
     skipped_note = f'{skipped} already in the catalog' if skipped else ''
@@ -766,7 +767,7 @@ def edit_stock_part(request):
     catalog_service = CatalogService(request.user)
     part_type, obj = stock_part_from_request(request)
 
-    form = PART_MODELS[part_type].stock_form(
+    form = PART_TYPES[part_type].stock_form(
         request.POST or None, prefix=part_type, instance=obj
     )
     action_url = f'{reverse("stock_part_edit")}?type={part_type}&id={obj.pk}'
@@ -797,7 +798,7 @@ def delete_stock_parts(request):
     part_type = require_part_type(request)
 
     ids = [value for value in bulk_ids(request) if is_id(value)]
-    objs = list(PART_MODELS[part_type].stock.objects.filter(pk__in=ids).order_by('pk'))
+    objs = list(PART_TYPES[part_type].stock.objects.filter(pk__in=ids).order_by('pk'))
     if not objs:
         raise BadRequest
 
@@ -808,7 +809,7 @@ def delete_stock_parts(request):
             blocked.append((part_name(obj), ', '.join(usage['prebuilts'])))
         else:
             deletable.append(obj)
-    plural = const.PART_PLURALS[part_type].lower()
+    plural = PART_TYPES[part_type].plural.lower()
     names = [part_name(obj) for obj in deletable]
 
     if request.method != 'POST':
@@ -849,7 +850,7 @@ def collect_stock_part(request):
     context = {
         'name': name,
         'part_type': part_type,
-        'type_label': const.PART_SINGULARS[part_type],
+        'type_label': PART_TYPES[part_type].singular,
         'action_url': f'{reverse("stock_part_collect")}?type={part_type}&id={obj.pk}',
         'quantity': request.POST.get('quantity', '1'),
         'quantity_error': None,
