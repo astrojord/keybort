@@ -30,7 +30,7 @@ SWITCH_MATERIALS = [
 ]
 
 
-# part types in display order. the model/form behind each one lives on managers.PART_MODELS,
+# part types in display order. the model/form behind each one lives on helpers.parts.PART_MODELS,
 # since models.py imports this file
 PART_SINGULARS = {
     'kit': 'Kit',

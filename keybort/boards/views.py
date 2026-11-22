@@ -14,36 +14,25 @@ from .handlers import (
     stock_csv_columns,
     stock_csv_template,
 )
-from .htmx import bulk_deleted, htmx_swap
-from .managers import (
-    PART_MODELS,
-    CatalogManager,
-    KeyboardManager,
-    ModalForms,
-    PartManager,
-    TypingManager,
-    delete_stock_keyboard,
-    delete_stock_part,
+from .helpers.forms_context import ModalForms, parse_quantity
+from .helpers.parts import PART_MODELS, part_type_of
+from .helpers.rows import (
     filter_facets,
     keyboard_ref,
     keyboard_row,
     keyboard_row_id,
     model_to_dict_verbose,
     parse_keyboard_ref,
-    parse_quantity,
     part_columns,
     part_row,
     part_row_id,
-    part_type_of,
     prebuilt_row_id,
-    promote_to_catalog,
-    save_stock_keyboard,
     stock_part_row,
     stock_part_row_id,
     stock_part_specs,
-    stock_part_usage,
     stock_prebuilt_row,
 )
+from .htmx import bulk_deleted, htmx_swap
 from .models import Inventory, StockKeyboard, part_name
 from .request_params import (
     bulk_ids,
@@ -52,6 +41,16 @@ from .request_params import (
     require_id,
     require_stock_flag,
 )
+from .services.catalog import (
+    CatalogService,
+    delete_stock_keyboard,
+    delete_stock_part,
+    promote_to_catalog,
+    save_stock_keyboard,
+    stock_part_usage,
+)
+from .services.inventory import KeyboardService, PartService
+from .services.races import TypingService
 
 
 def swap_row(request, template, context, target, swap='outerHTML'):
@@ -73,18 +72,18 @@ def found_or_404(request, obj, message):
     return obj
 
 
-def standalone_part_or_404(request, part_manager):
-    inv = part_manager.standalone_part(require_id(request))
+def standalone_part_or_404(request, part_service):
+    inv = part_service.standalone_part(require_id(request))
     return found_or_404(request, inv, 'That part no longer exists.')
 
 
 def index(request):
     context = {'page_title': 'Home'}
     if request.user.is_authenticated:
-        dashboard = KeyboardManager(request.user).dashboard()
+        dashboard = KeyboardService(request.user).dashboard()
         context.update(dashboard)
         context.update(
-            TypingManager(request.user).race_context(dashboard['owned_keyboards'])
+            TypingService(request.user).race_context(dashboard['owned_keyboards'])
         )
         context['quick_actions'] = const.QUICK_ACTIONS
         context['race_words'] = const.TYPING_RACE_WORDS
@@ -96,10 +95,10 @@ def index(request):
 @login_required
 def stats(request):
     context = {'page_title': 'Stats'}
-    collection = KeyboardManager(request.user).collection_stats()
+    collection = KeyboardService(request.user).collection_stats()
     context.update(collection)
     context.update(
-        TypingManager(request.user).race_context(collection['owned_keyboards'])
+        TypingService(request.user).race_context(collection['owned_keyboards'])
     )
     return render(request, 'pages/stats.html', context)
 
@@ -111,8 +110,8 @@ def save_typing_result(request):
     if not form.is_valid():
         raise BadRequest
     data = form.cleaned_data
-    manager = TypingManager(request.user)
-    saved = manager.record(
+    typing_service = TypingService(request.user)
+    saved = typing_service.record(
         keyboard_id=data['keyboard'],
         word_count=data['word_count'],
         characters=data['characters'],
@@ -122,14 +121,16 @@ def save_typing_result(request):
     if not saved:
         raise BadRequest
     return render(
-        request, 'partials/components/typing_history.html', manager.history_context()
+        request,
+        'partials/components/typing_history.html',
+        typing_service.history_context(),
     )
 
 
 @login_required
 def inventory_keyboards(request):
     context = {'page_title': 'Keyboard Inventory'}
-    context['inventory'] = KeyboardManager(request.user).keyboard_rows()
+    context['inventory'] = KeyboardService(request.user).keyboard_rows()
     context['filters'] = list(const.KEYBOARD_KINDS.items())
     add = request.GET.get('add')
     context['open_add'] = add if add in const.KEYBOARD_KINDS else None
@@ -139,7 +140,7 @@ def inventory_keyboards(request):
 @login_required
 def inventory_parts(request):
     context = {'page_title': 'Parts Inventory'}
-    context['inventory'] = PartManager(request.user).part_rows()
+    context['inventory'] = PartService(request.user).part_rows()
     context['part_columns'] = part_columns()
     context['filters'] = list(const.PART_PLURALS.items())
     add = request.GET.get('add')
@@ -151,7 +152,7 @@ def inventory_parts(request):
 @login_required
 def add_part(request):
     modal_forms = ModalForms(request.user)
-    part_manager = PartManager(request.user)
+    part_service = PartService(request.user)
     if request.method != 'POST':
         part_type = request.GET.get('type')
         if part_type not in PART_MODELS:
@@ -176,7 +177,7 @@ def add_part(request):
         context['step'] = part_type
         return render(request, 'partials/modals/part_add_modal.html', context)
 
-    inv, stacked = part_manager.add_part(part_type, choice, quantity)
+    inv, stacked = part_service.add_part(part_type, choice, quantity)
     row = part_row(inv)
     if stacked:
         messages.success(
@@ -194,9 +195,9 @@ def add_part(request):
 
 @login_required
 def edit_part(request):
-    part_manager = PartManager(request.user)
+    part_service = PartService(request.user)
     modal_forms = ModalForms(request.user)
-    inv = standalone_part_or_404(request, part_manager)
+    inv = standalone_part_or_404(request, part_service)
 
     post = request.POST if request.method == 'POST' else None
     action_url = f'{reverse("part_edit")}?id={inv.pk}'
@@ -216,7 +217,7 @@ def edit_part(request):
     if quantity is None or not form_valid:
         return render(request, 'partials/modals/part_edit_modal.html', context)
 
-    inv = part_manager.edit_part(inv, form, quantity)
+    inv = part_service.edit_part(inv, form, quantity)
 
     row = part_row(inv)
     messages.success(request, f'Saved {row["name"]}.')
@@ -227,8 +228,8 @@ def edit_part(request):
 
 @permission_required('boards.can_upload_stock_data', raise_exception=True)
 def promote_part(request):
-    part_manager = PartManager(request.user)
-    inv = standalone_part_or_404(request, part_manager)
+    part_service = PartService(request.user)
+    inv = standalone_part_or_404(request, part_service)
 
     part_type = part_type_of(inv)
     wrapper = getattr(inv, part_type)
@@ -247,7 +248,7 @@ def promote_part(request):
 
     promote_to_catalog(inv)
     messages.success(request, f'Added {name} to the catalog.')
-    row = part_row(part_manager.standalone_part(inv.pk))
+    row = part_row(part_service.standalone_part(inv.pk))
     return swap_row(
         request, 'partials/rows/part_row.html', {'part': row}, f'#{row["row_id"]}'
     )
@@ -258,8 +259,8 @@ def part_quantity(request):
     if request.method != 'POST':
         raise BadRequest
 
-    part_manager = PartManager(request.user)
-    inv = standalone_part_or_404(request, part_manager)
+    part_service = PartService(request.user)
+    inv = standalone_part_or_404(request, part_service)
 
     quantity = parse_quantity(request.POST.get('quantity'))
     if quantity is None:
@@ -291,8 +292,8 @@ def deleted_label(names, plural):
 @login_required
 def delete_parts(request):
     ids = [value for value in bulk_ids(request) if is_id(value)]
-    part_manager = PartManager(request.user)
-    invs = list(part_manager.standalone_parts().filter(pk__in=ids).order_by('pk'))
+    part_service = PartService(request.user)
+    invs = list(part_service.standalone_parts().filter(pk__in=ids).order_by('pk'))
     if not invs:
         raise BadRequest
 
@@ -311,19 +312,19 @@ def delete_parts(request):
 
     row_ids = [part_row_id(inv) for inv in invs]
     for inv in invs:
-        part_manager.delete_part(inv)
+        part_service.delete_part(inv)
     messages.success(request, f'Removed {deleted_label(names, "parts")} from parts.')
     return bulk_deleted(row_ids)
 
 
 @login_required
 def delete_keyboards(request):
-    kb_manager = KeyboardManager(request.user)
+    kb_service = KeyboardService(request.user)
     inventories = []
     for value in bulk_ids(request):
         params = parse_keyboard_ref(value)
         if params is not None:
-            inventory = kb_manager.keyboard_inventory(*params)
+            inventory = kb_service.keyboard_inventory(*params)
             if inventory is not None:
                 inventories.append((value, inventory))
     if not inventories:
@@ -341,8 +342,8 @@ def delete_keyboards(request):
             'action_url': reverse('keyboard_delete'),
         }
         if single:
-            context['parts'] = KeyboardManager.keyboard_delete_parts(keyboards[0])
-            context['keep_default'] = kb_manager.profile.keep_parts_on_delete
+            context['parts'] = KeyboardService.keyboard_delete_parts(keyboards[0])
+            context['keep_default'] = kb_service.profile.keep_parts_on_delete
         else:
             context['reminder'] = (
                 'Their parts are deleted too. To keep any parts, delete each '
@@ -354,7 +355,7 @@ def delete_keyboards(request):
     row_ids = []
     for kb, (_, inventory) in zip(keyboards, inventories, strict=True):
         row_ids.append(keyboard_row_id(kb))
-        kb_manager.delete_keyboard(inventory, keep)
+        kb_service.delete_keyboard(inventory, keep)
     label = deleted_label(names, 'keyboards')
     if keep:
         messages.success(
@@ -381,7 +382,7 @@ def part_detail(request):
     stock = require_stock_flag(request)
 
     # 404 for someone else's custom part too, so ids aren't confirmed
-    obj = PartManager(request.user).visible_part(part_type, part_id, stock)
+    obj = PartService(request.user).visible_part(part_type, part_id, stock)
     if obj is None:
         raise Http404
 
@@ -406,7 +407,7 @@ def part_detail(request):
 @login_required
 def add_keyboard(request):
     modal_forms = ModalForms(request.user)
-    kb_manager = KeyboardManager(request.user)
+    kb_service = KeyboardService(request.user)
     action_url = reverse('keyboard_add')
     if request.method != 'POST':
         kind = request.GET.get('kind')
@@ -423,7 +424,7 @@ def add_keyboard(request):
                 context['step'] = 'prebuilt'
                 context['prebuilt_error'] = error
                 return render(request, 'partials/modals/keyboard_modal.html', context)
-            kb_manager.collect_prebuilt(kb)
+            kb_service.collect_prebuilt(kb)
         case 'custom':
             submission = ModalForms.validate_parts(
                 request.POST, context, count_switches=True
@@ -431,7 +432,7 @@ def add_keyboard(request):
             if submission.step is not None:
                 context['step'] = submission.step
                 return render(request, 'partials/modals/keyboard_modal.html', context)
-            kb = kb_manager.add_custom(submission)
+            kb = kb_service.add_custom(submission)
         case _:
             raise BadRequest
 
@@ -449,11 +450,11 @@ def add_keyboard(request):
 @login_required
 def edit_keyboard(request):
     params = keyboard_params(request)
-    kb_manager = KeyboardManager(request.user)
+    kb_service = KeyboardService(request.user)
     modal_forms = ModalForms(request.user)
     inventory = found_or_404(
         request,
-        kb_manager.keyboard_inventory(*params),
+        kb_service.keyboard_inventory(*params),
         'That keyboard no longer exists.',
     )
 
@@ -473,7 +474,7 @@ def edit_keyboard(request):
         context['step'] = submission.step
         return render(request, 'partials/modals/keyboard_modal.html', context)
 
-    kb = kb_manager.edit_keyboard(inventory, submission)
+    kb = kb_service.edit_keyboard(inventory, submission)
     row = keyboard_row(kb)
     messages.success(request, f'Saved {kb}.')
     return swap_row(
@@ -486,8 +487,8 @@ def edit_keyboard(request):
 
 @login_required
 def account(request):
-    kb_manager = KeyboardManager(request.user)
-    form = ProfileForm(request.POST or None, instance=kb_manager.profile)
+    kb_service = KeyboardService(request.user)
+    form = ProfileForm(request.POST or None, instance=kb_service.profile)
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, 'Saved preferences.')
@@ -498,13 +499,13 @@ def account(request):
         context.update(carpet_oob=True, carpet_id='carpet-main')
         return render(request, 'partials/sections/account_preferences.html', context)
 
-    context.update(page_title='Account', **kb_manager.inventory_counts())
+    context.update(page_title='Account', **kb_service.inventory_counts())
     return render(request, 'pages/account.html', context)
 
 
 def stock_prebuilts(request):
-    catalog_manager = CatalogManager(request.user)
-    rows = catalog_manager.stock_prebuilt_rows()
+    catalog_service = CatalogService(request.user)
+    rows = catalog_service.stock_prebuilt_rows()
     context = {
         'page_title': 'Prebuilt Keyboards',
         'prebuilts': rows,
@@ -552,7 +553,7 @@ def edit_stock_prebuilt(request):
     )
 
     modal_forms = ModalForms(request.user)
-    catalog_manager = CatalogManager(request.user)
+    catalog_service = CatalogService(request.user)
     action_url = f'{reverse("stock_prebuilt_edit")}?id={current.pk}'
     delete_url = None
     if request.user.has_perm('boards.can_delete_stock_data'):
@@ -570,7 +571,7 @@ def edit_stock_prebuilt(request):
 
     stock_kb = save_stock_keyboard(submission)
     row = stock_prebuilt_row(
-        stock_kb, stock_kb.pk in catalog_manager.owned_prebuilt_ids()
+        stock_kb, stock_kb.pk in catalog_service.owned_prebuilt_ids()
     )
     messages.success(request, f'Saved {row["name"]}.')
     return swap_row(
@@ -636,20 +637,20 @@ def collect_stock_prebuilt(request):
         'That prebuilt is no longer in the catalog.',
     )
 
-    catalog_manager = CatalogManager(request.user)
-    kb_manager = KeyboardManager(request.user)
+    catalog_service = CatalogService(request.user)
+    kb_service = KeyboardService(request.user)
     row = stock_prebuilt_row(stock_kb, owned=True)
-    if stock_kb.pk in catalog_manager.owned_prebuilt_ids():
+    if stock_kb.pk in catalog_service.owned_prebuilt_ids():
         messages.info(request, f'{row["name"]} is already in your inventory.')
     else:
-        kb_manager.collect_prebuilt(stock_kb)
+        kb_service.collect_prebuilt(stock_kb)
         messages.success(request, f'Added {row["name"]} to keyboards.')
     return render(request, 'partials/rows/stock_prebuilt_row.html', {'kb': row})
 
 
 def stock_parts(request, part_type):
-    catalog_manager = CatalogManager(request.user)
-    rows = catalog_manager.stock_part_rows(part_type)
+    catalog_service = CatalogService(request.user)
+    rows = catalog_service.stock_part_rows(part_type)
     columns, facet_specs = stock_part_specs(part_type)
     context = {
         'page_title': const.PART_PLURALS[part_type],
@@ -762,7 +763,7 @@ def stock_upload_template(request):
 
 @permission_required('boards.can_edit_stock_data', raise_exception=True)
 def edit_stock_part(request):
-    catalog_manager = CatalogManager(request.user)
+    catalog_service = CatalogService(request.user)
     part_type, obj = stock_part_from_request(request)
 
     form = PART_MODELS[part_type].stock_form(
@@ -774,7 +775,7 @@ def edit_stock_part(request):
         delete_url = f'{reverse("stock_part_delete")}?type={part_type}&ids={obj.pk}'
     if request.method == 'POST' and form.is_valid():
         obj = form.save()
-        quantity = catalog_manager.stock_part_quantities(part_type).get(obj.pk, 0)
+        quantity = catalog_service.stock_part_quantities(part_type).get(obj.pk, 0)
         row = stock_part_row(part_type, obj, quantity)
         messages.success(request, f'Saved {row["name"]}.')
         return swap_row(
@@ -841,7 +842,7 @@ def delete_stock_parts(request):
 
 @login_required
 def collect_stock_part(request):
-    part_manager = PartManager(request.user)
+    part_service = PartService(request.user)
     part_type, obj = stock_part_from_request(request)
 
     name = part_name(obj)
@@ -861,7 +862,7 @@ def collect_stock_part(request):
         context['quantity_error'] = const.QUANTITY_ERROR
         return render(request, 'partials/modals/stock_part_collect_modal.html', context)
 
-    inv, stacked = part_manager.collect_stock_part(part_type, obj, quantity)
+    inv, stacked = part_service.collect_stock_part(part_type, obj, quantity)
     if stacked:
         messages.success(request, f'Updated quantity of {name} to {inv.quantity}.')
     else:

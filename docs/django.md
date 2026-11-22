@@ -3,33 +3,40 @@
 
 #### Request flow
 ```
-urls.py -> views.py -> managers.py -> models.py
+urls.py -> views.py -> services/ -> models.py
+                   \-> helpers/
                    \-> forms.py
                    \-> handlers.py (CSV upload only)
 ```
 
-Views are deliberately small and hand off anything that requires more than one model to the appropriate class in `managers`.
+Views are deliberately small and hand off anything that requires more than one model to the appropriate class in `services`.
 
 #### Non-standard modules
 | File | Contents |
 | --- | --- |
-| `managers.py` | Helper classes to abstract dict construction and ORM queries away from view functions |
+| `services/` | Per-user classes that wrap ORM queries and writes, plus the stock catalog write functions |
+| `helpers/` | Part registry, row/stats builders, and modal form context |
 | `handlers.py` | Parses + validates stock part CSVs, likely to be expanded later for other upload handlers |
 | `middleware.py` | `HtmxMessagesMiddleware`, see [frontend](frontend.md) |
-| `utils.py` | Request parsing (`is_id`, `keyboard_params`, `bulk_ids`) and HTMX response helpers (`htmx_swap`, `bulk_deleted`) |
+| `request_params.py` | Request parsing (`is_id`, `require_id`, `keyboard_params`, `bulk_ids`) |
+| `htmx.py` | HTMX response helpers (`htmx_swap`, `bulk_deleted`) |
 | `const.py` | Choices, labels, table columns, limits |
 
-#### managers.py
-Most helper classes here are supposed to be instantiated once per request, ie `SomeManager(request.user)`.
+#### services/
+Classes here are supposed to be instantiated once per request, ie `SomeService(request.user)`.
 
-- `PART_MODELS` - maps each part type (`kit`, `switch`, `keycaps`, `plate`, `stabilizer`) to its wrapper model, custom model, stock model, and forms
-- `RowBuilder` - turns models into the dicts the table row templates expect
-- `ModalForms` - builds context dicts for the add/edit modals
-- `PartChoice` / `KeyboardSubmission` - dataclasses for user responses in add/edit modals
-- `PartManager` - standalone parts in a given user's inventory
-- `KeyboardManager` - a given user's keyboards, dashboard numbers, and collection stats
-- `TypingManager` - saves typing race results + builds the history/sparklines
-- `CatalogManager` - CRUD operations on stock part data
+- `inventory.py`
+  - `PartService` - standalone parts in a given user's inventory
+  - `KeyboardService` - a given user's keyboards, dashboard numbers, and collection stats
+- `races.py` - `TypingService`, saves typing race results + builds the history/sparklines
+- `catalog.py` - `CatalogService` for a user's view of the stock catalog, plus functions for stock part/prebuilt writes (promote, delete, save)
+- `base.py` - `UserScoped`, the shared `user`/`profile` base
+
+#### helpers/
+- `parts.py` - `PART_MODELS` maps each part type (`kit`, `switch`, `keycaps`, `plate`, `stabilizer`) to its wrapper model, custom model, stock model, and forms, plus small part helpers (`part_obj`, `part_in_use`, ...)
+- `rows.py` - turns models into the dicts the table row templates expect, plus row ids and keyboard refs
+- `forms_context.py` - `ModalForms` builds context dicts for the add/edit modals, `PartChoice` / `KeyboardSubmission` are dataclasses for user responses in them
+- `stats.py` - stats page breakdowns and the typing sparkline
 
 #### Access
 - Public: home, the stock catalog pages, and `get_part_detail` (404s on custom parts you don't own)

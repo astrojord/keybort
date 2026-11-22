@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from boards.managers import CatalogManager, KeyboardManager, ModalForms, PartManager
+from boards.helpers.forms_context import ModalForms
 from boards.models import (
     CustomKeyboard,
     CustomKit,
@@ -17,6 +17,8 @@ from boards.models import (
     StockSwitch,
     Switch,
 )
+from boards.services.catalog import CatalogService
+from boards.services.inventory import KeyboardService, PartService
 
 
 def make_user(username='jordan'):
@@ -103,9 +105,9 @@ class UserTestCase(TestCase):
 
     def setUp(self):
         self.modal_forms = ModalForms(self.user)
-        self.part_manager = PartManager(self.user)
-        self.kb_manager = KeyboardManager(self.user)
-        self.catalog_manager = CatalogManager(self.user)
+        self.part_service = PartService(self.user)
+        self.kb_service = KeyboardService(self.user)
+        self.catalog_service = CatalogService(self.user)
 
 
 class ClientTestCase(UserTestCase):

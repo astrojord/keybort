@@ -8,7 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from . import const
-from .managers import PART_MODELS, part_fields
+from .helpers.parts import PART_MODELS, part_fields
 
 TRUE_VALUES = {'1', 'true', 't', 'yes', 'y', 'x'}
 FALSE_VALUES = {'', '0', 'false', 'f', 'no', 'n'}
