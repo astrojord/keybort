@@ -169,7 +169,7 @@ def add_part(request):
 
     part_type = context['part_type']
     part = next(p for p in context['parts'] if p.type == part_type)
-    choice = part.validate(request.POST)
+    choice, part.error = part.validate(request.POST)
     quantity = parse_quantity(request.POST.get('quantity'))
     if quantity is None:
         context['quantity_error'] = const.QUANTITY_ERROR

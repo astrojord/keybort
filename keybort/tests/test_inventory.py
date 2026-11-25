@@ -330,7 +330,7 @@ class AddPartTests(UserTestCase):
         context = self.modal_forms.add_part_context(data)
         part_type = context['part_type']
         part = next(p for p in context['parts'] if p.type == part_type)
-        choice = part.validate(data)
+        choice, part.error = part.validate(data)
         quantity = parse_quantity(data.get('quantity'))
         if quantity is None:
             context['quantity_error'] = const.QUANTITY_ERROR

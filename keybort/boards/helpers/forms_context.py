@@ -53,9 +53,11 @@ class PartChoice:
     removal: str
     # switch count, filled in by keyboard_form_context for the switch step
     count: int | str | None = None
+    # set by the caller from validate(), shown under the step
     error: str | None = None
 
     def validate(self, data):
+        """(choice, error): choice is a (source, value) tuple, or None when nothing valid was picked"""
         match self.source:
             case 'stock':
                 stock_id = data.get(f'{self.type}-stock', '')
@@ -65,36 +67,38 @@ class PartChoice:
                     else None
                 )
                 if obj is not None:
-                    return ('stock', obj)
-                self.error = f'Choose a stock option for {self.label.lower()}.'
+                    return ('stock', obj), None
+                return None, f'Choose a stock option for {self.label.lower()}.'
             case 'custom':
                 if self.form.is_valid():
-                    return ('custom', self.form)
-                self.error = 'Found some errors while checking the form.'
+                    return ('custom', self.form), None
+                return None, 'Found some errors while checking the form.'
             case 'owned' if self.owned_rows is not None:
                 row_id = data.get(f'{self.type}-owned', '')
                 row = (
                     self.owned_rows.filter(pk=row_id).first() if is_id(row_id) else None
                 )
                 if row is not None:
-                    return ('owned', row)
-                self.error = f'Choose {self.label.lower()} from your parts.'
+                    return ('owned', row), None
+                return None, f'Choose {self.label.lower()} from your parts.'
             case 'none' if not self.required:
-                pass
+                return None, None
             case _:
-                self.error = (
-                    f'Choose a stock {self.label.lower()} or enter a custom one.'
+                return (
+                    None,
+                    f'Choose a stock {self.label.lower()} or enter a custom one.',
                 )
-        return None
 
-    def validate_switch_count(self, data, choice):
+    @staticmethod
+    def validate_switch_count(data, choice):
+        """(count, error)"""
         count = parse_quantity(data.get('switch-count'))
         source, value = choice
         if count is None:
-            self.error = 'Enter how many switches are on the board.'
-        elif source == 'owned' and count > value.quantity:
-            self.error = f'You only have {value.quantity} of those switches.'
-        return count
+            return None, 'Enter how many switches are on the board.'
+        if source == 'owned' and count > value.quantity:
+            return count, f'You only have {value.quantity} of those switches.'
+        return count, None
 
 
 @dataclass
@@ -303,11 +307,11 @@ class ModalForms(UserScoped):
         switch_count = None
         step = None
         for part in context['parts']:
-            choice = part.validate(data)
+            choice, part.error = part.validate(data)
             if choice is not None:
                 chosen[part.type] = choice
                 if count_switches and part.type == 'switch':
-                    switch_count = part.validate_switch_count(data, choice)
+                    switch_count, part.error = part.validate_switch_count(data, choice)
             if part.error and step is None:
                 step = part.type
 

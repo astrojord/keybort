@@ -95,3 +95,44 @@ class KeyboardFormContextTests(UserTestCase):
         context = self.modal_forms.keyboard_form_context('/edit', current=kb)
         switch = next(p for p in context['parts'] if p.type == 'switch')
         self.assertEqual(switch.count, 60)
+
+
+class PartChoiceValidateTests(UserTestCase):
+    def switch_part(self, data):
+        context = self.modal_forms.keyboard_form_context('/add', data)
+        return context, next(p for p in context['parts'] if p.type == 'switch')
+
+    def test_validate_returns_error_without_setting_it(self):
+        data = {'switch-source': 'stock', 'switch-stock': '999999'}
+        _, part = self.switch_part(data)
+        choice, error = part.validate(data)
+        self.assertIsNone(choice)
+        self.assertIn('stock option', error)
+        self.assertIsNone(part.error)
+
+    def test_validate_returns_choice(self):
+        switch = stock_switch()
+        data = {'switch-source': 'stock', 'switch-stock': str(switch.pk)}
+        _, part = self.switch_part(data)
+        self.assertEqual(part.validate(data), (('stock', switch), None))
+
+    def test_skipped_optional_part_has_no_choice_or_error(self):
+        data = {'switch-source': 'none'}
+        _, part = self.switch_part(data)
+        self.assertEqual(part.validate(data), (None, None))
+
+    def test_switch_count_error_lands_on_switch_step(self):
+        switch = stock_switch()
+        data = {
+            'kit-source': 'stock',
+            'kit-stock': str(stock_kit().pk),
+            'switch-source': 'stock',
+            'switch-stock': str(switch.pk),
+            'switch-count': 'lots',
+            'details-notes': '',
+        }
+        context, part = self.switch_part(data)
+        submission = ModalForms.validate_parts(data, context, count_switches=True)
+        self.assertEqual(submission.step, 'switch')
+        self.assertIsNone(submission.switch_count)
+        self.assertEqual(part.error, 'Enter how many switches are on the board.')
